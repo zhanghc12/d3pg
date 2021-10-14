@@ -150,8 +150,8 @@ if __name__ == "__main__":
         if t >= args.start_timesteps:
             actor_loss, critic_loss, adv_loss = policy.train(replay_buffer, args.batch_size)
             writer.add_scalar('loss/actor_loss', actor_loss, t)
-            writer.add_scalar('loss/critic_loss', actor_loss, t)
-            writer.add_scalar('loss/adv_loss', actor_loss, t)
+            writer.add_scalar('loss/critic_loss', critic_loss, t)
+            writer.add_scalar('loss/adv_loss', adv_loss, t)
         if done:
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             print(
