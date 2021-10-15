@@ -3,7 +3,7 @@ import torch
 import gym
 import argparse
 import os
-
+import os.path as osp
 import duelingpg.utils as utils
 from duelingpg import d3pg
 from duelingpg import OurDDPG
@@ -61,6 +61,7 @@ if __name__ == "__main__":
         experiment_dir = '/data/zhanghc/d3pg/'
     else:
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
+    experiment_dir = experiment_dir + '10_15/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version))
 
