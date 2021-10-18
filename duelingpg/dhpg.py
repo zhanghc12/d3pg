@@ -249,7 +249,7 @@ class DHPG(object):
         elif version == 1:
             self.actor = Actor(state_dim, action_dim, max_action).to(device)
             self.critic = Critic(state_dim, action_dim).to(device)
-        else version == 2:
+        elif version == 2:
             self.actor = Actor(state_dim, action_dim, max_action).to(device)
             self.critic = OriginalCritic(state_dim, action_dim).to(device)
 
