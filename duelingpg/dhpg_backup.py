@@ -84,7 +84,7 @@ class Head(nn.Module):
     def __init__(self, latent_dim, output_dim_in, output_dim_out, sttdev):
         super(Head, self).__init__()
 
-        h_layer = 256
+        h_layer = 1024
         self.output_dim_in = output_dim_in
         self.output_dim_out = output_dim_out
 
@@ -113,6 +113,7 @@ class Head(nn.Module):
 
 
 class Meta_Embadding(nn.Module):
+
     def __init__(self, meta_dim, z_dim):
         super(Meta_Embadding, self).__init__()
         self.z_dim = z_dim
@@ -121,6 +122,15 @@ class Meta_Embadding(nn.Module):
             nn.Linear(meta_dim, 256),
             ResBlock(256, 256),
             ResBlock(256, 256),
+
+            nn.Linear(256, 512),
+            ResBlock(512, 512),
+            ResBlock(512, 512),
+
+            nn.Linear(512, 1024),
+            ResBlock(1024, 1024),
+            ResBlock(1024, 1024),
+
         )
 
         self.init_layers()
@@ -141,7 +151,7 @@ class HyperNetwork(nn.Module): # s vs s to form a feature
         super(HyperNetwork, self).__init__()
 
         dynamic_layer = 256
-        z_dim = 256
+        z_dim = 1024
 
         self.output_dim = output_dim
 
@@ -248,7 +258,7 @@ class DHPG(object):
 
         #self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-5)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
         #self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
