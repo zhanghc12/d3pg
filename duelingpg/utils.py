@@ -16,6 +16,16 @@ class ReplayBuffer(object):
 
 		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+	def get_all_samples(self):
+		if self.ptr < self.max_size:
+			inputs = np.concatenate([self.state[:self.ptr, :], self.action[:self.ptr, :]], axis=1)
+			delta_state = self.next_state[:self.ptr, :] - self.state[:self.ptr, :]
+			labels = np.concatenate((self.reward[:self.ptr, :], delta_state), axis=-1)
+		else:
+			inputs = np.concatenate([self.state, self.action], axis=1)
+			delta_state = self.next_state - self.state
+			labels = np.concatenate((self.reward, delta_state), axis=-1)
+		return inputs, labels
 
 	def add(self, state, action, next_state, reward, done):
 		self.state[self.ptr] = state
