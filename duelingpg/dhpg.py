@@ -147,19 +147,19 @@ class Meta_Embadding(nn.Module):
                 torch.nn.init.uniform_(module.weight, -bound, bound)
 
 class HyperNetwork(nn.Module): # s vs s to form a feature
-    def __init__(self, meta_v_dim, base_v_dim):
+    def __init__(self, meta_v_dim, base_v_dim, output_dim):
         super(HyperNetwork, self).__init__()
 
         dynamic_layer = 256
         z_dim = 1024
 
-        self.dynamic_layer = dynamic_layer
+        self.output_dim = output_dim
 
         self.hyper = Meta_Embadding(meta_v_dim, z_dim)
 
         # Q function net
         self.layer1 = Head(z_dim, base_v_dim, dynamic_layer, sttdev=0.05)
-        self.last_layer = Head(z_dim, dynamic_layer, dynamic_layer, sttdev=0.008)
+        self.last_layer = Head(z_dim, dynamic_layer, output_dim, sttdev=0.008)
 
     def forward(self, meta_v, base_v, debug=None):
         # produce dynmaic weights
@@ -171,40 +171,44 @@ class HyperNetwork(nn.Module): # s vs s to form a feature
         out = F.relu(torch.bmm(w1, base_v.unsqueeze(2)) * s1 + b1)
         out = torch.bmm(w2, out) * s2 + b2
 
-        return out.view(-1, self.dynamic_layer)
+        return out.view(-1, self.output_dim)
 
 
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
-        self.hyper = HyperNetwork(state_dim, state_dim)
+        self.hyper = HyperNetwork(state_dim, state_dim, action_dim)
         #self.l1 = nn.Linear(256, 256)
-        self.l2 = nn.Linear(256, 256)
-        self.l3 = nn.Linear(256, action_dim)
+        #self.l2 = nn.Linear(256, 256)
+        #self.l3 = nn.Linear(256, action_dim)
 
         self.max_action = max_action
 
     def forward(self, state):
-        a = F.relu(self.hyper(state, state))
+        a = self.hyper(state, state)
+        #a = F.relu(self.hyper(state, state))
         #a = F.relu(self.l1(a))
-        a = F.relu(self.l2(a))
-        return self.max_action * torch.tanh(self.l3(a))
+        #a = F.relu(self.l2(a))
+        #return self.max_action * torch.tanh(self.l3(a))
+        return self.max_action * torch.tanh(a)
 
 
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
-        self.hyper = HyperNetwork(state_dim + action_dim, state_dim + action_dim)
+        self.hyper = HyperNetwork(state_dim + action_dim, state_dim + action_dim, 1)
         #self.l1 = nn.Linear(256, 256)
-        self.l2 = nn.Linear(256, 256)
-        self.l3 = nn.Linear(256, 1)
+        #self.l2 = nn.Linear(256, 256)
+        #self.l3 = nn.Linear(256, 1)
 
     def forward(self, state, action):
         inputs = torch.cat([state, action], 1)
-        q = F.relu(self.hyper(inputs, inputs))
+        q = self.hyper(inputs, inputs)
+        #q = F.relu(self.hyper(inputs, inputs))
         #q = F.relu(self.l1(q))
-        q = F.relu(self.l2(q))
-        return self.l3(q)
+        #q = F.relu(self.l2(q))
+        #return self.l3(q)
+        return q
 
 
 class DHPG(object):
