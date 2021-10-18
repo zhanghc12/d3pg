@@ -192,10 +192,26 @@ class Actor(nn.Module):
         #return self.max_action * torch.tanh(self.l3(a))
         return self.max_action * torch.tanh(a)
 
+class OriginalActor(nn.Module):
+    def __init__(self, state_dim, action_dim, max_action):
+        super(OriginalActor, self).__init__()
 
-class Critic(nn.Module):
+        self.l1 = nn.Linear(state_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, action_dim)
+
+        self.max_action = max_action
+
+    def forward(self, state):
+        a = F.relu(self.l1(state))
+        a = F.relu(self.l2(a))
+        return self.max_action * torch.tanh(self.l3(a))
+
+
+
+class OriginalCritic(nn.Module):
     def __init__(self, state_dim, action_dim):
-        super(Critic, self).__init__()
+        super(OriginalCritic, self).__init__()
 
         self.l1 = nn.Linear(state_dim + action_dim, 256)
         self.l2 = nn.Linear(256, 256)
@@ -206,7 +222,7 @@ class Critic(nn.Module):
         q = F.relu(self.l2(q))
         return self.l3(q)
 
-'''
+
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
@@ -223,20 +239,31 @@ class Critic(nn.Module):
         #q = F.relu(self.l2(q))
         #return self.l3(q)
         return q
-'''
+
 
 class DHPG(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005):
-        self.actor = Actor(state_dim, action_dim, max_action).to(device)
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0):
+        if version == 0:
+            self.actor = OriginalActor(state_dim, action_dim, max_action).to(device)
+            self.critic = Critic(state_dim, action_dim).to(device)
+        elif version == 1:
+            self.actor = Actor(state_dim, action_dim, max_action).to(device)
+            self.critic = Critic(state_dim, action_dim).to(device)
+        else version == 2:
+            self.actor = Actor(state_dim, action_dim, max_action).to(device)
+            self.critic = OriginalCritic(state_dim, action_dim).to(device)
+
+        #self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.critic = Critic(state_dim, action_dim).to(device)
+        #self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
         self.discount = discount
         self.tau = tau
+        self.version = version
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)

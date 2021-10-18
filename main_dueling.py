@@ -107,6 +107,7 @@ if __name__ == "__main__":
         kwargs['version'] = args.version
         policy = dtpg.DTPG(**kwargs)
     elif args.policy == 'DHPG':
+        kwargs['version'] = args.version
         policy = dhpg.DHPG(**kwargs)
     elif args.policy == "TD3":
         # Target policy smoothing is scaled wrt the action scale
