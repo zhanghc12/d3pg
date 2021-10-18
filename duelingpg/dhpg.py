@@ -196,6 +196,20 @@ class Actor(nn.Module):
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
+
+        self.l1 = nn.Linear(state_dim + action_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, 1)
+
+    def forward(self, state, action):
+        q = F.relu(self.l1(torch.cat([state, action], 1)))
+        q = F.relu(self.l2(q))
+        return self.l3(q)
+
+'''
+class Critic(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(Critic, self).__init__()
         self.hyper = HyperNetwork(state_dim + action_dim, state_dim + action_dim, 1)
         #self.l1 = nn.Linear(256, 256)
         #self.l2 = nn.Linear(256, 256)
@@ -209,7 +223,7 @@ class Critic(nn.Module):
         #q = F.relu(self.l2(q))
         #return self.l3(q)
         return q
-
+'''
 
 class DHPG(object):
     def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005):
