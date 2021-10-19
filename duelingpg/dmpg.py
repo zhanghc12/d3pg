@@ -187,6 +187,7 @@ class DMPG(object):
         pred_reward_list = []
         pred_mc = torch.zeros_like(reward).to(device)
         terminal_flag = torch.zeros_like(reward, dtype=torch.bool).to(device)
+        pred_step = torch.zeros_like(reward, dtype=torch.int32).to(device)
         # done: terminal state adjustment, multiple state
         for i in range(self.n_step):
             pred_action = self.actor(pred_state)
@@ -196,6 +197,7 @@ class DMPG(object):
             pred_reward = torch.from_numpy(pred_reward).to(device)
             pred_terminal = torch.from_numpy(pred_terminal).to(device)
 
+            pred_step = torch.where(terminal_flag, pred_step, pred_step+1)
             pred_next_state = torch.where(terminal_flag, pred_state.float(), pred_next_state.float())
             pred_reward = torch.where(terminal_flag, 0., pred_reward.double())
             terminal_flag = terminal_flag | pred_terminal
@@ -218,7 +220,7 @@ class DMPG(object):
         aux_target_Q = torch.sum(target_ensemble_Q.detach() * weights, dim=1, keepdim=True) / torch.sum(weights, dim=1, keepdim=True)
 
         weights_loss = torch.mean(
-            torch.pow(aux_Q - pred_mc - (1 - pred_terminal.float()) * aux_target_Q, 2))
+            torch.pow(aux_Q - pred_mc - torch.pow(self.discount, pred_step) * (1 - pred_terminal.float()) * aux_target_Q, 2))
 
         self.weights_optimizer.zero_grad()
         weights_loss.backward()
