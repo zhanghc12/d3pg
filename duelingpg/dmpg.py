@@ -168,14 +168,14 @@ class DMPG(object):
 
         # train model
         inputs, labels = replay_buffer.get_all_samples()
-        '''
+
         self.model.train(
             inputs=inputs,
             labels=labels,
             batch_size=256,
             holdout_ratio=0.2,
             max_epochs_since_update=5)
-        '''
+
 
         # after training, how to generate mc data to aid training
         n_step = 20
