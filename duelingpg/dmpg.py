@@ -110,6 +110,9 @@ class DMPG(object):
 
         self.weights_network = WeightNetwork(state_dim, action_dim, ensemble_size).to(device)
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
+
+        self.cur_step = 0
+        self.model_update_freq = 250
         '''
         self.weights = nn.Parameter(
             (torch.ones(
@@ -168,13 +171,13 @@ class DMPG(object):
 
         # train model
         inputs, labels = replay_buffer.get_all_samples()
-
-        self.model.train(
-            inputs=inputs,
-            labels=labels,
-            batch_size=256,
-            holdout_ratio=0.2,
-            max_epochs_since_update=5)
+        if self.cur_step % self.model_update_freq == 0:
+            self.model.train(
+                inputs=inputs,
+                labels=labels,
+                batch_size=256,
+                holdout_ratio=0.2,
+                max_epochs_since_update=5)
 
 
         # after training, how to generate mc data to aid training
@@ -220,6 +223,8 @@ class DMPG(object):
         self.weights_optimizer.zero_grad()
         weights_loss.backward()
         self.weights_optimizer.step()
+
+        self.cur_step += 1
 
         return actor_loss.item(), critic_loss.item(), weights_loss
 
