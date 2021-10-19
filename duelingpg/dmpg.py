@@ -102,12 +102,12 @@ class DMPG(object):
             1,
             hidden_size=200,
             env_name=env_name
-        )
+        ).to(device)
         self.discount = discount
         self.tau = tau
         self.ensemble_size = ensemble_size
 
-        self.weights_network = WeightNetwork(state_dim, action_dim, ensemble_size)
+        self.weights_network = WeightNetwork(state_dim, action_dim, ensemble_size).to(device)
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
         '''
         self.weights = nn.Parameter(
