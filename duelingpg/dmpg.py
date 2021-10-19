@@ -188,7 +188,7 @@ class DMPG(object):
         for i in range(self.n_step):
             pred_action = self.actor(pred_state)
             pred_next_state, pred_reward, pred_terminal, _ = self.model.step(
-                pred_state.detach().numpy(), pred_action.detach().numpy())
+                pred_state.detach().cpu().numpy(), pred_action.detach().cpu().numpy())
             pred_next_state = torch.from_numpy(pred_next_state).to(device)
             pred_reward = torch.from_numpy(pred_reward).to(device)
             pred_terminal = torch.from_numpy(pred_terminal).to(device)
