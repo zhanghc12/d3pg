@@ -9,6 +9,7 @@ from duelingpg import d3pg
 from duelingpg import OurDDPG
 from duelingpg import dtpg
 from duelingpg import dhpg
+from duelingpg import dmpg
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -39,7 +40,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="DHPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
+    parser.add_argument("--policy", default="DMPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
     parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
@@ -62,7 +63,7 @@ if __name__ == "__main__":
         experiment_dir = '/data/zhanghc/d3pg/'
     else:
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
-    experiment_dir = experiment_dir + '10_18/'
+    experiment_dir = experiment_dir + '10_19/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version))
 
@@ -109,6 +110,10 @@ if __name__ == "__main__":
     elif args.policy == 'DHPG':
         kwargs['version'] = args.version
         policy = dhpg.DHPG(**kwargs)
+    elif args.policy == 'DMPG':
+        # kwargs['version'] = args.version
+        kwargs['env_name'] = args.env
+        policy = dmpg.DMPG(**kwargs)
     elif args.policy == "TD3":
         # Target policy smoothing is scaled wrt the action scale
         kwargs["policy_noise"] = args.policy_noise * max_action
