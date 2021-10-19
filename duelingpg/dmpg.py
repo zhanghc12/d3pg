@@ -102,7 +102,8 @@ class DMPG(object):
             1,
             hidden_size=200,
             env_name=env_name
-        ).to(device)
+        )
+        self.model.to(device)
         self.discount = discount
         self.tau = tau
         self.ensemble_size = ensemble_size
