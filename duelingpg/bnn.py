@@ -300,6 +300,9 @@ class EnsembleDynamicsModel():
         info = {}
         return next_obs, rewards, terminals, info
 
+    def to(self, device):
+        self.ensemble_model.to(device)
+
     def _termination_fn(self, env_name, obs, act, next_obs):
         if env_name == "Hopper-v2":
             assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
