@@ -80,7 +80,7 @@ class EnsembleCritic(nn.Module):
 
 class DMPG(object):
     def __init__(self, state_dim, action_dim,
-                 max_action, discount=0.99, tau=0.005, ensemble_size=5, env_name='Halfcheetah-v2'):
+                 max_action, discount=0.99, tau=0.005, ensemble_size=5, env_name='Halfcheetah-v2', version=0):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(
@@ -113,6 +113,7 @@ class DMPG(object):
 
         self.cur_step = 0
         self.model_update_freq = 250
+        self.version = version
         '''
         self.weights = nn.Parameter(
             (torch.ones(
@@ -134,8 +135,11 @@ class DMPG(object):
         # Compute the target Q value
         target_Q = self.critic_target(
             next_state, self.actor_target(next_state))
-        target_weights = self.weights_network(next_state, self.actor_target(next_state))
-        target_Q = torch.sum(target_Q * target_weights, dim=1, keepdim=True) / torch.sum(target_weights, dim=1, keepdim=True)
+        if self.version == 0:
+            target_Q = torch.mean(target_Q, dim=1, keepdim=True)
+        else:
+            target_weights = self.weights_network(next_state, self.actor_target(next_state))
+            target_Q = torch.sum(target_Q * target_weights, dim=1, keepdim=True) / torch.sum(target_weights, dim=1, keepdim=True)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
         # Get current Q estimate
@@ -170,6 +174,9 @@ class DMPG(object):
                 self.tau * param.data + (1 - self.tau) * target_param.data)
 
         # train model
+        if self.version == 0:
+            return actor_loss.item(), critic_loss.item(), 0.
+
         inputs, labels = replay_buffer.get_all_samples()
         if self.cur_step % self.model_update_freq == 0:
             self.model.train(

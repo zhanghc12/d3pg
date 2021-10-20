@@ -113,6 +113,7 @@ if __name__ == "__main__":
     elif args.policy == 'DMPG':
         # kwargs['version'] = args.version
         kwargs['env_name'] = args.env
+        kwargs['version'] = args.version
         policy = dmpg.DMPG(**kwargs)
     elif args.policy == "TD3":
         # Target policy smoothing is scaled wrt the action scale
