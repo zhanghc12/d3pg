@@ -80,7 +80,7 @@ class EnsembleCritic(nn.Module):
 
 class DMPG(object):
     def __init__(self, state_dim, action_dim,
-                 max_action, discount=0.99, tau=0.005, ensemble_size=5, env_name='Halfcheetah-v2', version=0):
+                 max_action, discount=0.99, tau=0.005, ensemble_size=3, env_name='Halfcheetah-v2', version=0):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(
@@ -112,7 +112,7 @@ class DMPG(object):
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
 
         self.cur_step = 0
-        self.model_update_freq = 250
+        self.model_update_freq = 50
         self.version = version
         '''
         self.weights = nn.Parameter(
@@ -240,7 +240,8 @@ class DMPG(object):
 
         self.cur_step += 1
 
-        return actor_loss.item(), critic_loss.item(), weights_loss.item()
+        return actor_loss.item(), critic_loss.item(), weights_loss.item(), torch.mean(pred_mc).item(), \
+               torch.mean(ensemble_Q).item(), torch.mean(aux_target_Q).item()
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
