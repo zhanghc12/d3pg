@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from duelingpg.model import EnsembleDynamicsModel
+from duelingpg.bnn import EnsembleDynamicsModel
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -92,7 +92,7 @@ class DMPG(object):
             self.critic.parameters(), lr=3e-4)
 
         num_networks = 7
-        num_elites = 5
+        num_elites = 3
 
         self.model = EnsembleDynamicsModel(
             num_networks,
@@ -112,7 +112,7 @@ class DMPG(object):
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
 
         self.cur_step = 0
-        self.model_update_freq = 50
+        self.model_update_freq = 5
         self.version = version
         '''
         self.weights = nn.Parameter(
@@ -199,8 +199,9 @@ class DMPG(object):
         pred_mc = torch.zeros_like(reward).to(device)
         terminal_flag = torch.zeros_like(reward, dtype=torch.bool).to(device)
         pred_step = torch.zeros_like(reward, dtype=torch.int32).to(device)
+
         # done: terminal state adjustment, multiple state
-        for i in range(self.n_step):
+        for _ in range(self.n_step):
             pred_action = self.actor(pred_state)
             pred_next_state, pred_reward, pred_terminal, _ = self.model.step(
                 pred_state.detach().cpu().numpy(), pred_action.detach().cpu().numpy())
@@ -241,7 +242,8 @@ class DMPG(object):
         self.cur_step += 1
 
         return actor_loss.item(), critic_loss.item(), weights_loss.item(), torch.mean(pred_mc).item(), \
-               torch.mean(ensemble_Q).item(), torch.mean(aux_target_Q).item()
+               torch.mean(ensemble_Q).item(), torch.mean(aux_target_Q).item(), torch.mean(pred_reward_list[0]).item(),\
+               torch.mean(pred_reward_list[1]).item(), torch.mean(pred_reward_list[2]).item()
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")

@@ -165,13 +165,18 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue = policy.train(replay_buffer, args.batch_size)
+            actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('loss/weight_loss', weight_loss, t)
             writer.add_scalar('value/mc_value', mc_value, t)
             writer.add_scalar('value/q_value', q_value, t)
             writer.add_scalar('value/target_qvalue', target_qvalue, t)
+            writer.add_scalar('value/r1', r1, t)
+            writer.add_scalar('value/r2', r2, t)
+            writer.add_scalar('value/r3', r3, t)
+
+
 
         if done:
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
