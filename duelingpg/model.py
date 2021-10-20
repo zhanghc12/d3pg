@@ -193,7 +193,10 @@ class EnsembleDynamicsModel():
         self.reward_size = reward_size
         self.network_size = network_size
         # todo 3:
-        self.elite_model_idxes = []
+        self.elite_model_idxes = [1,2,3]
+        if torch.cuda.is_available():
+            self.elite_model_idxes = []
+
         self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
         self.scaler = StandardScaler()
         self.env_name = env_name
@@ -272,7 +275,8 @@ class EnsembleDynamicsModel():
     def predict(self, inputs, batch_size=1024, factored=True):
         # todo 1 : inputs
         # todo 2 : episode start
-        inputs = self.scaler.transform(inputs)
+        if torch.cuda.is_available():
+            inputs = self.scaler.transform(inputs)
 
         ensemble_mean, ensemble_var = [], []
         for i in range(0, inputs.shape[0], batch_size):

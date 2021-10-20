@@ -139,16 +139,19 @@ class DMPG(object):
             target_Q = torch.mean(target_Q, dim=1, keepdim=True)
         else:
             target_weights = self.weights_network(next_state, self.actor_target(next_state))
-            target_Q = torch.sum(target_Q * target_weights, dim=1, keepdim=True) / torch.sum(target_weights, dim=1, keepdim=True)
+            target_weights = torch.softmax(target_weights, dim=1)
+            target_Q = torch.sum(target_Q * target_weights, dim=1, keepdim=True)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
         # Get current Q estimate
-        current_Q = self.critic(state, action)
-        current_Q = torch.mean(current_Q, dim=1, keepdim=True)
+        # redefine the critic loss:
 
+        current_Q = self.critic(state, action)
+        critic_loss = F.mse_loss(current_Q, target_Q.repeat(1, current_Q.shape[1]))
+        #current_Q = torch.mean(current_Q, dim=1, keepdim=True)
 
         # Compute critic loss
-        critic_loss = F.mse_loss(current_Q, target_Q)
+        #critic_loss = F.mse_loss(current_Q, target_Q)
         # Optimize the critic
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
@@ -178,7 +181,7 @@ class DMPG(object):
             return actor_loss.item(), critic_loss.item(), 0.
 
         inputs, labels = replay_buffer.get_all_samples()
-        if self.cur_step % self.model_update_freq == 0:
+        if self.cur_step % self.model_update_freq == 0 and torch.cuda.is_available():
             self.model.train(
                 inputs=inputs,
                 labels=labels,
@@ -188,7 +191,8 @@ class DMPG(object):
 
 
         # after training, how to generate mc data to aid training
-        n_step = 20
+        # todo: small n_step check, then terminal delete
+        n_step = 3  # 20
         self.n_step = n_step
         pred_state = state
         pred_reward_list = []
@@ -215,19 +219,20 @@ class DMPG(object):
             pred_mc = self.discount * pred_mc + pred_reward_list[i]
         pred_mc = pred_mc.detach()
         pred_terminal = terminal_flag.detach()
+        pred_step = pred_step.detach()
 
         # todo: multiple trajectories to enable robustness
         pi_action = self.actor(state)
         ensemble_Q = self.critic(state, pi_action)
-        aux_Q = torch.mean(ensemble_Q.detach(), dim=1, keepdim=True)
 
-        pi_pred_action = self.actor(pred_state)
+        pi_pred_action = self.actor_target(pred_state) # todo: target
         target_ensemble_Q = self.critic_target(pred_state, pi_pred_action)
         weights = self.weights_network(pred_state, pi_pred_action)
-        aux_target_Q = torch.sum(target_ensemble_Q.detach() * weights, dim=1, keepdim=True) / torch.sum(weights, dim=1, keepdim=True)
-
-        weights_loss = torch.mean(
-            torch.pow(aux_Q - pred_mc - torch.pow(self.discount, pred_step) * (1 - pred_terminal.float()) * aux_target_Q, 2))
+        weights = torch.softmax(weights, dim=1)
+        aux_target_Q = torch.sum(target_ensemble_Q.detach() * weights, dim=1, keepdim=True)
+        aux_target_Q = pred_mc + torch.pow(self.discount, pred_step) * (1 - pred_terminal.float()) * aux_target_Q
+        aux_target_Q = aux_target_Q.repeat([1, ensemble_Q.shape[1]])
+        weights_loss = torch.mean(torch.pow(ensemble_Q - aux_target_Q, 2))
 
         self.weights_optimizer.zero_grad()
         weights_loss.backward()
@@ -235,7 +240,7 @@ class DMPG(object):
 
         self.cur_step += 1
 
-        return actor_loss.item(), critic_loss.item(), weights_loss
+        return actor_loss.item(), critic_loss.item(), weights_loss.item()
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
