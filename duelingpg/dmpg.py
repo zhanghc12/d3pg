@@ -101,7 +101,8 @@ class DMPG(object):
             action_dim,
             1,
             hidden_size=200,
-            env_name=env_name
+            env_name=env_name,
+            inner_epoch_num=10
         )
         self.model.to(device)
         self.discount = discount
