@@ -113,7 +113,7 @@ class DMPG(object):
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
 
         self.cur_step = 0
-        self.model_update_freq = 300
+        self.model_update_freq = 300 # from 100 to 300
         self.version = version
         '''
         self.weights = nn.Parameter(
@@ -179,7 +179,7 @@ class DMPG(object):
 
         # train model
         if self.version == 0:
-            return actor_loss.item(), critic_loss.item(), 0.
+            return actor_loss.item(), critic_loss.item(), 0., 0., 0., 0., 0., 0., 0.
 
         inputs, labels = replay_buffer.get_all_samples()
         if self.cur_step % self.model_update_freq == 0 and torch.cuda.is_available():
