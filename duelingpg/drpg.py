@@ -108,17 +108,23 @@ class DRPG(object): # reverse model
         self.actor_optimizer.step()
 
         inputs, labels = replay_buffer.get_all_reverse_samples()
-        if self.cur_step % self.model_update_freq == 0 and torch.cuda.is_available():
-            self.reverse_model.train(
-                inputs=inputs,
-                labels=labels,
-                batch_size=256,
-                holdout_ratio=0.2,
-                max_epochs_since_update=5)
+        if torch.cuda.is_available():
+            if self.cur_step % self.model_update_freq == 0:
+                self.reverse_model.train(
+                    inputs=inputs,
+                    labels=labels,
+                    batch_size=256,
+                    holdout_ratio=0.2,
+                    max_epochs_since_update=5)
 
+            log_prob = self.reverse_actor.log_prob(next_state, action)
+            reverse_actor_loss = -log_prob.mean()
+            self.reverse_actor_optimizer.zero_grad()
+            reverse_actor_loss.backward()
+            self.reverse_actor_optimizer.step()
 
         # the core idea is to find the Q(s,a) which and then resample and update acoording to td
-        pred_states = replay_buffer.samples_states(batch_size=10 * batch_size)
+        pred_states = replay_buffer.sample_states(batch_size=10 * batch_size)
         # evaluate and get pre post update, q value change is the biggest
         pred_actions = self.actor_target(pred_states)
         pre_Q = self.critic_target(pred_states, pred_actions)
@@ -134,12 +140,16 @@ class DRPG(object): # reverse model
         post_Q = self.critic_target(pred_states, pred_actions)
         Q_diff = post_Q - pre_Q
         imp_index = torch.argsort(Q_diff, dim=0)[9 * batch_size:]
-        imp_states = pred_states[imp_index]
+        # imp_states = torch.gather(pred_states, 0, imp_index) # pred_states[imp_index]
+        imp_states = pred_states[imp_index.squeeze()]
         # largest Q difference, then we enumerate all the actions and states
-        imp_actions = self.reverse_actor(imp_states)
-        imp_rewards, pre_imp_states = self.reverse_model.step(imp_states, imp_actions)
+        imp_actions = self.reverse_actor.sample(imp_states)[0]
+        pre_imp_states, imp_rewards = self.reverse_model.step(imp_states.detach().cpu().numpy(), imp_actions.detach().cpu().numpy())
+        imp_rewards = torch.from_numpy(imp_rewards).to(device).float()
+        pre_imp_states = torch.from_numpy(pre_imp_states).to(device).float()
 
-        imp_target = post_Q[imp_index]
+        # imp_target = torch.gather(post_Q, 0, imp_index) # post_Q[imp_index]
+        imp_target = post_Q[imp_index.squeeze()]
         reverse_loss = F.mse_loss(self.critic(pre_imp_states, imp_actions), (imp_rewards + self.discount * imp_target).detach())
         self.critic_optimizer.zero_grad()
         reverse_loss.backward()
@@ -147,7 +157,7 @@ class DRPG(object): # reverse model
 
         self.cur_step += 1
 
-        return actor_loss.item(), critic_loss.item(), 0
+        return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
