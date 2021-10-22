@@ -113,7 +113,7 @@ class DMPG(object):
         self.weights_optimizer = torch.optim.Adam(self.weights_network.parameters(), lr=3e-4)
 
         self.cur_step = 0
-        self.model_update_freq = 100
+        self.model_update_freq = 300
         self.version = version
         '''
         self.weights = nn.Parameter(

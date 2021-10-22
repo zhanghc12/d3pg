@@ -14,16 +14,31 @@ class ReplayBuffer(object):
 		self.reward = np.zeros((max_size, 1))
 		self.not_done = np.zeros((max_size, 1))
 
+		self.non_terminal_state = np.zeros((max_size, state_dim))
+		self.non_terminal_ptr = 0
+		self.non_terminal_size = 0
+
 		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 	def get_all_samples(self):
-		if self.ptr < self.max_size:
+		if self.size < self.max_size:
 			inputs = np.concatenate([self.state[:self.ptr, :], self.action[:self.ptr, :]], axis=1)
 			delta_state = self.next_state[:self.ptr, :] - self.state[:self.ptr, :]
 			labels = np.concatenate((self.reward[:self.ptr, :], delta_state), axis=-1)
 		else:
 			inputs = np.concatenate([self.state, self.action], axis=1)
 			delta_state = self.next_state - self.state
+			labels = np.concatenate((self.reward, delta_state), axis=-1)
+		return inputs, labels
+
+	def get_all_reverse_samples(self): # sample question
+		if self.size < self.max_size:
+			inputs = np.concatenate([self.next_state[:self.ptr, :], self.action[:self.ptr, :]], axis=1)
+			delta_state = self.state[:self.ptr, :] - self.next_state[:self.ptr, :]
+			labels = np.concatenate((self.reward[:self.ptr, :], delta_state), axis=-1)
+		else:
+			inputs = np.concatenate([self.next_state, self.action], axis=1)
+			delta_state = self.state - self.next_state
 			labels = np.concatenate((self.reward, delta_state), axis=-1)
 		return inputs, labels
 
@@ -37,6 +52,15 @@ class ReplayBuffer(object):
 		self.ptr = (self.ptr + 1) % self.max_size
 		self.size = min(self.size + 1, self.max_size)
 
+		if done == 0:
+			self.non_terminal_state[self.non_terminal_ptr] = next_state
+			self.non_terminal_ptr = (self.non_terminal_ptr + 1) % self.max_size
+			self.non_terminal_size = min(self.non_terminal_size + 1, self.max_size)
+
+	def sample_states(self, batch_size):
+		# to make sure not done
+		ind = np.random.randint(0, self.size, size=batch_size)
+		return torch.FloatTensor(self.non_terminal_state[ind]).to(self.device)
 
 	def sample(self, batch_size):
 		ind = np.random.randint(0, self.size, size=batch_size)
