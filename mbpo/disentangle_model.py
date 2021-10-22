@@ -287,7 +287,7 @@ class DisentangleEnsembleDynamicsModel():
         ensemble_mean, ensemble_var = [], []
         for i in range(0, inputs.shape[0], batch_size):
             input = torch.from_numpy(inputs[i:min(i + batch_size, inputs.shape[0])]).float().to(device)
-            b_mean, b_var = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), input[None, :, :self.state_size].repeat([self.network_size, 1, 1]), ret_log_var=False)
+            b_mean, b_var, _, _ = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), input[None, :, :self.state_size].repeat([self.network_size, 1, 1]), ret_log_var=False)
             ensemble_mean.append(b_mean.detach().cpu().numpy())
             ensemble_var.append(b_var.detach().cpu().numpy())
         ensemble_mean = np.hstack(ensemble_mean)
