@@ -311,27 +311,27 @@ class EnsembleDynamicsModel():
         info = {}
         return next_obs, rewards, terminals, info
 
-    def step_vine(self, obs, act, deterministic=False):
-        inputs = np.concatenate((obs, act), axis=-1)
-        ensemble_model_means, ensemble_model_vars = self.predict(inputs)
-
-        ensemble_model_stds = np.sqrt(ensemble_model_vars)
-
-        if deterministic:
-            ensemble_samples = ensemble_model_means
-        else:
-            ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
-
-        ensemble_samples = self.output_scaler.inverse_transform(ensemble_samples)
-        ensemble_samples[:, :, 1:] += obs
-
-        samples = ensemble_samples[self.elite_model_idxes]
-
-        rewards, next_obs = samples[:, :, :1], samples[:, :, 1:]
-        terminals = self._termination_fn_vine(self.env_name, obs, act, next_obs)
-
-        info = {}
-        return next_obs, rewards, terminals, info
+    # def step_vine(self, obs, act, deterministic=False):
+    #     inputs = np.concatenate((obs, act), axis=-1)
+    #     ensemble_model_means, ensemble_model_vars = self.predict(inputs)
+    #
+    #     ensemble_model_stds = np.sqrt(ensemble_model_vars)
+    #
+    #     if deterministic:
+    #         ensemble_samples = ensemble_model_means
+    #     else:
+    #         ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
+    #
+    #     ensemble_samples = self.output_scaler.inverse_transform(ensemble_samples)
+    #     ensemble_samples[:, :, 1:] += obs
+    #
+    #     samples = ensemble_samples[self.elite_model_idxes]
+    #
+    #     rewards, next_obs = samples[:, :, :1], samples[:, :, 1:]
+    #     terminals = self._termination_fn_vine(self.env_name, obs, act, next_obs)
+    #
+    #     info = {}
+    #     return next_obs, rewards, terminals, info
 
     def to(self, device):
         self.ensemble_model.to(device)
@@ -389,54 +389,54 @@ class EnsembleDynamicsModel():
             done = done[:, None]
             return done
 
-    def _termination_fn_vine(self, env_name, obs, act, next_obs):
-        if env_name == "Hopper-v2":
-            height = next_obs[:, :, 0]
-            angle = next_obs[:, :, 1]
-            not_done = np.isfinite(next_obs).all(axis=-1) \
-                       * np.abs(next_obs[:, :, 1:] < 100).all(axis=-1) \
-                       * (height > .7) \
-                       * (np.abs(angle) < .2)
-
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        elif env_name == "InvertedPendulum-v2":
-            height = np.abs(next_obs[:, :, 1])
-            notdone = np.isfinite(next_obs).all(axis=-1) \
-                      * (height <= 0.2)
-            done = ~notdone
-            done = done[:, :, None]
-            return done
-
-        elif env_name == "Walker2d-v2":
-            height = next_obs[:, :, 0]
-            angle = next_obs[:, :, 1]
-            not_done = (height > 0.8) \
-                       * (height < 2.0) \
-                       * (angle > -1.0) \
-                       * (angle < 1.0)
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        elif 'walker_' in env_name:
-            torso_height =  next_obs[:, :, -2]
-            torso_ang = next_obs[:, :, -1]
-            if 'walker_7' in env_name or 'walker_5' in env_name:
-                offset = 0.
-            else:
-                offset = 0.26
-            not_done = (torso_height > 0.8 - offset) \
-                       * (torso_height < 2.0 - offset) \
-                       * (torso_ang > -1.0) \
-                       * (torso_ang < 1.0)
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        else:
-            done = np.zeros_like(next_obs[:, :, 1]).astype(bool)
-            done = done[:, :, None]
-            return done
+    # def _termination_fn_vine(self, env_name, obs, act, next_obs):
+    #     if env_name == "Hopper-v2":
+    #         height = next_obs[:, :, 0]
+    #         angle = next_obs[:, :, 1]
+    #         not_done = np.isfinite(next_obs).all(axis=-1) \
+    #                    * np.abs(next_obs[:, :, 1:] < 100).all(axis=-1) \
+    #                    * (height > .7) \
+    #                    * (np.abs(angle) < .2)
+    #
+    #         done = ~not_done
+    #         done = done[:, :, None]
+    #         return done
+    #     elif env_name == "InvertedPendulum-v2":
+    #         height = np.abs(next_obs[:, :, 1])
+    #         notdone = np.isfinite(next_obs).all(axis=-1) \
+    #                   * (height <= 0.2)
+    #         done = ~notdone
+    #         done = done[:, :, None]
+    #         return done
+    #
+    #     elif env_name == "Walker2d-v2":
+    #         height = next_obs[:, :, 0]
+    #         angle = next_obs[:, :, 1]
+    #         not_done = (height > 0.8) \
+    #                    * (height < 2.0) \
+    #                    * (angle > -1.0) \
+    #                    * (angle < 1.0)
+    #         done = ~not_done
+    #         done = done[:, :, None]
+    #         return done
+    #     elif 'walker_' in env_name:
+    #         torso_height =  next_obs[:, :, -2]
+    #         torso_ang = next_obs[:, :, -1]
+    #         if 'walker_7' in env_name or 'walker_5' in env_name:
+    #             offset = 0.
+    #         else:
+    #             offset = 0.26
+    #         not_done = (torso_height > 0.8 - offset) \
+    #                    * (torso_height < 2.0 - offset) \
+    #                    * (torso_ang > -1.0) \
+    #                    * (torso_ang < 1.0)
+    #         done = ~not_done
+    #         done = done[:, :, None]
+    #         return done
+    #     else:
+    #         done = np.zeros_like(next_obs[:, :, 1]).astype(bool)
+    #         done = done[:, :, None]
+    #         return done
 
 class Swish(nn.Module):
     def __init__(self):

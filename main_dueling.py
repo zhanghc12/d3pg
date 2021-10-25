@@ -41,7 +41,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="DRPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
+    parser.add_argument("--policy", default="DMPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
     parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
@@ -104,6 +104,7 @@ if __name__ == "__main__":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action
         #kwargs["policy_freq"] = args.policy_freq
+        kwargs['version'] = args.version
         policy = d3pg.D3PG(**kwargs)
     elif args.policy == 'DTPG':
         kwargs['version'] = args.version
