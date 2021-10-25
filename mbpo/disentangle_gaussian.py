@@ -1,5 +1,5 @@
-
 import torch
+
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -12,8 +12,8 @@ import itertools
 if torch.cuda.is_available():
     torch.set_default_tensor_type(torch.cuda.FloatTensor)
 
-device = torch.device("cuda") if torch.cuda.is_available() else 'cpu'
 
+device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
 
 class StandardScaler(object):
     def __init__(self):
@@ -99,42 +99,74 @@ class EnsembleFC(nn.Module):
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=True):
+    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=True, use_disentangle=False):
         super(EnsembleModel, self).__init__()
         self.hidden_size = hidden_size
         self.nn1 = EnsembleFC(state_size + action_size, hidden_size, ensemble_size, weight_decay=0.000025)
         self.nn2 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.00005)
         self.nn3 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.000075)
         self.nn4 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.000075)
+
         self.use_decay = use_decay
 
         self.output_dim = state_size + reward_size
         # Add variance output
         self.nn5 = EnsembleFC(hidden_size, self.output_dim * 2, ensemble_size, weight_decay=0.0001)
 
+        self.sn1 = EnsembleFC(state_size, hidden_size, ensemble_size, weight_decay=0.000025)
+        self.sn2 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.00005)
+        self.sn3 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.000075)
+        self.sn4 = EnsembleFC(hidden_size, hidden_size, ensemble_size, weight_decay=0.000075)
+        # Add variance output
+        self.sn5 = EnsembleFC(hidden_size, self.output_dim * 2, ensemble_size, weight_decay=0.0001)
+
+
         self.max_logvar = nn.Parameter((torch.ones((1, self.output_dim)).float() / 2).to(device), requires_grad=False)
         self.min_logvar = nn.Parameter((-torch.ones((1, self.output_dim)).float() * 10).to(device), requires_grad=False)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         self.apply(init_weights)
         self.swish = Swish()
+        self.use_disentangle = use_disentangle
 
-
-    def forward(self, x, ret_log_var=False):
+    def forward(self, x, y, ret_log_var=False):
         nn1_output = self.swish(self.nn1(x))
         nn2_output = self.swish(self.nn2(nn1_output))
         nn3_output = self.swish(self.nn3(nn2_output))
         nn4_output = self.swish(self.nn4(nn3_output))
         nn5_output = self.nn5(nn4_output)
 
-        mean = nn5_output[:, :, :self.output_dim]
+        sn1_output = self.swish(self.sn1(y))
+        sn2_output = self.swish(self.sn2(sn1_output))
+        sn3_output = self.swish(self.sn3(sn2_output))
+        sn4_output = self.swish(self.sn4(sn3_output))
+        sn5_output = self.sn5(sn4_output)
 
-        logvar = self.max_logvar - F.softplus(self.max_logvar - nn5_output[:, :, self.output_dim:])
-        logvar = self.min_logvar + F.softplus(logvar - self.min_logvar)
+        mean = nn5_output[:, :, :self.output_dim] + sn5_output[:, :, :self.output_dim]
+        sa_logvar = self.max_logvar - F.softplus(self.max_logvar - nn5_output[:, :, self.output_dim:])
+        sa_logvar = self.min_logvar + F.softplus(sa_logvar - self.min_logvar)
+
+        s_logvar = self.max_logvar - F.softplus(self.max_logvar - sn5_output[:, :, self.output_dim:])
+        s_logvar = self.min_logvar + F.softplus(s_logvar - self.min_logvar)
+
+        logvar = torch.log(sa_logvar.exp() + s_logvar.exp())
 
         if ret_log_var:
-            return mean, logvar
+            return mean, logvar, nn5_output, sn5_output
         else:
-            return mean, torch.exp(logvar)
+            return mean, torch.exp(logvar), nn5_output, sn5_output
+
+    def forward_s(self, x):
+        sn1_output = self.swish(self.sn1(x))
+        sn2_output = self.swish(self.sn2(sn1_output))
+        sn3_output = self.swish(self.sn3(sn2_output))
+        sn4_output = self.swish(self.sn4(sn3_output))
+        sn5_output = self.sn5(sn4_output)
+
+        s_mean = sn5_output[:, :, :self.output_dim]
+        s_logvar = self.max_logvar - F.softplus(self.max_logvar - sn5_output[:, :, self.output_dim:])
+        s_logvar = self.min_logvar + F.softplus(s_logvar - self.min_logvar)
+
+        return s_mean, s_logvar, sn5_output
 
     def get_decay_loss(self):
         decay_loss = 0.
@@ -145,7 +177,20 @@ class EnsembleModel(nn.Module):
                 # print(m, decay_loss, m.weight_decay)
         return decay_loss
 
-    def loss(self, mean, logvar, labels, inc_var_loss=True):
+    def get_dynamic_loss(self, iid_input, ood_input):
+        dynamic_loss = 0.
+        iid_mean, iid_logvar, iid_nn5_output = self.forward_s(iid_input)
+        iid_var = torch.exp(iid_logvar)
+        iid_prob = -((iid_mean - self.loc) ** 2) / (2 * iid_var) - iid_logvar - math.log(math.sqrt(2 * math.pi))
+        iid_loss =
+
+
+    def get_disentangle_loss(self, sa_output, s_output):
+        # sa_o = 0 then s_o = 0
+        disentangle_loss = torch.mean(torch.abs(sa_output * s_output))
+        return disentangle_loss
+
+    def loss(self, mean, logvar, labels, sa_output, s_output, inc_var_loss=True):
         """
         mean, logvar: Ensemble_size x N x dim
         labels: N x dim
@@ -160,6 +205,8 @@ class EnsembleModel(nn.Module):
         else:
             mse_loss = torch.mean(torch.pow(mean - labels, 2), dim=(1, 2))
             total_loss = torch.sum(mse_loss)
+        if self.use_disentangle:
+            total_loss += self.get_disentangle_loss(sa_output, s_output)
         return total_loss, mse_loss
 
     def train(self, loss):
@@ -169,6 +216,7 @@ class EnsembleModel(nn.Module):
         # print('loss:', loss.item())
         if self.use_decay:
             loss += self.get_decay_loss()
+
         loss.backward()
         # for name, param in self.named_parameters():
         #     if param.requires_grad:
@@ -176,8 +224,8 @@ class EnsembleModel(nn.Module):
         self.optimizer.step()
 
 
-class EnsembleDynamicsModel():
-    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=True, env_name='', inner_epoch_num=5):
+class DisentangleGaussianEnsembleDynamicsModel():
+    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, use_disentangle=True, writer=None):
         self.network_size = network_size
         self.elite_size = elite_size
         self.model_list = []
@@ -186,12 +234,9 @@ class EnsembleDynamicsModel():
         self.reward_size = reward_size
         self.network_size = network_size
         self.elite_model_idxes = []
-        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
+        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, use_disentangle=use_disentangle)
         self.scaler = StandardScaler()
-        self.output_scaler = StandardScaler()
-        self.env_name = env_name
-        self.inner_epoch_num = inner_epoch_num
-
+        self.writer = writer
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -210,17 +255,12 @@ class EnsembleDynamicsModel():
         train_inputs = self.scaler.transform(train_inputs)
         holdout_inputs = self.scaler.transform(holdout_inputs)
 
-        #
-        self.output_scaler.fit(train_labels)
-        train_labels = self.output_scaler.transform(train_labels)
-        holdout_labels = self.output_scaler.transform(holdout_labels)
-
         holdout_inputs = torch.from_numpy(holdout_inputs).float().to(device)
         holdout_labels = torch.from_numpy(holdout_labels).float().to(device)
         holdout_inputs = holdout_inputs[None, :, :].repeat([self.network_size, 1, 1])
         holdout_labels = holdout_labels[None, :, :].repeat([self.network_size, 1, 1])
 
-        for epoch in range(self.inner_epoch_num):
+        for epoch in itertools.count():
 
             train_idx = np.vstack([np.random.permutation(train_inputs.shape[0]) for _ in range(self.network_size)])
             # train_idx = np.vstack([np.arange(train_inputs.shape[0])] for _ in range(self.network_size))
@@ -229,14 +269,14 @@ class EnsembleDynamicsModel():
                 train_input = torch.from_numpy(train_inputs[idx]).float().to(device)
                 train_label = torch.from_numpy(train_labels[idx]).float().to(device)
                 losses = []
-                mean, logvar = self.ensemble_model(train_input, ret_log_var=True)
-                loss, _ = self.ensemble_model.loss(mean, logvar, train_label)
+                mean, logvar, sa_output, s_output = self.ensemble_model(train_input, train_input[:, :, :self.state_size], ret_log_var=True)
+                loss, _ = self.ensemble_model.loss(mean, logvar, train_label, sa_output, s_output)
                 self.ensemble_model.train(loss)
                 losses.append(loss)
 
             with torch.no_grad():
-                holdout_mean, holdout_logvar = self.ensemble_model(holdout_inputs, ret_log_var=True)
-                _, holdout_mse_losses = self.ensemble_model.loss(holdout_mean, holdout_logvar, holdout_labels, inc_var_loss=False)
+                holdout_mean, holdout_logvar, holdout_sa_output, holdout_s_output = self.ensemble_model(holdout_inputs, holdout_inputs[:, :, :self.state_size], ret_log_var=True)
+                _, holdout_mse_losses = self.ensemble_model.loss(holdout_mean, holdout_logvar, holdout_labels, holdout_sa_output, holdout_s_output, inc_var_loss=False)
                 holdout_mse_losses = holdout_mse_losses.detach().cpu().numpy()
                 sorted_loss_idx = np.argsort(holdout_mse_losses)
                 self.elite_model_idxes = sorted_loss_idx[:self.elite_size].tolist()
@@ -271,7 +311,7 @@ class EnsembleDynamicsModel():
         ensemble_mean, ensemble_var = [], []
         for i in range(0, inputs.shape[0], batch_size):
             input = torch.from_numpy(inputs[i:min(i + batch_size, inputs.shape[0])]).float().to(device)
-            b_mean, b_var = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), ret_log_var=False)
+            b_mean, b_var, _, _ = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), input[None, :, :self.state_size].repeat([self.network_size, 1, 1]), ret_log_var=False)
             ensemble_mean.append(b_mean.detach().cpu().numpy())
             ensemble_var.append(b_var.detach().cpu().numpy())
         ensemble_mean = np.hstack(ensemble_mean)
@@ -284,159 +324,6 @@ class EnsembleDynamicsModel():
             mean = torch.mean(ensemble_mean, dim=0)
             var = torch.mean(ensemble_var, dim=0) + torch.mean(torch.square(ensemble_mean - mean[None, :, :]), dim=0)
             return mean, var
-
-    def step(self, obs, act, deterministic=False):
-        inputs = np.concatenate((obs, act), axis=-1)
-        ensemble_model_means, ensemble_model_vars = self.predict(inputs)
-
-        ensemble_model_stds = np.sqrt(ensemble_model_vars)
-
-        if deterministic:
-            ensemble_samples = ensemble_model_means
-        else:
-            ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
-
-        ensemble_samples = self.output_scaler.inverse_transform(ensemble_samples)
-        ensemble_samples[:, :, 1:] += obs
-
-        num_models, batch_size, _ = ensemble_model_means.shape
-        model_idxes = np.random.choice(self.elite_model_idxes, size=batch_size)
-        batch_idxes = np.arange(0, batch_size)
-
-        samples = ensemble_samples[model_idxes, batch_idxes]
-
-        rewards, next_obs = samples[:, :1], samples[:, 1:]
-        terminals = self._termination_fn(self.env_name, obs, act, next_obs)
-
-        info = {}
-        return next_obs, rewards, terminals, info
-
-    def step_vine(self, obs, act, deterministic=False):
-        inputs = np.concatenate((obs, act), axis=-1)
-        ensemble_model_means, ensemble_model_vars = self.predict(inputs)
-
-        ensemble_model_stds = np.sqrt(ensemble_model_vars)
-
-        if deterministic:
-            ensemble_samples = ensemble_model_means
-        else:
-            ensemble_samples = ensemble_model_means + np.random.normal(size=ensemble_model_means.shape) * ensemble_model_stds
-
-        ensemble_samples = self.output_scaler.inverse_transform(ensemble_samples)
-        ensemble_samples[:, :, 1:] += obs
-
-        samples = ensemble_samples[self.elite_model_idxes]
-
-        rewards, next_obs = samples[:, :, :1], samples[:, :, 1:]
-        terminals = self._termination_fn_vine(self.env_name, obs, act, next_obs)
-
-        info = {}
-        return next_obs, rewards, terminals, info
-
-    def to(self, device):
-        self.ensemble_model.to(device)
-
-    def _termination_fn(self, env_name, obs, act, next_obs):
-        if env_name == "Hopper-v2":
-            assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
-
-            height = next_obs[:, 0]
-            angle = next_obs[:, 1]
-            not_done = np.isfinite(next_obs).all(axis=-1) \
-                       * np.abs(next_obs[:, 1:] < 100).all(axis=-1) \
-                       * (height > .7) \
-                       * (np.abs(angle) < .2)
-
-            done = ~not_done
-            done = done[:, None]
-            return done
-        elif env_name == "InvertedPendulum-v2":
-            height = np.abs(next_obs[:, 1])
-            notdone = np.isfinite(next_obs).all(axis=-1) \
-                      * (height <= 0.2)
-            done = ~notdone
-            done = done[:, None]
-            return done
-
-        elif env_name == "Walker2d-v2":
-            assert len(obs.shape) == len(next_obs.shape) == len(act.shape) == 2
-
-            height = next_obs[:, 0]
-            angle = next_obs[:, 1]
-            not_done = (height > 0.8) \
-                       * (height < 2.0) \
-                       * (angle > -1.0) \
-                       * (angle < 1.0)
-            done = ~not_done
-            done = done[:, None]
-            return done
-        elif 'walker_' in env_name:
-            torso_height =  next_obs[:, -2]
-            torso_ang = next_obs[:, -1]
-            if 'walker_7' in env_name or 'walker_5' in env_name:
-                offset = 0.
-            else:
-                offset = 0.26
-            not_done = (torso_height > 0.8 - offset) \
-                       * (torso_height < 2.0 - offset) \
-                       * (torso_ang > -1.0) \
-                       * (torso_ang < 1.0)
-            done = ~not_done
-            done = done[:, None]
-            return done
-        else:
-            done = np.zeros_like(next_obs[:, 1]).astype(bool)
-            done = done[:, None]
-            return done
-
-    def _termination_fn_vine(self, env_name, obs, act, next_obs):
-        if env_name == "Hopper-v2":
-            height = next_obs[:, :, 0]
-            angle = next_obs[:, :, 1]
-            not_done = np.isfinite(next_obs).all(axis=-1) \
-                       * np.abs(next_obs[:, :, 1:] < 100).all(axis=-1) \
-                       * (height > .7) \
-                       * (np.abs(angle) < .2)
-
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        elif env_name == "InvertedPendulum-v2":
-            height = np.abs(next_obs[:, :, 1])
-            notdone = np.isfinite(next_obs).all(axis=-1) \
-                      * (height <= 0.2)
-            done = ~notdone
-            done = done[:, :, None]
-            return done
-
-        elif env_name == "Walker2d-v2":
-            height = next_obs[:, :, 0]
-            angle = next_obs[:, :, 1]
-            not_done = (height > 0.8) \
-                       * (height < 2.0) \
-                       * (angle > -1.0) \
-                       * (angle < 1.0)
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        elif 'walker_' in env_name:
-            torso_height =  next_obs[:, :, -2]
-            torso_ang = next_obs[:, :, -1]
-            if 'walker_7' in env_name or 'walker_5' in env_name:
-                offset = 0.
-            else:
-                offset = 0.26
-            not_done = (torso_height > 0.8 - offset) \
-                       * (torso_height < 2.0 - offset) \
-                       * (torso_ang > -1.0) \
-                       * (torso_ang < 1.0)
-            done = ~not_done
-            done = done[:, :, None]
-            return done
-        else:
-            done = np.zeros_like(next_obs[:, :, 1]).astype(bool)
-            done = done[:, :, None]
-            return done
 
 class Swish(nn.Module):
     def __init__(self):

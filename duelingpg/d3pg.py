@@ -57,7 +57,7 @@ class Critic(nn.Module):
 
 
 class D3PG(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
@@ -68,6 +68,7 @@ class D3PG(object):
 
         self.discount = discount
         self.tau = tau
+        self.version = version
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -78,7 +79,12 @@ class D3PG(object):
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         # Compute the target Q value
-        _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+        if self.version == 0:
+            _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+        elif self.version == 1:
+            target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
+        else:
+            raise NotImplementedError
         target_Q = reward + (not_done * self.discount * target_Q).detach()
         _, _, current_Q = self.critic(state, action)
         critic_loss = F.mse_loss(current_Q, target_Q)

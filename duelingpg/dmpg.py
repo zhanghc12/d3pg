@@ -80,7 +80,7 @@ class EnsembleCritic(nn.Module):
 
 class DMPG(object):
     def __init__(self, state_dim, action_dim,
-                 max_action, discount=0.99, tau=0.005, ensemble_size=3, env_name='Halfcheetah-v2', version=0):
+                 max_action, discount=0.99, tau=0.005, ensemble_size=5, env_name='Halfcheetah-v2', version=0):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(
@@ -102,7 +102,7 @@ class DMPG(object):
             1,
             hidden_size=200,
             env_name=env_name,
-            inner_epoch_num=10
+            inner_epoch_num=2
         )
         self.model.to(device)
         self.discount = discount
@@ -193,8 +193,14 @@ class DMPG(object):
 
         # after training, how to generate mc data to aid training
         # todo: small n_step check, then terminal delete
-        n_step = 3  # 20
+        # todo: predict weight change
+        n_step = 5  # 3  # 20
         self.n_step = n_step
+        repeat_number = 5
+        if self.version == 2:
+            state = state.repeat(repeat_number, 1)
+            reward = reward.repeat(repeat_number, 1)
+
         pred_state = state
         pred_reward_list = []
         pred_mc = torch.zeros_like(reward).to(device)
