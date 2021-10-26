@@ -97,7 +97,6 @@ class D3PG(object):
         if self.version == 4:
             alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
             adv_loss = (alpha_prime * pi_adv).mean()
-            alpha_prime_loss = -(alpha_prime * pi_adv).mean()
         elif self.version == 3:
             adv_loss = self.huber(pi_adv, torch.zeros_like(pi_adv).to(device))
         else:
@@ -107,10 +106,13 @@ class D3PG(object):
         # Optimize the critic
 
         self.critic_optimizer.zero_grad()
-        critic_loss.backward(retain_graph=(True if self.version == 4 else False))
+        critic_loss.backward()
         self.critic_optimizer.step()
 
         if self.version == 4:
+            _, pi_adv, _ = self.critic(state, self.actor(state))
+            alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
+            alpha_prime_loss = -(alpha_prime * pi_adv).mean()
             self.alpha_prime_optimizer.zero_grad()
             alpha_prime_loss.backward()
             self.alpha_prime_optimizer.step()
