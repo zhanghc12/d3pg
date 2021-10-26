@@ -141,7 +141,10 @@ class EnsembleModel(nn.Module):
         sn4_output = self.swish(self.sn4(sn3_output))
         sn5_output = self.sn5(sn4_output)
 
-        mean = nn5_output[:, :, :self.output_dim] + sn5_output[:, :, :self.output_dim]
+        sa_mean = nn5_output[:, :, :self.output_dim]
+        s_mean = sn5_output[:, :, :self.output_dim]
+        mean = sa_mean + s_mean
+
         sa_logvar = self.max_logvar - F.softplus(self.max_logvar - nn5_output[:, :, self.output_dim:])
         sa_logvar = self.min_logvar + F.softplus(sa_logvar - self.min_logvar)
 
@@ -151,22 +154,22 @@ class EnsembleModel(nn.Module):
         logvar = torch.log(sa_logvar.exp() + s_logvar.exp())
 
         if ret_log_var:
-            return mean, logvar, nn5_output, sn5_output
+            return mean, logvar, sa_mean, s_mean, sa_logvar, s_logvar
         else:
-            return mean, torch.exp(logvar), nn5_output, sn5_output
+            return mean, torch.exp(logvar), sa_mean, s_mean, sa_logvar, s_logvar
 
-    def forward_s(self, x):
-        sn1_output = self.swish(self.sn1(x))
-        sn2_output = self.swish(self.sn2(sn1_output))
-        sn3_output = self.swish(self.sn3(sn2_output))
-        sn4_output = self.swish(self.sn4(sn3_output))
-        sn5_output = self.sn5(sn4_output)
-
-        s_mean = sn5_output[:, :, :self.output_dim]
-        s_logvar = self.max_logvar - F.softplus(self.max_logvar - sn5_output[:, :, self.output_dim:])
-        s_logvar = self.min_logvar + F.softplus(s_logvar - self.min_logvar)
-
-        return s_mean, s_logvar, sn5_output
+    # def forward_s(self, x):
+    #     sn1_output = self.swish(self.sn1(x))
+    #     sn2_output = self.swish(self.sn2(sn1_output))
+    #     sn3_output = self.swish(self.sn3(sn2_output))
+    #     sn4_output = self.swish(self.sn4(sn3_output))
+    #     sn5_output = self.sn5(sn4_output)
+    #
+    #     s_mean = sn5_output[:, :, :self.output_dim]
+    #     s_logvar = self.max_logvar - F.softplus(self.max_logvar - sn5_output[:, :, self.output_dim:])
+    #     s_logvar = self.min_logvar + F.softplus(s_logvar - self.min_logvar)
+    #
+    #     return s_mean, s_logvar, sn5_output
 
     def get_decay_loss(self):
         decay_loss = 0.
@@ -177,25 +180,59 @@ class EnsembleModel(nn.Module):
                 # print(m, decay_loss, m.weight_decay)
         return decay_loss
 
+    '''
     def get_dynamic_loss(self, iid_input, ood_input):
         dynamic_loss = 0.
         iid_mean, iid_logvar, iid_nn5_output = self.forward_s(iid_input)
         iid_var = torch.exp(iid_logvar)
         iid_prob = -((iid_mean - self.loc) ** 2) / (2 * iid_var) - iid_logvar - math.log(math.sqrt(2 * math.pi))
         iid_loss =
+    '''
 
-
-    def get_disentangle_loss(self, sa_output, s_output):
+    def get_disentangle_loss(self, sa_mean, s_mean):
         # sa_o = 0 then s_o = 0
-        disentangle_loss = torch.mean(torch.abs(sa_output * s_output))
+        disentangle_loss = torch.mean(torch.abs(sa_mean * s_mean))
         return disentangle_loss
 
-    def loss(self, mean, logvar, labels, sa_output, s_output, inc_var_loss=True):
+    def get_separate_loss(self, sa_mean, s_mean, sa_logvar, s_logvar, labels, inc_var_loss=True):
+        s_inv_var = torch.exp(-s_logvar)
+        if inc_var_loss:
+            # Average over batch and dim, sum over ensembles.
+            s_mse_loss = torch.mean(torch.mean(torch.pow(s_mean - labels, 2) * s_inv_var, dim=-1), dim=-1)
+            s_var_loss = torch.mean(torch.mean(s_inv_var, dim=-1), dim=-1)
+            s_total_loss = torch.sum(s_mse_loss) + torch.sum(s_var_loss)
+        else:
+            s_mse_loss = torch.mean(torch.pow(s_mean - labels, 2), dim=(1, 2))
+            s_total_loss = torch.sum(s_mse_loss)
+
+        labels = (labels - s_mean).detach()  # approximation error
+        # then s, a things
+        sa_inv_var = torch.exp(-sa_logvar)
+        if inc_var_loss:
+            # Average over batch and dim, sum over ensembles.
+            sa_mse_loss = torch.mean(torch.mean(torch.pow(sa_mean - labels, 2) * sa_inv_var, dim=-1), dim=-1)
+            sa_var_loss = torch.mean(torch.mean(sa_inv_var, dim=-1), dim=-1)
+            sa_total_loss = torch.sum(sa_mse_loss) + torch.sum(sa_var_loss)
+        else:
+            sa_mse_loss = torch.mean(torch.pow(sa_mean - labels, 2), dim=(1, 2))
+            sa_total_loss = torch.sum(sa_mse_loss)
+
+        total_loss = s_total_loss + sa_total_loss
+        mse_loss = s_mse_loss + sa_mse_loss
+        return total_loss, mse_loss
+
+
+    def loss(self, mean, logvar, labels, output, inc_var_loss=True):
         """
         mean, logvar: Ensemble_size x N x dim
         labels: N x dim
         """
         assert len(mean.shape) == len(logvar.shape) == len(labels.shape) == 3
+
+        sa_mean, s_mean, sa_logvar, s_logvar = output
+        if self.use_separate:
+            total_loss, mse_loss = self.get_separate_loss(sa_mean, s_mean, sa_logvar, s_logvar, labels, inc_var_loss=inc_var_loss)
+            return total_loss, mse_loss
         inv_var = torch.exp(-logvar)
         if inc_var_loss:
             # Average over batch and dim, sum over ensembles.
@@ -206,7 +243,7 @@ class EnsembleModel(nn.Module):
             mse_loss = torch.mean(torch.pow(mean - labels, 2), dim=(1, 2))
             total_loss = torch.sum(mse_loss)
         if self.use_disentangle:
-            total_loss += self.get_disentangle_loss(sa_output, s_output)
+            total_loss += self.get_disentangle_loss(sa_mean, s_mean)
         return total_loss, mse_loss
 
     def train(self, loss):
@@ -269,14 +306,14 @@ class DisentangleGaussianEnsembleDynamicsModel():
                 train_input = torch.from_numpy(train_inputs[idx]).float().to(device)
                 train_label = torch.from_numpy(train_labels[idx]).float().to(device)
                 losses = []
-                mean, logvar, sa_output, s_output = self.ensemble_model(train_input, train_input[:, :, :self.state_size], ret_log_var=True)
-                loss, _ = self.ensemble_model.loss(mean, logvar, train_label, sa_output, s_output)
+                mean, logvar, *train_output = self.ensemble_model(train_input, train_input[:, :, :self.state_size], ret_log_var=True)
+                loss, _ = self.ensemble_model.loss(mean, logvar, train_label, train_output)
                 self.ensemble_model.train(loss)
                 losses.append(loss)
 
             with torch.no_grad():
-                holdout_mean, holdout_logvar, holdout_sa_output, holdout_s_output = self.ensemble_model(holdout_inputs, holdout_inputs[:, :, :self.state_size], ret_log_var=True)
-                _, holdout_mse_losses = self.ensemble_model.loss(holdout_mean, holdout_logvar, holdout_labels, holdout_sa_output, holdout_s_output, inc_var_loss=False)
+                holdout_mean, holdout_logvar, *holdout_output = self.ensemble_model(holdout_inputs, holdout_inputs[:, :, :self.state_size], ret_log_var=True)
+                _, holdout_mse_losses = self.ensemble_model.loss(holdout_mean, holdout_logvar, holdout_labels, holdout_output, inc_var_loss=False)
                 holdout_mse_losses = holdout_mse_losses.detach().cpu().numpy()
                 sorted_loss_idx = np.argsort(holdout_mse_losses)
                 self.elite_model_idxes = sorted_loss_idx[:self.elite_size].tolist()
