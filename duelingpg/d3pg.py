@@ -69,6 +69,10 @@ class D3PG(object):
         self.discount = discount
         self.tau = tau
         self.version = version
+        self.huber = torch.nn.SmoothL1Loss()
+
+        self.alpha_prime = torch.zeros(1, requires_grad=True).to(device)
+        self.alpha_prime_optimizer = torch.optim.Adam(self.alpha_prime, lr=3e-4)
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -79,7 +83,7 @@ class D3PG(object):
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         # Compute the target Q value
-        if self.version in [0, 2]:
+        if self.version in [0, 2, 3, 4]:
             _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
         elif self.version == 1:
             target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
@@ -90,7 +94,19 @@ class D3PG(object):
         critic_loss = F.mse_loss(current_Q, target_Q)
 
         pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
-        adv_loss = torch.mean(torch.pow(pi_adv, 2))
+        if self.version == 4:
+            alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
+            adv_loss = (alpha_prime * pi_adv).mean()
+
+            self.alpha_prime_optimizer.zero_grad()
+            alpha_prime_loss = -(alpha_prime * pi_adv).mean()
+            alpha_prime_loss.backward(retain_graph=True)
+            self.alpha_prime_optimizer.step()
+
+        elif self.version == 3:
+            adv_loss = self.huber(pi_adv, torch.zeros_like(pi_adv).to(device))
+        else:
+            adv_loss = torch.mean(torch.pow(pi_adv, 2))
 
         critic_loss = critic_loss + adv_loss
         # Optimize the critic
