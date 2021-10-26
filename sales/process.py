@@ -45,7 +45,7 @@ print(df)
 
 m = Prophet(yearly_seasonality=True)
 m.fit(df)
-future = m.make_future_dataframe(periods=30, freq='min')
+future = m.make_future_dataframe(periods=30, freq='month')
 future.tail()
 forecast = m.predict(future)
 print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail())
