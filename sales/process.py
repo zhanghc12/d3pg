@@ -43,7 +43,7 @@ df['y'] = data
 
 print(df)
 
-m = Prophet(yearly_seasonality=True)
+m = Prophet(yearly_seasonality=True, n_changepoints=10)
 m.fit(df)
 future = m.make_future_dataframe(periods=30, freq='M')
 future.tail()
