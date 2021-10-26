@@ -39,18 +39,20 @@ df['y'] = data
 # #df0 = pd.DataFrame(dates)
 # df = df.rename(columns={'0':'ds', 'value':'y'})
 
-df['y'] = (df['y'] - df['y'].mean()) / (df['y'].std())
+# df['y'] = (df['y'] - df['y'].mean()) / (df['y'].std())
 
 print(df)
 
-m = Prophet()
+m = Prophet(yearly_seasonality=True)
 m.fit(df)
 future = m.make_future_dataframe(periods=30, freq='min')
 future.tail()
 forecast = m.predict(future)
-m.plot(forecast)
-m.plot_components(forecast)
-m.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+print(forecast.tail())
+
+#m.plot(forecast)
+#m.plot_components(forecast)
+#m.add_seasonality(name='monthly', period=30.5, fourier_order=5)
 
 
 
