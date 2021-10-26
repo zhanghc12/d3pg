@@ -48,8 +48,10 @@ m.fit(df)
 future = m.make_future_dataframe(periods=30, freq='M')
 future.tail()
 forecast = m.predict(future)
+
 print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']])
 
+forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_csv('data.csv')
 #m.plot(forecast)
 #m.plot_components(forecast)
 #m.add_seasonality(name='monthly', period=30.5, fourier_order=5)
