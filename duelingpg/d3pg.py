@@ -79,7 +79,7 @@ class D3PG(object):
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         # Compute the target Q value
-        if self.version == 0:
+        if self.version in [0, 2]:
             _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
         elif self.version == 1:
             target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
@@ -100,6 +100,9 @@ class D3PG(object):
 
         # Compute actor loss
         actor_loss = -self.critic(state, self.actor(state))[-1].mean()
+        if self.version == 2:
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_adv > 0) * torch.pow(cur_adv.detach() - self.actor(state), 2)).mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
