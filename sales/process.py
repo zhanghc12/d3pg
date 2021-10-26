@@ -48,7 +48,7 @@ m.fit(df)
 future = m.make_future_dataframe(periods=30, freq='M')
 future.tail()
 forecast = m.predict(future)
-print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail())
+print(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']])
 
 #m.plot(forecast)
 #m.plot_components(forecast)
