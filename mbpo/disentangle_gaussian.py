@@ -276,6 +276,7 @@ class DisentangleGaussianEnsembleDynamicsModel():
         self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, use_disentangle=use_disentangle, use_separate=use_separate)
         self.scaler = StandardScaler()
         self.writer = writer
+        self.step = 0
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -312,6 +313,8 @@ class DisentangleGaussianEnsembleDynamicsModel():
                 loss, _ = self.ensemble_model.loss(mean, logvar, train_label, train_output)
                 self.ensemble_model.train(loss)
                 losses.append(loss)
+                if epoch == 0 and start_pos == 0:
+                    self.writer.add_scalar('loss/train_loss', loss.detach().cpu().numpy(), self.step)
 
             with torch.no_grad():
                 holdout_mean, holdout_logvar, *holdout_output = self.ensemble_model(holdout_inputs, holdout_inputs[:, :, :self.state_size], ret_log_var=True)
@@ -322,7 +325,13 @@ class DisentangleGaussianEnsembleDynamicsModel():
                 break_train = self._save_best(epoch, holdout_mse_losses)
                 if break_train:
                     break
+
             print('epoch: {}, holdout mse losses: {}'.format(epoch, holdout_mse_losses))
+            if epoch == 0:
+                self.writer.add_scalar('loss/holdout_loss', np.mean(holdout_mse_losses), self.step)
+                self.writer.add_scalar('loss/top_holdout_loss', np.mean(holdout_mse_losses[self.elite_model_idxes]), self.step)
+
+        self.step += 1
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
@@ -350,7 +359,7 @@ class DisentangleGaussianEnsembleDynamicsModel():
         ensemble_mean, ensemble_var = [], []
         for i in range(0, inputs.shape[0], batch_size):
             input = torch.from_numpy(inputs[i:min(i + batch_size, inputs.shape[0])]).float().to(device)
-            b_mean, b_var, _, _ = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), input[None, :, :self.state_size].repeat([self.network_size, 1, 1]), ret_log_var=False)
+            b_mean, b_var, *_ = self.ensemble_model(input[None, :, :].repeat([self.network_size, 1, 1]), input[None, :, :self.state_size].repeat([self.network_size, 1, 1]), ret_log_var=False)
             ensemble_mean.append(b_mean.detach().cpu().numpy())
             ensemble_var.append(b_var.detach().cpu().numpy())
         ensemble_mean = np.hstack(ensemble_mean)

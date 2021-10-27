@@ -204,6 +204,7 @@ class EnsembleDynamicsModel():
         self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
         self.scaler = StandardScaler()
         self.writer = writer
+        self.step = 0
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -240,6 +241,8 @@ class EnsembleDynamicsModel():
                 loss, _ = self.ensemble_model.loss(mean, logvar, train_label)
                 self.ensemble_model.train(loss)
                 losses.append(loss)
+                if epoch == 0 and start_pos == 0:
+                    self.writer.add_scalar('loss/train_loss', loss.detach().cpu().numpy(), self.step)
 
             with torch.no_grad():
                 holdout_mean, holdout_logvar = self.ensemble_model(holdout_inputs, ret_log_var=True)
@@ -251,6 +254,11 @@ class EnsembleDynamicsModel():
                 if break_train:
                     break
             print('epoch: {}, holdout mse losses: {}'.format(epoch, holdout_mse_losses))
+            if epoch == 0:
+                self.writer.add_scalar('loss/holdout_loss', np.mean(holdout_mse_losses), self.step)
+                self.writer.add_scalar('loss/top_holdout_loss', np.mean(holdout_mse_losses[self.elite_model_idxes]),
+                                       self.step)
+        self.step += 1
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
