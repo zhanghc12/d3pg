@@ -20,6 +20,8 @@ from mbpo.tf_models.constructor import construct_model, format_samples_for_train
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 from mbpo.disentangle_model import DisentangleEnsembleDynamicsModel
+from mbpo.disentangle_gaussian import DisentangleGaussianEnsembleDynamicsModel
+
 
 def readParser():
     parser = argparse.ArgumentParser(description='MBPO')
@@ -100,7 +102,7 @@ def readParser():
     parser.add_argument('--cuda', default=True, action="store_true",
                         help='run on CUDA (default: True)')
 
-    parser.add_argument('--version', type=int, default=1, metavar='A',
+    parser.add_argument('--version', type=int, default=4, metavar='A',
                         help='hyper or model_type')
     return parser.parse_args()
 
@@ -298,7 +300,7 @@ def main(args=None):
     else:
         log_dir = '/tmp/data/zhanghc/d3pg/mbpo/'
 
-    log_dir = log_dir + '10_22/'
+    log_dir = log_dir + '10_27/'
     summary_log_dir = log_dir + '{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version)
 
     writer = SummaryWriter(log_dir=summary_log_dir)
@@ -310,6 +312,12 @@ def main(args=None):
         elif args.version == 2:
             env_model = DisentangleEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
                                           use_decay=args.use_decay, use_disentangle=False, writer=writer)
+        elif args.version == 3:
+            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
+                                          use_decay=args.use_decay, use_disentangle=True, writer=writer)
+        elif args.version == 4:
+            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
+                                          use_decay=args.use_decay, use_separate=True, writer=writer)
         else:
             env_model = EnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
                                           use_decay=args.use_decay, writer=writer)

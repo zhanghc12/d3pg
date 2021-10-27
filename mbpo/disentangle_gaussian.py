@@ -99,7 +99,7 @@ class EnsembleFC(nn.Module):
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=True, use_disentangle=False):
+    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=True, use_disentangle=False, use_separate=False):
         super(EnsembleModel, self).__init__()
         self.hidden_size = hidden_size
         self.nn1 = EnsembleFC(state_size + action_size, hidden_size, ensemble_size, weight_decay=0.000025)
@@ -127,6 +127,8 @@ class EnsembleModel(nn.Module):
         self.apply(init_weights)
         self.swish = Swish()
         self.use_disentangle = use_disentangle
+        self.use_separate = use_separate
+        assert (self.use_disentangle and self.use_separate) is False
 
     def forward(self, x, y, ret_log_var=False):
         nn1_output = self.swish(self.nn1(x))
@@ -262,7 +264,7 @@ class EnsembleModel(nn.Module):
 
 
 class DisentangleGaussianEnsembleDynamicsModel():
-    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, use_disentangle=True, writer=None):
+    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, use_disentangle=False, use_separate=False, writer=None):
         self.network_size = network_size
         self.elite_size = elite_size
         self.model_list = []
@@ -271,7 +273,7 @@ class DisentangleGaussianEnsembleDynamicsModel():
         self.reward_size = reward_size
         self.network_size = network_size
         self.elite_model_idxes = []
-        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, use_disentangle=use_disentangle)
+        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, use_disentangle=use_disentangle, use_separate=use_separate)
         self.scaler = StandardScaler()
         self.writer = writer
 
