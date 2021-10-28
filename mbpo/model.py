@@ -328,9 +328,6 @@ class EnsembleDynamicsModel():
         self.ensemble_model_target.nn5.weight.data[idx, :, :].copy_(self.ensemble_model.nn5.weight[idx, :, :])
         self.ensemble_model_target.nn5.bias.data[idx, :].copy_(self.ensemble_model.nn5.bias[idx, :])
 
-        self.ensemble_model_target.nn6.weight.data[idx, :, :].copy_(self.ensemble_model.nn6.weight[idx, :, :])
-        self.ensemble_model_target.nn6.bias.data[idx, :].copy_(self.ensemble_model.nn6.bias[idx, :])
-
     def _set_state(self):
         self.ensemble_model.nn1.weight.data.copy_(self.ensemble_model_target.nn1.weight)
         self.ensemble_model.nn1.bias.data.copy_(self.ensemble_model_target.nn1.bias)
