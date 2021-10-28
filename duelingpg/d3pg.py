@@ -85,7 +85,7 @@ class D3PG(object):
         # Compute the target Q value
         if self.version in [0, 2, 3, 4]:
             _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
-        elif self.version == 1:
+        elif self.version in [1,5]:
             target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
         else:
             raise NotImplementedError
@@ -94,13 +94,18 @@ class D3PG(object):
         critic_loss = F.mse_loss(current_Q, target_Q)
 
         pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
-        if self.version == 4:
+        if self.version in [4, 5]:
             alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
             adv_loss = (alpha_prime * pi_adv).mean()
+            prime_adv_loss = pi_adv.mean()
         elif self.version == 3:
+            alpha_prime = 0
             adv_loss = self.huber(pi_adv, torch.zeros_like(pi_adv).to(device))
+            prime_adv_loss = adv_loss
         else:
+            alpha_prime = 0
             adv_loss = torch.mean(torch.pow(pi_adv, 2))
+            prime_adv_loss = adv_loss
 
         critic_loss = critic_loss + adv_loss
         # Optimize the critic
@@ -109,7 +114,7 @@ class D3PG(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        if self.version == 4:
+        if self.version in [4, 5]:
             _, pi_adv, _ = self.critic(state, self.actor(state))
             alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
             alpha_prime_loss = -(alpha_prime * pi_adv).mean()
@@ -137,7 +142,7 @@ class D3PG(object):
         for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return actor_loss.item(), critic_loss.item(), adv_loss.item(), 0, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), adv_loss.item(), prime_adv_loss.item(), alpha_prime.item(), 0, 0, 0, 0
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
