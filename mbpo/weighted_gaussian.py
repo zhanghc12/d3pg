@@ -271,7 +271,7 @@ class EnsembleModel(nn.Module):
         if self.use_disentangle:
             total_loss += self.get_disentangle_loss(sa_mean, s_mean)
         if self.use_kl:
-            total_loss += self.get_kl(sa_mean, s_mean)
+            total_loss += self.get_kl_loss(sa_mean, s_mean)
         return total_loss, mse_loss
 
     def train(self, loss):
