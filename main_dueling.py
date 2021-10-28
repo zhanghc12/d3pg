@@ -41,7 +41,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="DMPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
+    parser.add_argument("--policy", default="DRPG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
     parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
@@ -183,8 +183,6 @@ if __name__ == "__main__":
             writer.add_scalar('value/r2', r2, t)
             writer.add_scalar('value/r3', r3, t)
 
-
-
         if done:
             # +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
             #print(
@@ -196,7 +194,6 @@ if __name__ == "__main__":
             episode_reward = 0
             episode_timesteps = 0
             episode_num += 1
-
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:

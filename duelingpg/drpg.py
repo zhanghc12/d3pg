@@ -137,7 +137,8 @@ class DRPG(object): # reverse model
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         # todo: make sure not terminal
-        post_Q = self.critic_target(pred_states, pred_actions)
+        updated_pred_actions = self.actor_target(pred_states)
+        post_Q = self.critic_target(pred_states, updated_pred_actions)
         Q_diff = post_Q - pre_Q
         imp_index = torch.argsort(Q_diff, dim=0)[9 * batch_size:]
         # imp_states = torch.gather(pred_states, 0, imp_index) # pred_states[imp_index]
@@ -157,7 +158,7 @@ class DRPG(object): # reverse model
 
         self.cur_step += 1
 
-        return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), reverse_loss.item(), 0, 0, 0, 0, 0, 0
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
