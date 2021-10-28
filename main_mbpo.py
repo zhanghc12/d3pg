@@ -21,7 +21,7 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 from mbpo.disentangle_model import DisentangleEnsembleDynamicsModel
 from mbpo.disentangle_gaussian import DisentangleGaussianEnsembleDynamicsModel
-
+from mbpo.weighted_gaussian import WeightedGaussianEnsembleDynamicsModel
 
 def readParser():
     parser = argparse.ArgumentParser(description='MBPO')
@@ -318,6 +318,12 @@ def main(args=None):
         elif args.version == 4:
             env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
                                           use_decay=args.use_decay, use_separate=True, writer=writer)
+        elif args.version == 5:
+            env_model = WeightedGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
+                                          use_decay=args.use_decay, use_kl=True, writer=writer)
+        elif args.version == 6:
+            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
+                                          use_decay=args.use_decay, use_disentangle=False, writer=writer)
         else:
             env_model = EnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
                                           use_decay=args.use_decay, writer=writer)

@@ -4,16 +4,68 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from sf.utils import soft_update, hard_update
 from sf.model import GaussianPolicy
+from sf.utils import *
 
 
-class SuccessorFeature(nn.Module):
+class SharedSF(nn.Module):
     def __init__(self, state_dim, action_dim, feat_dim, hidden_dim):
-        super(SuccessorFeature, self).__init__()
+        super(SharedSF, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.output_dim = 1
         self.feat_dim = feat_dim
 
+        self.feat_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)  # todo: feature is naive
+        self.hidden_l1 = nn.Linear(hidden_dim, hidden_dim)
+
+        self.psi_l1 = nn.Linear(hidden_dim, self.feat_dim)
+        self.phi_l1 = nn.Linear(hidden_dim, self.feat_dim)
+        self.r_l1 = nn.Linear(self.feat_dim, 1)
+
+        init_weights_xavier(self)
+
+    def forward(self, state, action):
+        return self.get_qvalue(state, action)
+
+    def get_feature(self, state, action):
+        input = torch.cat([state, action], dim=1)
+        feat = F.relu(self.feat_l1(input))
+        feat = F.relu(self.hidden_l1(feat))
+        return feat
+
+    def local_embedding(self, state, action):
+        feat = self.get_feature(state, action)
+        phi = self.phi_l1(feat)
+        norm = phi.norm(dim=-1, keepdim=True) + 1e-6
+        return (phi / norm).view(-1, self.feat_dim)
+
+    def global_embedding(self, state, action):
+        feat = self.get_feature(state, action)
+        psi = self.psi_l1(feat)
+        return psi
+
+    def get_reward(self, state, action):
+        phi = self.local_embedding(state, action)
+        reward = self.r_l1(phi)
+        return reward
+
+    def get_w(self):
+        return self.r_l1.weight, self.r_l1.bias,
+
+    def get_qvalue(self, state, action):
+        psi = self.global_embedding(state, action)
+        return self.r_l1(psi)
+
+
+class IdpSF(nn.Module):
+    def __init__(self, state_dim, action_dim, feat_dim, hidden_dim):
+        super(IdpSF, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.output_dim = 1
+        self.feat_dim = feat_dim
+
+        # first layer feature
         self.weight_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
         self.weight_l2 = nn.Linear(hidden_dim, hidden_dim)
         self.weight_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
@@ -66,7 +118,7 @@ class SuccessorFeature(nn.Module):
 # must be off-policy, then sac or ddpg -> directly actor successor feature?
 # get psi and w, how to update psi, how to update w
 class Trainer:
-    def __init__(self, num_inputs, action_space, args):
+    def __init__(self, num_inputs, action_space, args, model_type='shared'):
 
         self.gamma = args.gamma
         self.tau = args.tau
@@ -78,8 +130,8 @@ class Trainer:
 
         self.device = torch.device("cuda" if args.cuda else "cpu")
 
-        self.sf = SuccessorFeature(num_inputs, action_space.shape[0], args.feat_size, args.hidden_size).to(self.device)
-        self.target_sf = SuccessorFeature(num_inputs, action_space.shape[0], args.feat_size, args.hidden_size).to(self.device)
+        self.sf = SharedSF(num_inputs, action_space.shape[0], args.feat_size, args.hidden_size).to(self.device)
+        self.target_sf = SharedSF(num_inputs, action_space.shape[0], args.feat_size, args.hidden_size).to(self.device)
         self.sf_optim = Adam(self.sf.parameters(), lr=args.sf_lr)
 
         hard_update(self.target_sf, self.sf)
@@ -99,6 +151,9 @@ class Trainer:
             self.automatic_entropy_tuning = False
             self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
+
+        self.model_type = model_type
+
 
     def to(self):
         for network in self.networks:
@@ -124,16 +179,36 @@ class Trainer:
         qf2_loss = F.mse_loss(qf2, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf_loss = qf1_loss + qf2_loss
 
-        # to set w
-        phi = self.sf.get_phi(state_batch, action_batch) # fixed
-        w = self.sf.get_w(state_batch, action_batch)
-        psi = self.sf.get_psi(state_batch, action_batch)
+        # todo: get qf1 and qf2, minimize them
+        if self.model_type == 'idp':
+            '''
+            loss for idp_SF
+            '''
+            phi = self.sf.get_phi(state_batch, action_batch) # fixed
+            w = self.sf.get_w(state_batch, action_batch)
+            psi = self.sf.get_psi(state_batch, action_batch)
 
-        w_loss = torch.mean(torch.pow(reward_batch - phi.detach() * w, 2))  # only train w
-        target_psi = self.target_sf.get_psi(next_state_batch, next_state_action)
-        target_psi = (phi + self.gamma * mask_batch * target_psi).detach()
-        psi_loss = torch.mean(torch.pow((target_psi - psi), 2))  # used to train psi,
+            w_loss = torch.mean(torch.pow(reward_batch - torch.sum((phi.detach() * w), dim=1, keepdim=True), 2))  # only train w
+            target_psi = self.target_sf.get_psi(next_state_batch, next_state_action)
+            target_psi = (phi + self.gamma * mask_batch * target_psi).detach()
+            psi_loss = torch.mean(torch.pow((target_psi - psi), 2))  # used to train psi,
+        elif self.model_type == 'shared':
+            '''
+            loss for SharedSF
+            '''
+            phi = self.sf.local_embedding(state_batch, action_batch) # fixed
+            weight, bias = self.sf.get_w(state_batch, action_batch)
+            psi = self.sf.global_embedding(state_batch, action_batch)
 
+            w_loss = F.smooth_l1_loss(F.linear(phi, weight, bias), reward_batch)
+            target_psi = self.target_sf.global_embedding(next_state_batch, next_state_action)
+            target_psi = (phi + self.gamma * mask_batch * target_psi).detach()
+            psi_loss = torch.mean(torch.pow((target_psi - psi), 2))  # used to train psi,
+
+        else:
+            raise NotImplementedError
+
+        # todo: constrastive
         sf_loss = qf_loss + w_loss + psi_loss
 
         # todo: how to get the feature of the phi

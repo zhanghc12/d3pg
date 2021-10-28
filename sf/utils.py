@@ -1,5 +1,7 @@
 import math
 import torch
+import torch.nn as nn
+
 
 def create_log_gaussian(mean, log_std, t):
     quadratic = -((0.5 * (t - mean) / (log_std.exp())).pow(2))
@@ -26,3 +28,9 @@ def soft_update(target, source, tau):
 def hard_update(target, source):
     for target_param, param in zip(target.parameters(), source.parameters()):
         target_param.data.copy_(param.data)
+
+
+def init_weights_xavier(model):
+    for p_name, p_tensor in model.named_parameters():
+        if '.weight' in p_name:
+            nn.init.xavier_uniform_(p_tensor)
