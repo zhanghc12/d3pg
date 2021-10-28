@@ -191,9 +191,9 @@ class EnsembleModel(nn.Module):
         iid_loss =
     '''
 
-    def get_disentangle_loss(self, sa_mean, s_mean):
+    def get_disentangle_loss(self, sa_mean, s_mean): #
         # sa_o = 0 then s_o = 0
-        disentangle_loss = torch.mean(torch.abs(sa_mean * s_mean))
+        disentangle_loss = torch.sum(torch.mean(torch.mean(torch.abs(sa_mean * s_mean), dim=-1), dim=-1))
         return disentangle_loss
 
     def get_separate_loss(self, sa_mean, s_mean, sa_logvar, s_logvar, labels, inc_var_loss=True):

@@ -199,7 +199,7 @@ class EnsembleModel(nn.Module):
 
     def get_kl_loss(self, sa_mean, s_mean):
         # todo: take care of the dimension
-        return torch.mean(torch.mean((sa_mean - s_mean.detach()) ** 2, dim=-1), dim=-1)
+        return torch.sum(torch.mean(torch.mean((sa_mean - s_mean.detach()) ** 2, dim=-1), dim=-1))
 
         # sigma_1 = logvar_1.exp().type(dtype=torch.float64)
         # sigma_2 = logvar_2.exp().type(dtype=torch.float64)
