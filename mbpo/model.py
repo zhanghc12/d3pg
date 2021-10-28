@@ -193,6 +193,10 @@ class EnsembleModel(nn.Module):
         #         print(name, param.grad.shape, torch.mean(param.grad), param.grad.flatten()[:5])
         self.optimizer.step()
 
+    def get_model_vars(self, idx):
+        var_dict = {'weights': self.nn1.weight[idx, :, :], 'bias':self.nn1.bias[idx, :]}
+        return var_dict
+
 
 class EnsembleDynamicsModel():
     def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, writer=None):
@@ -205,9 +209,11 @@ class EnsembleDynamicsModel():
         self.network_size = network_size
         self.elite_model_idxes = []
         self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
+        self.ensemble_model_target = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
         self.scaler = StandardScaler()
         self.writer = writer
         self.step = 0
+        self._state = {}
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -262,6 +268,7 @@ class EnsembleDynamicsModel():
                 self.writer.add_scalar('loss/top_holdout_loss', np.mean(holdout_mse_losses[self.elite_model_idxes]),
                                        self.step)
         self.step += 1
+        self._set_state()
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
@@ -271,7 +278,7 @@ class EnsembleDynamicsModel():
             improvement = (best - current) / best
             if improvement > 0.01:
                 self._snapshots[i] = (epoch, current)
-                # self._save_state(i)
+                self._save_state(i)
                 updated = True
                 # improvement = (best - current) / best
 
@@ -302,6 +309,43 @@ class EnsembleDynamicsModel():
             mean = torch.mean(ensemble_mean, dim=0)
             var = torch.mean(ensemble_var, dim=0) + torch.mean(torch.square(ensemble_mean - mean[None, :, :]), dim=0)
             return mean, var
+
+
+
+    def _save_state(self, idx):
+        self.ensemble_model_target.nn1.weight.data[idx, :, :].copy_(self.ensemble_model.nn1.weight[idx, :, :])
+        self.ensemble_model_target.nn1.bias.data[idx, :].copy_(self.ensemble_model.nn1.bias[idx, :])
+
+        self.ensemble_model_target.nn2.weight.data[idx, :, :].copy_(self.ensemble_model.nn2.weight[idx, :, :])
+        self.ensemble_model_target.nn2.bias.data[idx, :].copy_(self.ensemble_model.nn2.bias[idx, :])
+
+        self.ensemble_model_target.nn3.weight.data[idx, :, :].copy_(self.ensemble_model.nn3.weight[idx, :, :])
+        self.ensemble_model_target.nn3.bias.data[idx, :].copy_(self.ensemble_model.nn3.bias[idx, :])
+
+        self.ensemble_model_target.nn4.weight.data[idx, :, :].copy_(self.ensemble_model.nn4.weight[idx, :, :])
+        self.ensemble_model_target.nn4.bias.data[idx, :].copy_(self.ensemble_model.nn4.bias[idx, :])
+
+        self.ensemble_model_target.nn5.weight.data[idx, :, :].copy_(self.ensemble_model.nn5.weight[idx, :, :])
+        self.ensemble_model_target.nn5.bias.data[idx, :].copy_(self.ensemble_model.nn5.bias[idx, :])
+
+        self.ensemble_model_target.nn6.weight.data[idx, :, :].copy_(self.ensemble_model.nn6.weight[idx, :, :])
+        self.ensemble_model_target.nn6.bias.data[idx, :].copy_(self.ensemble_model.nn6.bias[idx, :])
+
+    def _set_state(self):
+        self.ensemble_model.nn1.weight.data.copy_(self.ensemble_model_target.nn1.weight)
+        self.ensemble_model.nn1.bias.data.copy_(self.ensemble_model_target.nn1.bias)
+
+        self.ensemble_model.nn2.weight.data.copy_(self.ensemble_model_target.nn2.weight)
+        self.ensemble_model.nn2.bias.data.copy_(self.ensemble_model_target.nn2.bias)
+
+        self.ensemble_model.nn3.weight.data.copy_(self.ensemble_model_target.nn3.weight)
+        self.ensemble_model.nn3.bias.data.copy_(self.ensemble_model_target.nn3.bias)
+
+        self.ensemble_model.nn4.weight.data.copy_(self.ensemble_model_target.nn4.weight)
+        self.ensemble_model.nn4.bias.data.copy_(self.ensemble_model_target.nn4.bias)
+
+        self.ensemble_model.nn5.weight.data.copy_(self.ensemble_model_target.nn5.weight)
+        self.ensemble_model.nn5.bias.data.copy_(self.ensemble_model_target.nn5.bias)
 
 
 class Swish(nn.Module):
@@ -350,6 +394,8 @@ def set_tf_weights(model, tf_weights):
             param.data = torch.FloatTensor(pth_weights[name]).to(device).reshape(param.data.shape)
             pth_weights[name] = param.data
             print(name)
+
+
 
 
 def main():
