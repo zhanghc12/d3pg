@@ -107,7 +107,7 @@ def readParser():
     return parser.parse_args()
 
 
-def train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer):
+def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, model_pool, writer):
     total_step = 0
     reward_sum = 0
     rollout_length = 1
@@ -140,25 +140,25 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer):
 
             total_step += 1
 
-            if total_step % 1000 == 0:
+            if total_step % 500 == 0:
                 '''
                 avg_reward_len = min(len(env_sampler.path_rewards), 5)
                 avg_reward = sum(env_sampler.path_rewards[-avg_reward_len:]) / avg_reward_len
                 logging.info("Step Reward: " + str(total_step) + " " + str(env_sampler.path_rewards[-1]) + " " + str(avg_reward))
                 print(total_step, env_sampler.path_rewards[-1], avg_reward)
                 '''
-                env_sampler.current_state = None
+                test_env_sampler.current_state = None
                 done = False
                 n_episodes = 10
                 test_returns = []
                 for i_episode in range(n_episodes):
                     sum_reward = 0
                     while not done:
-                        cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
+                        cur_state, action, next_state, reward, done, info = test_env_sampler.sample(agent, eval_t=True)
                         sum_reward += reward
                     test_returns.append(sum_reward)
                     done = False
-                    env_sampler.current_state = None
+                    test_env_sampler.current_state = None
                 avg_return = np.mean(test_returns)
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
@@ -344,8 +344,9 @@ def main(args=None):
 
     # Sampler of environment
     env_sampler = EnvSampler(env)
+    test_env_sampler = EnvSampler(env)
 
-    train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer)
+    train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, model_pool, writer)
 
 
 if __name__ == '__main__':

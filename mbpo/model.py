@@ -115,7 +115,7 @@ class EnsembleFC(nn.Module):
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=False):
+    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=False, version=10):
         super(EnsembleModel, self).__init__()
         self.hidden_size = hidden_size
         self.nn1 = EnsembleFC(state_size + action_size, hidden_size, ensemble_size, weight_decay=0.000025)
@@ -133,6 +133,7 @@ class EnsembleModel(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         self.apply(init_weights)
         self.swish = Swish()
+        self.version = version
 
     def forward(self, x, ret_log_var=False):
         nn1_output = self.swish(self.nn1(x))
@@ -176,7 +177,8 @@ class EnsembleModel(nn.Module):
             mse_loss = torch.mean(torch.pow(mean - labels, 2), dim=(1, 2))
             total_loss = torch.sum(mse_loss)
 
-        total_loss += 0.01 * torch.sum(self.max_logvar) - 0.01 * torch.sum(self.min_logvar)
+        if self.version in [11, 12]:
+            total_loss += 0.01 * torch.sum(self.max_logvar) - 0.01 * torch.sum(self.min_logvar)
 
         return total_loss, mse_loss
 
@@ -199,7 +201,7 @@ class EnsembleModel(nn.Module):
 
 
 class EnsembleDynamicsModel():
-    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, writer=None):
+    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, writer=None, version=10):
         self.network_size = network_size
         self.elite_size = elite_size
         self.model_list = []
@@ -208,12 +210,13 @@ class EnsembleDynamicsModel():
         self.reward_size = reward_size
         self.network_size = network_size
         self.elite_model_idxes = []
-        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
-        self.ensemble_model_target = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
+        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, version=version)
+        self.ensemble_model_target = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, version=version)
         self.scaler = StandardScaler()
         self.writer = writer
         self.step = 0
         self._state = {}
+        self.version = version
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -268,7 +271,9 @@ class EnsembleDynamicsModel():
                 self.writer.add_scalar('loss/top_holdout_loss', np.mean(holdout_mse_losses[self.elite_model_idxes]),
                                        self.step)
         self.step += 1
-        self._set_state()
+
+        if self.version == 12:
+            self._set_state()
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
