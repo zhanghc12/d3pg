@@ -3,8 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from duelingpg.reverse_model import ReverseActor
+from duelingpg.reverse_model import ReverseActor, RerverseVaeActor
 from duelingpg.reverse_model import EnsembleDynamicsModel
+from duelingpg.tf_models.constructor import construct_model
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -56,22 +57,31 @@ class DRPG(object): # reverse model
         self.discount = discount
         self.tau = tau
 
-        self.reverse_actor = ReverseActor(state_dim, action_dim, 1).to(device)
+        self.reverse_actor = RerverseVaeActor(
+            obs_dim=state_dim,
+            action_dim=action_dim,
+            latent_dim=action_dim * 2
+        )
+        self.reverse_actor_criterion = nn.MSELoss()
+        # self.reverse_actor = ReverseActor(state_dim, action_dim, 1).to(device)
+
         self.reverse_actor_optimizer = torch.optim.Adam(self.reverse_actor.parameters(), lr=3e-4)
 
         num_networks = 7
         num_elites = 3
-        self.reverse_model = EnsembleDynamicsModel(
-            num_networks,
-            num_elites,
-            state_dim,
-            action_dim,
-            1,
-            hidden_size=200,
-            env_name=env_name,
-            inner_epoch_num=10
-        )
-        self.reverse_model.to(device)
+        self.reverse_model = construct_model(obs_dim=state_dim, act_dim=action_dim, hidden_dim=200,
+                                             num_networks=num_networks, num_elites=num_elites)
+        # self.reverse_model = EnsembleDynamicsModel(
+        #     num_networks,
+        #     num_elites,
+        #     state_dim,
+        #     action_dim,
+        #     1,
+        #     hidden_size=200,
+        #     env_name=env_name,
+        #     inner_epoch_num=10
+        # )
+        # self.reverse_model.to(device)
 
         self.cur_step = 0
         self.model_update_freq = 100
@@ -108,20 +118,29 @@ class DRPG(object): # reverse model
         self.actor_optimizer.step()
 
         inputs, labels = replay_buffer.get_all_reverse_samples()
-        if torch.cuda.is_available():
-            if self.cur_step % self.model_update_freq == 0:
-                self.reverse_model.train(
-                    inputs=inputs,
-                    labels=labels,
-                    batch_size=256,
-                    holdout_ratio=0.2,
-                    max_epochs_since_update=5)
+        if self.cur_step % self.model_update_freq == 0:
+            self.reverse_model.train(
+                inputs=inputs,
+                labels=labels,
+                batch_size=256,
+                holdout_ratio=0.2,
+                max_epochs_since_update=-1)
 
-            log_prob = self.reverse_actor.log_prob(next_state, action)
-            reverse_actor_loss = -log_prob.mean()
+        if torch.cuda.is_available():
+            recon, mean, std = self.reverse_actor(next_state, action)
+            recon_loss = self.reverse_actor_criterion(recon, action)
+            kl_loss = -0.5 * (1 + torch.log(std.pow(2)) - mean.pow(2) - std.pow(2)).mean()
+            reverse_actor_loss = recon_loss + 0.5 * kl_loss
+
             self.reverse_actor_optimizer.zero_grad()
             reverse_actor_loss.backward()
             self.reverse_actor_optimizer.step()
+
+            # log_prob = self.reverse_actor.log_prob(next_state, action)
+            # reverse_actor_loss = -log_prob.mean()
+            # self.reverse_actor_optimizer.zero_grad()
+            # reverse_actor_loss.backward()
+            # self.reverse_actor_optimizer.step()
 
         # the core idea is to find the Q(s,a) which and then resample and update acoording to td
         pred_states = replay_buffer.sample_states(batch_size=10 * batch_size)
