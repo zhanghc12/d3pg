@@ -154,12 +154,12 @@ class D3PG(object):
             cur_value, cur_adv, cur_Q = self.critic(state, action)
             actor_loss += ((cur_adv > 0) * torch.pow(action - self.actor(state), 2)).mean()
 
-
+        '''
         if self.version == 8:
             cur_value, cur_adv, cur_Q = self.critic(state, action)
             _, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
             actor_loss += ((target_Q > 0) * torch.pow(action - self.actor(state), 2)).mean()
-
+        '''
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
