@@ -88,7 +88,7 @@ class D3PG(object):
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         # Compute the target Q value
-        if self.version in [0, 2, 3, 4, 6, 8]:
+        if self.version in [0, 2, 3, 4, 6, 8, 9]:
             _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
         elif self.version in [1, 5, 7]:
             target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
@@ -103,8 +103,8 @@ class D3PG(object):
         pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
 
         # plug into the consistency loss
-        advantage_diff = current_adv - pi_adv
-        Q_diff = current_Q - pi_Q = target_Q - pi_value
+        #advantage_diff = current_adv - pi_adv
+        # Q_diff = current_Q - pi_Q = target_Q - pi_value
 
 
         if self.version in [4, 5]:
@@ -112,7 +112,7 @@ class D3PG(object):
             alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)
             adv_loss = (alpha_prime * pi_adv).mean()
             prime_adv_loss = pi_adv.mean()
-        elif self.version in [6, 7]:
+        elif self.version in [6, 7, 9]:
             alpha_prime = self.alpha_prime
             beta_prime = torch.clamp(self.log_beta_prime.exp(), min=0.0, max=1000000.0)
             adv_loss = beta_prime * torch.mean(torch.pow(pi_adv, 2))
@@ -144,7 +144,7 @@ class D3PG(object):
             alpha_prime_loss.backward()
             self.alpha_prime_optimizer.step()
 
-        if self.version in [6, 7]:
+        if self.version in [6, 7, 9]:
             _, pi_adv, _ = self.critic(state, self.actor(state))
             beta_prime = torch.clamp(self.log_beta_prime.exp(), min=0.0, max=1000000.0)
             beta_prime_loss = -beta_prime * (torch.mean(torch.pow(pi_adv, 2)) - self.target_threshold).detach()
@@ -158,9 +158,21 @@ class D3PG(object):
             cur_value, cur_adv, cur_Q = self.critic(state, action)
             actor_loss += ((cur_adv > 0) * torch.pow(cur_adv.detach() - self.actor(state), 2)).mean()
 
-        if self.version == 8:
+        if self.version == 8 :
             cur_value, cur_adv, cur_Q = self.critic(state, action)
             actor_loss += ((cur_adv > 0) * torch.pow(action - self.actor(state), 2)).mean()
+
+        if self.version == 9 :
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_adv > np.sqrt(self.target_threshold)) * torch.pow(action - self.actor(state), 2)).mean()
+
+
+        if self.version == 10 :
+            _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+            target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_Q > target_Q) * torch.pow(action - self.actor(state), 2)).mean()
 
         '''
         if self.version == 8:
