@@ -11,21 +11,19 @@ import os
 import os.path as osp
 import json
 
-from mbpo.sac.replay_memory import ReplayMemory
-from mbpo.sac.sac import SAC
-from mbpo.model import EnsembleDynamicsModel
-from mbpo.predict_env import PredictEnv
-from mbpo.sample_env import EnvSampler
-from mbpo.tf_models.constructor import construct_model, format_samples_for_training
 from torch.utils.tensorboard import SummaryWriter
 import datetime
-from mbpo.disentangle_model import DisentangleEnsembleDynamicsModel
-from mbpo.disentangle_gaussian import DisentangleGaussianEnsembleDynamicsModel
-from mbpo.weighted_gaussian import WeightedGaussianEnsembleDynamicsModel
+from mbpo_py.sac.replay_memory import ReplayMemory
+from mbpo_py.sac.sac import SAC
+from mbpo_py.model import EnsembleDynamicsModel
+from mbpo_py.predict_env import PredictEnv
+from mbpo_py.sample_env import EnvSampler
+from mbpo_py.tf_models.constructor import construct_model, format_samples_for_training
+
 
 def readParser():
     parser = argparse.ArgumentParser(description='MBPO')
-    parser.add_argument('--env_name', default="Walker2d-v2",
+    parser.add_argument('--env_name', default="Hopper-v2",
                         help='Mujoco Gym environment (default: Hopper-v2)')
     parser.add_argument('--seed', type=int, default=123456, metavar='N',
                         help='random seed (default: 123456)')
@@ -96,7 +94,7 @@ def readParser():
     parser.add_argument('--init_exploration_steps', type=int, default=5000, metavar='A',
                         help='exploration steps initially')
 
-    parser.add_argument('--model_type', default='pytorch', metavar='A',
+    parser.add_argument('--model_type', default='tensorflow', metavar='A',
                         help='predict model -- pytorch or tensorflow')
 
     parser.add_argument('--cuda', default=True, action="store_true",
@@ -104,6 +102,7 @@ def readParser():
 
     parser.add_argument('--version', type=int, default=4, metavar='A',
                         help='hyper or model_type')
+
     return parser.parse_args()
 
 
@@ -119,7 +118,7 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer):
         for i in count():
             cur_step = total_step - start_step
 
-            if cur_step >= args.epoch_length and len(env_pool) > args.min_pool_size:
+            if cur_step >= start_step + args.epoch_length and len(env_pool) > args.min_pool_size:
                 break
 
             if cur_step > 0 and cur_step % args.model_train_freq == 0 and args.real_ratio < 1.0:
@@ -148,27 +147,18 @@ def train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer):
                 print(total_step, env_sampler.path_rewards[-1], avg_reward)
                 '''
                 env_sampler.current_state = None
+                sum_reward = 0
                 done = False
-                n_episodes = 10
-                test_returns = []
-                for i_episode in range(n_episodes):
-                    sum_reward = 0
-                    while not done:
-                        cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
-                        sum_reward += reward
-                    test_returns.append(sum_reward)
-                    done = False
-                    env_sampler.current_state = None
-                avg_return = np.mean(test_returns)
+                while not done:
+                    cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
+                    sum_reward += reward
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
                 # logger.dump_tabular()
-                print(total_step, avg_return, '!!')
-                logging.info("Eisode Reward: " + str(total_step) + " " + str(avg_return))
-                writer.add_scalar('Episode reward', avg_return, total_step)
+                logging.info("Step Reward: " + str(total_step) + " " + str(sum_reward))
                 # print(total_step, sum_reward)
+                writer.add_scalar('Episode reward', sum_reward, total_step)
 
-                # print(total_step, sum_reward)
 
 
 def exploration_before_start(args, env_sampler, env_pool, agent):
@@ -300,33 +290,15 @@ def main(args=None):
     else:
         log_dir = '/tmp/data/zhanghc/d3pg/mbpo/'
 
-    log_dir = log_dir + '10_27/'
+    log_dir = log_dir + '11_01/'
     summary_log_dir = log_dir + '{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version)
 
     writer = SummaryWriter(log_dir=summary_log_dir)
 
+
     if args.model_type == 'pytorch':
-        if args.version == 1:
-            env_model = DisentangleEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_disentangle=True, writer=writer)
-        elif args.version == 2:
-            env_model = DisentangleEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_disentangle=False, writer=writer)
-        elif args.version == 3:
-            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_disentangle=True, writer=writer)
-        elif args.version == 4:
-            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_separate=True, writer=writer)
-        elif args.version == 5:
-            env_model = WeightedGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_kl=True, writer=writer)
-        elif args.version == 6:
-            env_model = DisentangleGaussianEnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, use_disentangle=False, writer=writer)
-        else:
-            env_model = EnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
-                                          use_decay=args.use_decay, writer=writer)
+        env_model = EnsembleDynamicsModel(args.num_networks, args.num_elites, state_size, action_size, args.reward_size, args.pred_hidden_size,
+                                          use_decay=args.use_decay)
     else:
         env_model = construct_model(obs_dim=state_size, act_dim=action_size, hidden_dim=args.pred_hidden_size, num_networks=args.num_networks,
                                     num_elites=args.num_elites)

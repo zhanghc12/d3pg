@@ -2,8 +2,8 @@ import os
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from sac.utils import  soft_update, hard_update
-from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy
+from mbpo.sac.utils import  soft_update, hard_update
+from mbpo.sac.model import GaussianPolicy, QNetwork, DeterministicPolicy
 
 
 class SAC(object):
@@ -17,7 +17,7 @@ class SAC(object):
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
 
-        self.device = torch.device("cuda")
+        self.device = torch.device("cuda") if torch.cuda.is_available() else 'cpu'
 
         self.critic = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
         self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)

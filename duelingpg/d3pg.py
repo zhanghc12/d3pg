@@ -95,10 +95,18 @@ class D3PG(object):
         else:
             raise NotImplementedError
         target_Q = reward + (not_done * self.discount * target_Q).detach()
-        _, _, current_Q = self.critic(state, action)
+        current_value, current_adv, current_Q = self.critic(state, action)
         critic_loss = F.mse_loss(current_Q, target_Q)
 
+
+
         pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
+
+        # plug into the consistency loss
+        advantage_diff = current_adv - pi_adv
+        Q_diff = current_Q - pi_Q = target_Q - pi_value
+
+
         if self.version in [4, 5]:
             beta_prime = self.log_beta_prime.exp()
             alpha_prime = torch.clamp(self.alpha_prime, min=-1000000.0, max=1000000.0)

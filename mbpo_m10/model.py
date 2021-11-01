@@ -1,6 +1,6 @@
 import torch
 
-torch.set_default_tensor_type(torch.cuda.FloatTensor)
+
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -9,7 +9,11 @@ import math
 import gzip
 import itertools
 
-device = torch.device('cuda')
+if torch.cuda.is_available():
+    torch.set_default_tensor_type(torch.cuda.FloatTensor)
+
+
+device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
 
 num_train = 60000  # 60k train examples
 num_test = 10000  # 10k test examples
@@ -111,7 +115,7 @@ class EnsembleFC(nn.Module):
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=False):
+    def __init__(self, state_size, action_size, reward_size, ensemble_size, hidden_size=200, learning_rate=1e-3, use_decay=False, version=10):
         super(EnsembleModel, self).__init__()
         self.hidden_size = hidden_size
         self.nn1 = EnsembleFC(state_size + action_size, hidden_size, ensemble_size, weight_decay=0.000025)
@@ -124,11 +128,12 @@ class EnsembleModel(nn.Module):
         # Add variance output
         self.nn5 = EnsembleFC(hidden_size, self.output_dim * 2, ensemble_size, weight_decay=0.0001)
 
-        self.max_logvar = nn.Parameter((torch.ones((1, self.output_dim)).float() / 2).to(device), requires_grad=False)
-        self.min_logvar = nn.Parameter((-torch.ones((1, self.output_dim)).float() * 10).to(device), requires_grad=False)
+        self.max_logvar = nn.Parameter((torch.ones((1, self.output_dim)).float() / 2).to(device), requires_grad=True)
+        self.min_logvar = nn.Parameter((-torch.ones((1, self.output_dim)).float() * 10).to(device), requires_grad=True)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         self.apply(init_weights)
         self.swish = Swish()
+        self.version = version
 
     def forward(self, x, ret_log_var=False):
         nn1_output = self.swish(self.nn1(x))
@@ -171,6 +176,10 @@ class EnsembleModel(nn.Module):
         else:
             mse_loss = torch.mean(torch.pow(mean - labels, 2), dim=(1, 2))
             total_loss = torch.sum(mse_loss)
+
+        if self.version in [11, 12]:
+            total_loss += 0.01 * torch.sum(self.max_logvar) - 0.01 * torch.sum(self.min_logvar)
+
         return total_loss, mse_loss
 
     def train(self, loss):
@@ -186,9 +195,13 @@ class EnsembleModel(nn.Module):
         #         print(name, param.grad.shape, torch.mean(param.grad), param.grad.flatten()[:5])
         self.optimizer.step()
 
+    def get_model_vars(self, idx):
+        var_dict = {'weights': self.nn1.weight[idx, :, :], 'bias':self.nn1.bias[idx, :]}
+        return var_dict
+
 
 class EnsembleDynamicsModel():
-    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False):
+    def __init__(self, network_size, elite_size, state_size, action_size, reward_size=1, hidden_size=200, use_decay=False, writer=None, version=10):
         self.network_size = network_size
         self.elite_size = elite_size
         self.model_list = []
@@ -197,8 +210,13 @@ class EnsembleDynamicsModel():
         self.reward_size = reward_size
         self.network_size = network_size
         self.elite_model_idxes = []
-        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
+        self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, version=version)
+        self.ensemble_model_target = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay, version=version)
         self.scaler = StandardScaler()
+        self.writer = writer
+        self.step = 0
+        self._state = {}
+        self.version = version
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -235,6 +253,8 @@ class EnsembleDynamicsModel():
                 loss, _ = self.ensemble_model.loss(mean, logvar, train_label)
                 self.ensemble_model.train(loss)
                 losses.append(loss)
+                if epoch == 0 and start_pos == 0:
+                    self.writer.add_scalar('loss/train_loss', loss.detach().cpu().numpy(), self.step)
 
             with torch.no_grad():
                 holdout_mean, holdout_logvar = self.ensemble_model(holdout_inputs, ret_log_var=True)
@@ -246,6 +266,14 @@ class EnsembleDynamicsModel():
                 if break_train:
                     break
             print('epoch: {}, holdout mse losses: {}'.format(epoch, holdout_mse_losses))
+            if epoch == 0:
+                self.writer.add_scalar('loss/holdout_loss', np.mean(holdout_mse_losses), self.step)
+                self.writer.add_scalar('loss/top_holdout_loss', np.mean(holdout_mse_losses[self.elite_model_idxes]),
+                                       self.step)
+        self.step += 1
+
+        if self.version == 12:
+            self._set_state()
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
@@ -255,7 +283,7 @@ class EnsembleDynamicsModel():
             improvement = (best - current) / best
             if improvement > 0.01:
                 self._snapshots[i] = (epoch, current)
-                # self._save_state(i)
+                self._save_state(i)
                 updated = True
                 # improvement = (best - current) / best
 
@@ -286,6 +314,40 @@ class EnsembleDynamicsModel():
             mean = torch.mean(ensemble_mean, dim=0)
             var = torch.mean(ensemble_var, dim=0) + torch.mean(torch.square(ensemble_mean - mean[None, :, :]), dim=0)
             return mean, var
+
+
+
+    def _save_state(self, idx):
+        self.ensemble_model_target.nn1.weight.data[idx, :, :].copy_(self.ensemble_model.nn1.weight[idx, :, :])
+        self.ensemble_model_target.nn1.bias.data[idx, :].copy_(self.ensemble_model.nn1.bias[idx, :])
+
+        self.ensemble_model_target.nn2.weight.data[idx, :, :].copy_(self.ensemble_model.nn2.weight[idx, :, :])
+        self.ensemble_model_target.nn2.bias.data[idx, :].copy_(self.ensemble_model.nn2.bias[idx, :])
+
+        self.ensemble_model_target.nn3.weight.data[idx, :, :].copy_(self.ensemble_model.nn3.weight[idx, :, :])
+        self.ensemble_model_target.nn3.bias.data[idx, :].copy_(self.ensemble_model.nn3.bias[idx, :])
+
+        self.ensemble_model_target.nn4.weight.data[idx, :, :].copy_(self.ensemble_model.nn4.weight[idx, :, :])
+        self.ensemble_model_target.nn4.bias.data[idx, :].copy_(self.ensemble_model.nn4.bias[idx, :])
+
+        self.ensemble_model_target.nn5.weight.data[idx, :, :].copy_(self.ensemble_model.nn5.weight[idx, :, :])
+        self.ensemble_model_target.nn5.bias.data[idx, :].copy_(self.ensemble_model.nn5.bias[idx, :])
+
+    def _set_state(self):
+        self.ensemble_model.nn1.weight.data.copy_(self.ensemble_model_target.nn1.weight)
+        self.ensemble_model.nn1.bias.data.copy_(self.ensemble_model_target.nn1.bias)
+
+        self.ensemble_model.nn2.weight.data.copy_(self.ensemble_model_target.nn2.weight)
+        self.ensemble_model.nn2.bias.data.copy_(self.ensemble_model_target.nn2.bias)
+
+        self.ensemble_model.nn3.weight.data.copy_(self.ensemble_model_target.nn3.weight)
+        self.ensemble_model.nn3.bias.data.copy_(self.ensemble_model_target.nn3.bias)
+
+        self.ensemble_model.nn4.weight.data.copy_(self.ensemble_model_target.nn4.weight)
+        self.ensemble_model.nn4.bias.data.copy_(self.ensemble_model_target.nn4.bias)
+
+        self.ensemble_model.nn5.weight.data.copy_(self.ensemble_model_target.nn5.weight)
+        self.ensemble_model.nn5.bias.data.copy_(self.ensemble_model_target.nn5.bias)
 
 
 class Swish(nn.Module):
@@ -334,6 +396,8 @@ def set_tf_weights(model, tf_weights):
             param.data = torch.FloatTensor(pth_weights[name]).to(device).reshape(param.data.shape)
             pth_weights[name] = param.data
             print(name)
+
+
 
 
 def main():
