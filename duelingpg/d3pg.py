@@ -77,7 +77,7 @@ class D3PG(object):
         self.log_beta_prime = torch.zeros(1, requires_grad=True).to(device)
         self.beta_prime_optimizer = torch.optim.Adam([self.log_beta_prime], lr=3e-4)
 
-        self.target_threshold = 0.1 # note:
+        self.target_threshold = target_threshold # note:
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
