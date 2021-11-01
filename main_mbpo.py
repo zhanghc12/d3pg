@@ -94,7 +94,7 @@ def readParser():
     parser.add_argument('--init_exploration_steps', type=int, default=5000, metavar='A',
                         help='exploration steps initially')
 
-    parser.add_argument('--model_type', default='tensorflow', metavar='A',
+    parser.add_argument('--model_type', default='pytorch', metavar='A',
                         help='predict model -- pytorch or tensorflow')
 
     parser.add_argument('--cuda', default=True, action="store_true",
@@ -291,7 +291,7 @@ def main(args=None):
         log_dir = '/tmp/data/zhanghc/d3pg/mbpo/'
 
     log_dir = log_dir + '11_01/'
-    summary_log_dir = log_dir + '{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version)
+    summary_log_dir = log_dir + '{}_{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.model_type, args.env_name, args.seed, args.version)
 
     writer = SummaryWriter(log_dir=summary_log_dir)
 
