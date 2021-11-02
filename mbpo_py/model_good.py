@@ -124,8 +124,8 @@ class EnsembleModel(nn.Module):
         # Add variance output
         self.nn5 = EnsembleFC(hidden_size, self.output_dim * 2, ensemble_size, weight_decay=0.0001)
 
-        self.max_logvar = nn.Parameter((torch.ones((1, self.output_dim)).float() / 2).to(device), requires_grad=True)
-        self.min_logvar = nn.Parameter((-torch.ones((1, self.output_dim)).float() * 10).to(device), requires_grad=True)
+        self.max_logvar = nn.Parameter((torch.ones((1, self.output_dim)).float() / 2).to(device), requires_grad=False)
+        self.min_logvar = nn.Parameter((-torch.ones((1, self.output_dim)).float() * 10).to(device), requires_grad=False)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         self.apply(init_weights)
         self.swish = Swish()
