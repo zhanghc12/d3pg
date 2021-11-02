@@ -139,10 +139,11 @@ class D3PG(object):
         # advantage_diff = current_adv - pi_adv
         # Q_diff = current_Q - pi_Q = target_Q - pi_value
         if self.version == 12:
-            adv_diff = pi_adv - current_adv
-            adv_diff = adv_diff.detach()
-            consistency_loss = ((pi_adv - current_adv - adv_diff) ** 2).mean()
+            beta_prime = torch.clamp(self.log_beta_prime.exp(), min=0.0, max=1000000.0)
+            adv_diff = (current_adv - pi_adv).detach()
+            consistency_loss = beta_prime * ((current_adv - adv_diff) ** 2).mean()
             critic_loss += consistency_loss
+            # loss is zero, grad is zero, so we cannot do this thing better
 
         if self.version == 13:
             current_value, current_adv, current_Q = self.critic(state, action)
