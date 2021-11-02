@@ -94,7 +94,7 @@ class D3PG(object):
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         # Compute the target Q value
-        if self.version in [0, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13]:
+        if self.version in [0, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14]:
             _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
         elif self.version in [1, 5, 7]:
             target_Q, _, _ = self.critic_target(next_state, self.actor_target(next_state)) # assume the adv is
