@@ -135,6 +135,15 @@ class D3PG(object):
 
         critic_loss = critic_loss + adv_loss
 
+        if self.version == 14:
+            target_v, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+            target_Q = reward + (not_done * self.discount * target_v).detach()
+            current_value, current_adv, current_Q = self.critic(state, action)
+            pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
+            current_Q = current_Q - pi_adv
+            critic_loss = F.mse_loss(current_Q, target_Q)
+            adv_loss = critic_loss
+
         # plug into the consistency loss
         # advantage_diff = current_adv - pi_adv
         # Q_diff = current_Q - pi_Q = target_Q - pi_value
