@@ -11,6 +11,8 @@ from duelingpg import dtpg
 from duelingpg import dhpg
 from duelingpg import dmpg
 from duelingpg import drpg
+from duelingpg import d2pg
+from duelingpg import d6pg
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -109,6 +111,14 @@ if __name__ == "__main__":
         kwargs['target_threshold'] = args.target_threshold
 
         policy = d3pg.D3PG(**kwargs)
+    elif args.policy == "D6PG":
+        #kwargs["policy_noise"] = args.policy_noise * max_action
+        #kwargs["noise_clip"] = args.noise_clip * max_action
+        #kwargs["policy_freq"] = args.policy_freq
+        kwargs['version'] = args.version
+        kwargs['target_threshold'] = args.target_threshold
+
+        policy = d6pg.D6PG(**kwargs)
     elif args.policy == 'DTPG':
         kwargs['version'] = args.version
         policy = dtpg.DTPG(**kwargs)
@@ -133,6 +143,8 @@ if __name__ == "__main__":
         policy = TD3.TD3(**kwargs)
     elif args.policy == "OurDDPG":
         policy = OurDDPG.DDPG(**kwargs)
+    elif args.policy == "D2PG":
+        policy = d2pg.D2PG(**kwargs)
     elif args.policy == "DDPG":
         policy = DDPG.DDPG(**kwargs)
 

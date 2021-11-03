@@ -222,8 +222,25 @@ class D3PG(object):
             self.beta_prime_optimizer.step()
 
         # Compute actor loss
-
         actor_loss = -self.critic(state, self.actor(state))[-1].mean()
+        if self.version == 2:
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_adv > 0) * torch.pow(cur_adv.detach() - self.actor(state), 2)).mean()
+
+        if self.version == 8 :
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_adv > 0) * torch.pow(action - self.actor(state), 2)).mean()
+
+        if self.version == 9 :
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_adv > np.sqrt(self.target_threshold)) * torch.pow(action - self.actor(state), 2)).mean()
+
+        if self.version == 10 :
+            _, _, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+            target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+            cur_value, cur_adv, cur_Q = self.critic(state, action)
+            actor_loss += ((cur_Q > target_Q) * torch.pow(action - self.actor(state), 2)).mean()
 
         '''
         if self.version == 8:
@@ -237,13 +254,13 @@ class D3PG(object):
         actor_loss.backward()
         self.actor_optimizer.step()
 
+
         # Update the frozen target models
         for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
 
         return actor_loss.item(), critic_loss.item(), adv_loss.item(), prime_adv_loss.item(), alpha_prime.item(), beta_prime.item(), 0, 0, 0
 

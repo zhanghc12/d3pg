@@ -62,7 +62,7 @@ class Critic(nn.Module):
         return self.l3(q)
 
 
-class D3PG(object):
+class D6PG(object):
     def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
@@ -222,27 +222,19 @@ class D3PG(object):
             self.beta_prime_optimizer.step()
 
         # Compute actor loss
-
         actor_loss = -self.critic(state, self.actor(state))[-1].mean()
+        if self.total_it % 2 == 0:
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
 
-        '''
-        if self.version == 8:
-            cur_value, cur_adv, cur_Q = self.critic(state, action)
-            _, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
-            actor_loss += ((target_Q > 0) * torch.pow(action - self.actor(state), 2)).mean()
-        '''
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        # Optimize the actor
-        self.actor_optimizer.zero_grad()
-        actor_loss.backward()
-        self.actor_optimizer.step()
-
-        # Update the frozen target models
-        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-        for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
         return actor_loss.item(), critic_loss.item(), adv_loss.item(), prime_adv_loss.item(), alpha_prime.item(), beta_prime.item(), 0, 0, 0
