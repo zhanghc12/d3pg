@@ -198,7 +198,9 @@ class EnsembleDynamicsModel():
         self.network_size = network_size
         self.elite_model_idxes = []
         self.ensemble_model = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
+        self.ensemble_model_target = EnsembleModel(state_size, action_size, reward_size, network_size, hidden_size, use_decay=use_decay)
         self.scaler = StandardScaler()
+        self.step = 0
 
     def train(self, inputs, labels, batch_size=256, holdout_ratio=0., max_epochs_since_update=5):
         self._max_epochs_since_update = max_epochs_since_update
@@ -247,6 +249,9 @@ class EnsembleDynamicsModel():
                     break
             print('epoch: {}, holdout mse losses: {}'.format(epoch, holdout_mse_losses))
 
+        self.step += 1
+        self._set_state()
+
     def _save_best(self, epoch, holdout_losses):
         updated = False
         for i in range(len(holdout_losses)):
@@ -255,7 +260,7 @@ class EnsembleDynamicsModel():
             improvement = (best - current) / best
             if improvement > 0.01:
                 self._snapshots[i] = (epoch, current)
-                # self._save_state(i)
+                self._save_state(i)
                 updated = True
                 # improvement = (best - current) / best
 
@@ -286,6 +291,39 @@ class EnsembleDynamicsModel():
             mean = torch.mean(ensemble_mean, dim=0)
             var = torch.mean(ensemble_var, dim=0) + torch.mean(torch.square(ensemble_mean - mean[None, :, :]), dim=0)
             return mean, var
+
+
+    def _save_state(self, idx):
+        self.ensemble_model_target.nn1.weight.data[idx, :, :].copy_(self.ensemble_model.nn1.weight[idx, :, :])
+        self.ensemble_model_target.nn1.bias.data[idx, :].copy_(self.ensemble_model.nn1.bias[idx, :])
+
+        self.ensemble_model_target.nn2.weight.data[idx, :, :].copy_(self.ensemble_model.nn2.weight[idx, :, :])
+        self.ensemble_model_target.nn2.bias.data[idx, :].copy_(self.ensemble_model.nn2.bias[idx, :])
+
+        self.ensemble_model_target.nn3.weight.data[idx, :, :].copy_(self.ensemble_model.nn3.weight[idx, :, :])
+        self.ensemble_model_target.nn3.bias.data[idx, :].copy_(self.ensemble_model.nn3.bias[idx, :])
+
+        self.ensemble_model_target.nn4.weight.data[idx, :, :].copy_(self.ensemble_model.nn4.weight[idx, :, :])
+        self.ensemble_model_target.nn4.bias.data[idx, :].copy_(self.ensemble_model.nn4.bias[idx, :])
+
+        self.ensemble_model_target.nn5.weight.data[idx, :, :].copy_(self.ensemble_model.nn5.weight[idx, :, :])
+        self.ensemble_model_target.nn5.bias.data[idx, :].copy_(self.ensemble_model.nn5.bias[idx, :])
+
+    def _set_state(self):
+        self.ensemble_model.nn1.weight.data.copy_(self.ensemble_model_target.nn1.weight)
+        self.ensemble_model.nn1.bias.data.copy_(self.ensemble_model_target.nn1.bias)
+
+        self.ensemble_model.nn2.weight.data.copy_(self.ensemble_model_target.nn2.weight)
+        self.ensemble_model.nn2.bias.data.copy_(self.ensemble_model_target.nn2.bias)
+
+        self.ensemble_model.nn3.weight.data.copy_(self.ensemble_model_target.nn3.weight)
+        self.ensemble_model.nn3.bias.data.copy_(self.ensemble_model_target.nn3.bias)
+
+        self.ensemble_model.nn4.weight.data.copy_(self.ensemble_model_target.nn4.weight)
+        self.ensemble_model.nn4.bias.data.copy_(self.ensemble_model_target.nn4.bias)
+
+        self.ensemble_model.nn5.weight.data.copy_(self.ensemble_model_target.nn5.weight)
+        self.ensemble_model.nn5.bias.data.copy_(self.ensemble_model_target.nn5.bias)
 
 
 class Swish(nn.Module):
