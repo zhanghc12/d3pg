@@ -75,7 +75,7 @@ def readParser():
                         help='rollout max epoch')
     parser.add_argument('--rollout_min_length', type=int, default=1, metavar='A',
                         help='rollout min length')
-    parser.add_argument('--rollout_max_length', type=int, default=15, metavar='A',
+    parser.add_argument('--rollout_max_length', type=int, default=1, metavar='A',
                         help='rollout max length')
     parser.add_argument('--num_epoch', type=int, default=1000, metavar='A',
                         help='total number of epochs')
@@ -106,22 +106,28 @@ def readParser():
     return parser.parse_args()
 
 
-def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, model_pool, writer):
+def train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer):
     total_step = 0
     reward_sum = 0
     rollout_length = 1
     exploration_before_start(args, env_sampler, env_pool, agent)
 
-    for epoch_step in range(args.num_epoch):
-        start_step = total_step
-        train_policy_steps = 0
-        for i in count():
-            cur_step = total_step - start_step
+    total_samples = args.init_exploration_steps
+    total_timesteps = 0
 
-            if cur_step >= args.epoch_length and len(env_pool) > args.min_pool_size:
+    for epoch_step in range(args.num_epoch):
+        train_steps_this_epoch = 0
+        start_samples = total_samples
+
+        for i in count():
+            samples_now = total_samples
+            timesteps = samples_now - start_samples
+            total_timesteps = epoch_step * args.epoch_length + timesteps
+
+            if samples_now >= start_samples + args.epoch_length and len(env_pool) > args.min_pool_size:
                 break
 
-            if cur_step > 0 and cur_step % args.model_train_freq == 0 and args.real_ratio < 1.0:
+            if timesteps % args.model_train_freq == 0 and args.real_ratio < 1.0:
                 train_predict_model(args, env_pool, predict_env)
 
                 new_rollout_length = set_rollout_length(args, epoch_step)
@@ -133,25 +139,23 @@ def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, mod
 
             cur_state, action, next_state, reward, done, info = env_sampler.sample(agent)
             env_pool.push(cur_state, action, reward, next_state, done)
+            total_samples += 1
 
             if len(env_pool) > args.min_pool_size:
-                train_policy_steps += train_policy_repeats(args, total_step, train_policy_steps, cur_step, env_pool, model_pool, agent)
+                train_steps_this_epoch += train_policy_repeats(args, timesteps, total_timesteps, train_steps_this_epoch, env_pool, model_pool, agent)
 
-            total_step += 1
-
-            if total_step % 1000 == 0:
+            if total_samples % 1000 == 0:
                 '''
                 avg_reward_len = min(len(env_sampler.path_rewards), 5)
                 avg_reward = sum(env_sampler.path_rewards[-avg_reward_len:]) / avg_reward_len
                 logging.info("Step Reward: " + str(total_step) + " " + str(env_sampler.path_rewards[-1]) + " " + str(avg_reward))
                 print(total_step, env_sampler.path_rewards[-1], avg_reward)
                 '''
-                test_env_sampler.current_state = None
-                # env_sampler.current_state = None
+                env_sampler.current_state = None
                 sum_reward = 0
                 done = False
                 while not done:
-                    cur_state, action, next_state, reward, done, info = test_env_sampler.sample(agent, eval_t=True)
+                    cur_state, action, next_state, reward, done, info = env_sampler.sample(agent, eval_t=True)
                     sum_reward += reward
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
@@ -211,7 +215,7 @@ def rollout_model(args, predict_env, agent, model_pool, env_pool, rollout_length
         state = next_states[nonterm_mask]
 
 
-def train_policy_repeats(args, total_step, train_step, cur_step, env_pool, model_pool, agent):
+def train_policy_repeats(args, total_step, total_timesteps, train_step, env_pool, model_pool, agent):
     if total_step % args.train_every_n_steps > 0:
         return 0
 
@@ -238,7 +242,7 @@ def train_policy_repeats(args, total_step, train_step, cur_step, env_pool, model
 
         batch_reward, batch_done = np.squeeze(batch_reward), np.squeeze(batch_done)
         batch_done = (~batch_done).astype(int)
-        agent.update_parameters((batch_state, batch_action, batch_reward, batch_next_state, batch_done), args.policy_train_batch_size, i)
+        agent.update_parameters((batch_state, batch_action, batch_reward, batch_next_state, batch_done), args.policy_train_batch_size, total_timesteps)
 
     return args.num_train_repeat
 
@@ -317,10 +321,8 @@ def main(args=None):
 
     # Sampler of environment
     env_sampler = EnvSampler(env)
-    test_env = gym.make(args.env_name)
-    test_env_sampler = EnvSampler(test_env)
 
-    train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, model_pool, writer)
+    train(args, env_sampler, predict_env, agent, env_pool, model_pool, writer)
 
 
 if __name__ == '__main__':

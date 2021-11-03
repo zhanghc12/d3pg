@@ -94,7 +94,7 @@ class ReverseModel(): # no
 '''
 
 
-class RerverseVaeActor(nn.Module):
+    class RerverseVaeActor(nn.Module):
     def __init__(
             self,
             obs_dim,
