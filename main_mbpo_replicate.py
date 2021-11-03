@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 import datetime
 from mbpo_py.sac.replay_memory import ReplayMemory
 from mbpo_py.sac.sac import SAC
-from mbpo_py.model import EnsembleDynamicsModel
+from mbpo_py.model_replicate import EnsembleDynamicsModel
 from mbpo_py.predict_env import PredictEnv
 from mbpo_py.sample_env import EnvSampler
 from mbpo_py.tf_models.constructor import construct_model, format_samples_for_training
