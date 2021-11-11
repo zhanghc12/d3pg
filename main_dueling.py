@@ -13,6 +13,7 @@ from duelingpg import dmpg
 from duelingpg import drpg
 from duelingpg import d2pg
 from duelingpg import d6pg
+from duelingpg import d4pg
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -43,7 +44,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="Dueling")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
+    parser.add_argument("--policy", default="D4PG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
     parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
-    parser.add_argument("--version", default=12, type=int)
+    parser.add_argument("--version", default=1, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     args = parser.parse_args()
@@ -111,6 +112,15 @@ if __name__ == "__main__":
         kwargs['target_threshold'] = args.target_threshold
 
         policy = d3pg.D3PG(**kwargs)
+    elif args.policy == "D4PG":
+        #kwargs["policy_noise"] = args.policy_noise * max_action
+        #kwargs["noise_clip"] = args.noise_clip * max_action
+        #kwargs["policy_freq"] = args.policy_freq
+        kwargs['version'] = args.version
+        kwargs['scale'] = args.target_threshold
+
+        policy = d4pg.D4PG(**kwargs)
+
     elif args.policy == "D6PG":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action

@@ -85,7 +85,7 @@ class D6PG(object):
 
         self.target_threshold = target_threshold # note:
         self.total_it = 0
-        self.update_ratio = 10
+        self.update_ratio = 1
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
