@@ -59,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
-    parser.add_argument("--version", default=1, type=int)
+    parser.add_argument("--version", default=2, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     args = parser.parse_args()
