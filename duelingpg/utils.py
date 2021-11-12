@@ -109,12 +109,13 @@ class RunningMeanStd:
 class MeanStdNormalizer:
 	def __init__(self, device='cpu'):
 		self.rms = None
-		self.clip = 10.0
+		self.max = 1
 		self.epsilon = 1e-8
 		self.device = device
+		self.min = -1
 
 	def __call__(self, x):
 		if self.rms is None:
 			self.rms = RunningMeanStd(shape=(1,) + x.shape[1:], device=self.device)
 		self.rms.update(x)
-		return torch.clamp((x - self.rms.mean) / torch.sqrt(self.rms.var + self.epsilon), min=-self.clip, max=self.clip)
+		return torch.clamp((x - self.rms.mean) / torch.sqrt(self.rms.var + self.epsilon), min=self.min, max=self.max)
