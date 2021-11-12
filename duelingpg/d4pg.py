@@ -204,7 +204,9 @@ class D4PG(object):
         current_Q1, current_Q2 = self.critic(state, action)
         target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3)) # keep a
         target_ratio = self.ratio_mean_std(target_ratio.detach()) * self.scale
-        critic_loss = ((target_ratio + 1) * ((current_Q1 - target_Q) ** 2)).mean()
+        # critic_loss = ((target_ratio + 1) * ((current_Q1 - target_Q) ** 2)).mean()
+
+        critic_loss = (((current_Q1 - target_Q) ** 2)).mean()
 
         '''
         the second copy to make sure no other stuff
@@ -217,7 +219,9 @@ class D4PG(object):
         current_Q1, current_Q2 = self.critic(state, action)
         target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
         target_ratio = self.ratio_mean_std(target_ratio.detach()) * self.scale
-        critic_loss = critic_loss + ((target_ratio + 1) * ((current_Q2 - target_Q) ** 2)).mean()
+        # critic_loss = critic_loss + ((target_ratio + 1) * ((current_Q2 - target_Q) ** 2)).mean()
+        critic_loss = critic_loss + (((current_Q2 - target_Q) ** 2)).mean()
+
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
