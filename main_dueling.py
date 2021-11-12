@@ -173,7 +173,7 @@ if __name__ == "__main__":
         policy.load(f"./models/{policy_file}")
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
-    onpolicy_buffer = utils.ReplayBuffer(state_dim, action_dim, max_size=1e4)
+    onpolicy_buffer = utils.ReplayBuffer(state_dim, action_dim, max_size=int(1e4))
 
     # Evaluate untrained policy
     evaluations = [eval_policy(policy, args.env, args.seed)]
