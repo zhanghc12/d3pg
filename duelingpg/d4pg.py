@@ -197,7 +197,7 @@ class D4PG(object):
         self.total_it += 1
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
+        target_Q1, target_Q2  = self.critic_target(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
@@ -212,7 +212,7 @@ class D4PG(object):
         the second copy to make sure no other stuff
         '''
         # state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-        target_Q1, target_Q2 = self.critic(next_state, self.actor(next_state))
+        target_Q1, target_Q2 = self.critic_target(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
