@@ -256,7 +256,7 @@ class D4PG(object):
         self.total_it += 1
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
+        target_Q1, target_Q2  = self.critic(next_state, self.actor_target(next_state))
         target_Q = target_Q1
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
@@ -269,7 +269,7 @@ class D4PG(object):
         self.critic_optimizer.step()
         target_ratio = critic_loss
         # Compute actor loss
-        actor_loss = -self.critic.Q1(state, self.actor(state)).mean()
+        actor_loss = -self.critic.Q1(state, self.actor_target(state)).mean()
 
         # the core issue is use the same data to update
         if self.total_it % 2 == 0:
