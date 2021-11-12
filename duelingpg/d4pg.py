@@ -256,23 +256,31 @@ class D4PG(object):
         self.total_it += 1
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-        target_Q1, target_Q2  = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
         current_Q1, current_Q2 = self.critic(state, action)
-        critic_loss = (((current_Q1 - target_Q) ** 2)).mean()
+        target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3)) # keep a
+        target_ratio = self.ratio_mean_std(target_ratio.detach()) * self.scale
+        critic_loss = ((target_ratio + 1) * ((current_Q1 - target_Q) ** 2)).mean()
+
+        # critic_loss = (((current_Q1 - target_Q) ** 2)).mean()
 
         '''
         the second copy to make sure no other stuff
         '''
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-        target_Q1, target_Q2 = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q1, target_Q2 = self.critic(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
         current_Q1, current_Q2 = self.critic(state, action)
-        critic_loss = critic_loss + (((current_Q2 - target_Q) ** 2)).mean()
+
+        target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
+        target_ratio = self.ratio_mean_std(target_ratio.detach()) * self.scale
+        critic_loss = critic_loss + ((target_ratio + 1) * ((current_Q2 - target_Q) ** 2)).mean()
+        #critic_loss = critic_loss + (((current_Q2 - target_Q) ** 2)).mean()
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
@@ -300,7 +308,7 @@ class D4PG(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), 0, 0, 0, 0
 
 
     def train_mixed_target(self, replay_buffer, batch_size=256):
