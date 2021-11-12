@@ -160,9 +160,9 @@ def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, mod
                 # logger.record_tabular("total_step", total_step)
                 # logger.record_tabular("sum_reward", sum_reward)
                 # logger.dump_tabular()
-                logging.info("Step Reward: " + str(total_step) + " " + str(sum_reward))
+                logging.info("Step Reward: " + str(total_samples) + " " + str(sum_reward))
                 # print(total_step, sum_reward)
-                writer.add_scalar('Episode reward', sum_reward, total_step)
+                writer.add_scalar('Episode reward', sum_reward, total_samples)
 
 
 
