@@ -92,6 +92,8 @@ class D4PG(object):
         return self.actor(state).cpu().data.numpy().flatten()
 
     def train(self, replay_buffer, batch_size=256):
+        if self.version == 0:
+            return self.train_td3(replay_buffer)
         if self.version == 1:
             return self.train_original(replay_buffer)
         else:
@@ -146,6 +148,47 @@ class D4PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
+
+    def train_td3(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        # Sample replay buffer
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+        target_Q1, target_Q2  = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q = torch.min(target_Q1, target_Q2)
+        target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+        current_Q1, current_Q2 = self.critic(state, action)
+        critic_loss = (((current_Q1 - target_Q) ** 2)).mean() + (((current_Q2 - target_Q) ** 2)).mean()
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
+
+        # the core issue is use the same data to update
+        if self.total_it % 2 == 0:
+            # Compute actor loss
+            actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state,
+                                                                                           self.actor(state)).mean()
+
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
+
+
 
     def train_no_target(self, replay_buffer, batch_size=256):
         self.total_it += 1
