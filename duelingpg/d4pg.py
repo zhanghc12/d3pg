@@ -368,7 +368,7 @@ class D4PG(object):
         target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
 
         target_ratio_original = torch.sqrt(0.25 * (target_Q1_original + target_Q2_original) ** 2 / ((target_Q1_original - target_Q2_original) ** 2 + 1e-3)) # keep a
-        self.ratio_mean_std(target_ratio_original.detach())
+        target_ratio_original = (self.ratio_mean_std(target_ratio_original.detach()) + 1 / 2) * self.scale
 
         critic_loss += ((1 - target_ratio) * ((current_Q1 - target_Q_original) ** 2)).mean()
 
@@ -417,7 +417,7 @@ class D4PG(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), target_ratio_original.mean().item(), target_ratio_original.max().item(), target_ratio_original.min().item(), 0
 
 
     def save(self, filename):
