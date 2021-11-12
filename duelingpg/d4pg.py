@@ -267,7 +267,7 @@ class D4PG(object):
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-
+        target_ratio = critic_loss
         # Compute actor loss
         actor_loss = -self.critic.Q1(state, self.actor(state)).mean()
 
