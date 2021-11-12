@@ -269,7 +269,7 @@ class D4PG(object):
         self.critic_optimizer.step()
         target_ratio = critic_loss
         # Compute actor loss
-        actor_loss = -self.critic.Q1(state, self.actor_target(state)).mean()
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean()
 
         # the core issue is use the same data to update
         if self.total_it % 2 == 0:
