@@ -14,6 +14,7 @@ from duelingpg import drpg
 from duelingpg import d2pg
 from duelingpg import d6pg
 from duelingpg import d4pg
+from duelingpg import dvpg
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -121,6 +122,15 @@ if __name__ == "__main__":
 
         policy = d4pg.D4PG(**kwargs)
 
+    elif args.policy == "DVPG":
+        #kwargs["policy_noise"] = args.policy_noise * max_action
+        #kwargs["noise_clip"] = args.noise_clip * max_action
+        #kwargs["policy_freq"] = args.policy_freq
+        kwargs['version'] = args.version
+        # kwargs['scale'] = args.target_threshold
+
+        policy = dvpg.DVPG(**kwargs)
+
     elif args.policy == "D6PG":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action
@@ -163,6 +173,7 @@ if __name__ == "__main__":
         policy.load(f"./models/{policy_file}")
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
+    onpolicy_buffer = utils.ReplayBuffer(state_dim, action_dim, max_size=1e4)
 
     # Evaluate untrained policy
     evaluations = [eval_policy(policy, args.env, args.seed)]
@@ -191,13 +202,19 @@ if __name__ == "__main__":
 
         # Store data in replay buffer
         replay_buffer.add(state, action, next_state, reward, done_bool)
+        onpolicy_buffer.add(state, action, next_state, reward, done_bool)
+
 
         state = next_state
         episode_reward += reward
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            if args.policy == "DVPG":
+                actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, onpolicy_buffer, args.batch_size)
+            else:
+                actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('loss/weight_loss', weight_loss, t)
