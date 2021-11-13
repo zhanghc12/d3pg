@@ -250,7 +250,7 @@ class EnsembleDynamicsModel():
             print('epoch: {}, holdout mse losses: {}'.format(epoch, holdout_mse_losses))
 
         self.step += 1
-        self._set_state()
+        # self._set_state()
 
     def _save_best(self, epoch, holdout_losses):
         updated = False
@@ -260,7 +260,7 @@ class EnsembleDynamicsModel():
             improvement = (best - current) / best
             if improvement > 0.01:
                 self._snapshots[i] = (epoch, current)
-                self._save_state(i)
+                #self._save_state(i)
                 updated = True
                 # improvement = (best - current) / best
 

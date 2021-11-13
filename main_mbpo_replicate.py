@@ -107,24 +107,21 @@ def readParser():
 
 
 def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, model_pool, writer):
-    total_step = 0
-    reward_sum = 0
     rollout_length = 1
     exploration_before_start(args, env_sampler, env_pool, agent)
 
     total_samples = args.init_exploration_steps
-    total_timesteps = 0
 
     for epoch_step in range(args.num_epoch):
         train_steps_this_epoch = 0
-        start_samples = total_samples
+        start_samples = total_samples # 5000
 
         for i in count():
             samples_now = total_samples
             timesteps = samples_now - start_samples
             total_timesteps = epoch_step * args.epoch_length + timesteps
 
-            if samples_now >= start_samples + args.epoch_length and len(env_pool) > args.min_pool_size:
+            if samples_now >= start_samples + args.epoch_length and len(env_pool) > args.min_pool_size: # 6000
                 break
 
             if timesteps % args.model_train_freq == 0 and args.real_ratio < 1.0:
@@ -135,7 +132,7 @@ def train(args, env_sampler, test_env_sampler, predict_env, agent, env_pool, mod
                     rollout_length = new_rollout_length
                     model_pool = resize_model_pool(args, rollout_length, model_pool)
 
-                rollout_model(args, predict_env, agent, model_pool, env_pool, rollout_length)
+                rollout_model(args, predict_env, agent, model_pool, env_pool, rollout_length) # 1 timestep
 
             cur_state, action, next_state, reward, done, info = env_sampler.sample(agent)
             env_pool.push(cur_state, action, reward, next_state, done)
@@ -181,7 +178,7 @@ def set_rollout_length(args, epoch_step):
 
 def train_predict_model(args, env_pool, predict_env):
     # Get all samples from environment
-    state, action, reward, next_state, done = env_pool.sample(len(env_pool))
+    state, action, reward, next_state, done = env_pool.sample_all()
     delta_state = next_state - state
     inputs = np.concatenate((state, action), axis=-1)
     labels = np.concatenate((np.reshape(reward, (reward.shape[0], -1)), delta_state), axis=-1)

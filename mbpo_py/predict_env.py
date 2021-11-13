@@ -89,9 +89,11 @@ class PredictEnv:
 
         num_models, batch_size, _ = ensemble_model_means.shape
         if self.model_type == 'pytorch':
+            # model_idxes = np.random.choice(self._model_inds, size=batch_size)
+
             model_idxes = np.random.choice(self.model.elite_model_idxes, size=batch_size)
         else:
-            model_idxes = self.model.random_inds(batch_size)
+            model_idxes = self.model.random_inds(batch_size)  # not elite, so not that good, that might be the reason
         batch_idxes = np.arange(0, batch_size)
 
         samples = ensemble_samples[model_idxes, batch_idxes]

@@ -34,6 +34,13 @@ class ReplayMemory:
         state, action, reward, next_state, done = map(np.stack, zip(*batch))
         return state, action, reward, next_state, done
 
+    def sample_all(self):
+        idxes = np.arange(len(self.buffer))
+        batch = list(itemgetter(*idxes)(self.buffer))
+        state, action, reward, next_state, done = map(np.stack, zip(*batch))
+        return state, action, reward, next_state, done
+
+
     def sample_all_batch(self, batch_size):
         idxes = np.random.randint(0, len(self.buffer), batch_size)
         batch = list(itemgetter(*idxes)(self.buffer))

@@ -118,7 +118,7 @@ class DVPG(object):
         target_Q = reward + (not_done * self.discount * target_v).detach()
         current_value, current_adv, current_Q = self.critic(state, action)
         pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
-        current_Q = current_Q - pi_adv
+        current_Q = current_value + current_adv.detach() - pi_adv.detach()  # todo eve
         adv_loss = F.mse_loss(current_Q, target_Q)
 
         critic_loss = critic_loss + adv_loss
