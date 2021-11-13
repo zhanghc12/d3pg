@@ -104,12 +104,22 @@ class DVPG(object):
         critic_loss = F.mse_loss(current_Q, target_Q)
 
         # on policy part, the most recent 1000 samples
+        # state, action, next_state, reward, not_done = onpolicy_buffer.sample(batch_size)
+        # # train the value function,
+        # target_v, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+        # target_v = reward + (not_done * self.discount * target_v).detach()
+        # current_value, _, _ = self.critic(state, self.actor(state))
+        # adv_loss = F.mse_loss(current_value, target_v)
+        #
+        # critic_loss = critic_loss + adv_loss
         state, action, next_state, reward, not_done = onpolicy_buffer.sample(batch_size)
-        # train the value function,
+
         target_v, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
-        target_v = reward + (not_done * self.discount * target_v).detach()
-        current_value, _, _ = self.critic(state, self.actor(state))
-        adv_loss = F.mse_loss(current_value, target_v)
+        target_Q = reward + (not_done * self.discount * target_v).detach()
+        current_value, current_adv, current_Q = self.critic(state, action)
+        pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
+        current_Q = current_Q - pi_adv
+        adv_loss = F.mse_loss(current_Q, target_Q)
 
         critic_loss = critic_loss + adv_loss
 
