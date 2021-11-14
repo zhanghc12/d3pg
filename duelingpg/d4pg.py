@@ -82,6 +82,17 @@ class Critic(nn.Module):
         q2 = self.l6(q2)
         return q2
 
+    def get_grad(self, state, actor):
+        action1 = actor(state)
+        q1 = self.Q1(state, action1)
+        q1.backward()
+
+        action2 = actor(state)
+        q2 = self.Q2(state, action2)
+        q2.backward()
+        return action1.grad, action2.grad
+
+
 class D4PG(object):
     def __init__(self, state_dim, action_dim, max_action, version, scale, discount=0.99, tau=0.005):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
@@ -116,6 +127,8 @@ class D4PG(object):
             return self.train_heuritic_target(replay_buffer)
         elif self.version == 5:
             return self.train_mixed_target_baseline(replay_buffer)
+        elif self.version == 6:
+            return self.train_gradient_target(replay_buffer)
 
 
     def train_original(self, replay_buffer, batch_size=256):
@@ -654,22 +667,28 @@ class D4PG(object):
         # Sample replay buffer
 
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+
         target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
 
         current_Q1, current_Q2 = self.critic(state, action)
-        target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3)) # keep a
+        grad1, grad2 = self.critic.get_grad(next_state, self.actor)
+        target_ratio = (torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1) + grad2.norm(dim=1) + 1e-6))
+
         target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
         critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
 
 
+        grad1, grad2 = self.critic_target.get_grad(next_state, self.actor_target)
+        target_ratio = torch.abs(torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1) + grad2.norm(dim=1) + 1e-6))
 
         target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
         target_Q_original = torch.min(target_Q1_original, target_Q2_original)
         target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
 
-        target_ratio_original = torch.sqrt(0.25 * (target_Q1_original + target_Q2_original) ** 2 / ((target_Q1_original - target_Q2_original) ** 2 + 1e-3)) # keep a
+        grad1_original, grad2_original = self.critic_target.get_grad(next_state, self.actor_target)
+        target_ratio_original = (torch.sum(grad1_original * grad2_original, dim=1, keepdim=True) / (grad1_original.norm(dim=1) + grad2_original.norm(dim=1) + 1e-6))
         target_ratio_original = (self.ratio_mean_std(target_ratio_original.detach()) + 1 / 2) * self.scale
 
         critic_loss += ((1 - target_ratio) * ((current_Q1 - target_Q_original) ** 2)).mean()

@@ -71,7 +71,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
     experiment_dir = experiment_dir + '10_27/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau))
 
     file_name = f"{args.policy}_{args.env}_{args.seed}"
     print("---------------------------------------")
