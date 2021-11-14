@@ -75,7 +75,7 @@ def readParser():
                         help='rollout max epoch')
     parser.add_argument('--rollout_min_length', type=int, default=1, metavar='A',
                         help='rollout min length')
-    parser.add_argument('--rollout_max_length', type=int, default=1, metavar='A',
+    parser.add_argument('--rollout_max_length', type=int, default=25, metavar='A',
                         help='rollout max length')
     parser.add_argument('--num_epoch', type=int, default=1000, metavar='A',
                         help='total number of epochs')
