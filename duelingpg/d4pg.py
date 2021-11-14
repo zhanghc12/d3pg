@@ -467,12 +467,12 @@ class D4PG(object):
         # current_Q1, current_Q2 = self.critic(state, action)
         # target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
         # target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
-        critic_loss += (target_ratio * ((current_Q2 - target_Q) ** 2)).mean()
+        critic_loss += (self.scale * ((current_Q2 - target_Q) ** 2)).mean()
 
         # target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
         # target_Q_original = torch.min(target_Q1_original, target_Q2_original)
         # target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
-        critic_loss += ((1 - target_ratio) * ((current_Q2 - target_Q_original) ** 2)).mean()
+        critic_loss += ((1 - self.scale) * ((current_Q2 - target_Q_original) ** 2)).mean()
 
 
         # Optimize the critic
@@ -501,7 +501,7 @@ class D4PG(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), target_ratio_original.mean().item(), target_ratio_original.max().item(), target_ratio_original.min().item(), 0
+        return actor_loss.item(), critic_loss.item(), 0,0,0,0,0,0, 0
 
 
     def train_heuritic_target(self, replay_buffer, batch_size=256):
