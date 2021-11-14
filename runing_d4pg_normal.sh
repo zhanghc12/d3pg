@@ -8,4 +8,4 @@ CUDA_VISIBLE_DEVICES=1 python main_dueling.py --policy D4PG  --version $1  --tar
 CUDA_VISIBLE_DEVICES=1 python main_dueling.py --policy D4PG  --version $1  --target_threshold $2  --env Ant-v2 --seed 1
 
 
-# CUDA_VISIBLE_DEVICES=1 python main_dueling.py --policy D4PG  --version 2  --target_threshold 0  --env Ant-v2 --seed 1
+# CUDA_VISIBLE_DEVICES=1 python main_dueling.py --policy D4PG  --version 6  --target_threshold 0.02  --env Ant-v2 --seed 1

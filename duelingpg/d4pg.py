@@ -84,12 +84,14 @@ class Critic(nn.Module):
 
     def get_grad(self, state, actor):
         action1 = actor(state)
+        action1.retain_grad()
         q1 = self.Q1(state, action1)
-        q1.backward()
+        q1.sum().backward()
 
         action2 = actor(state)
+        action2.retain_grad()
         q2 = self.Q2(state, action2)
-        q2.backward()
+        q2.sum().backward()
         return action1.grad, action2.grad
 
 
@@ -674,7 +676,7 @@ class D4PG(object):
 
         current_Q1, current_Q2 = self.critic(state, action)
         grad1, grad2 = self.critic.get_grad(next_state, self.actor)
-        target_ratio = (torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1) + grad2.norm(dim=1) + 1e-6))
+        target_ratio = (torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1, keepdim=True) + grad2.norm(dim=1, keepdim=True) + 1e-6))
 
         target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
         critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
