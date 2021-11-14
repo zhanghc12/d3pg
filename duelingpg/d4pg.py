@@ -193,8 +193,6 @@ class D4PG(object):
 
         return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
 
-
-
     def train_no_target_original(self, replay_buffer, batch_size=256):
         self.total_it += 1
         # Sample replay buffer
