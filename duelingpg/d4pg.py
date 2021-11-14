@@ -681,10 +681,6 @@ class D4PG(object):
         target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
         critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
 
-
-        grad1, grad2 = self.critic_target.get_grad(next_state, self.actor_target)
-        target_ratio = torch.abs(torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1) + grad2.norm(dim=1) + 1e-6))
-
         target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
         target_Q_original = torch.min(target_Q1_original, target_Q2_original)
         target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
