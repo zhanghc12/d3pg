@@ -54,6 +54,18 @@ class Critic(nn.Module):
         q2 = self.l6(q2)
         return q1, q2
 
+    def forward_with_hook(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q1, q2
+
     def Q1(self, state, action):
         sa = torch.cat([state, action], 1)
 
@@ -102,6 +114,8 @@ class D4PG(object):
             return self.train_mixed_target(replay_buffer)
         elif self.version == 4:
             return self.train_heuritic_target(replay_buffer)
+        elif self.version == 5:
+            return self.train_mixed_target_baseline(replay_buffer)
 
 
     def train_original(self, replay_buffer, batch_size=256):
@@ -419,6 +433,77 @@ class D4PG(object):
 
         return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), target_ratio_original.mean().item(), target_ratio_original.max().item(), target_ratio_original.min().item(), 0
 
+    def train_mixed_target_baseline(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        # Sample replay buffer
+
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
+        target_Q = torch.min(target_Q1, target_Q2)
+        target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+        current_Q1, current_Q2 = self.critic(state, action)
+        #target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3)) # keep a
+        #target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+        critic_loss = (self.scale * ((current_Q1 - target_Q) ** 2)).mean()
+
+        target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+
+        #target_ratio_original = torch.sqrt(0.25 * (target_Q1_original + target_Q2_original) ** 2 / ((target_Q1_original - target_Q2_original) ** 2 + 1e-3)) # keep a
+        #target_ratio_original = (self.ratio_mean_std(target_ratio_original.detach()) + 1 / 2) * self.scale
+
+        critic_loss += ((1 - self.scale) * ((current_Q1 - target_Q_original) ** 2)).mean()
+
+        '''
+        the second copy to make sure no other stuff
+        '''
+        # state, action, next_state, reward, not_done = replay_buffer.sample(batch_size) # note: we disard the
+        # target_Q1, target_Q2 = self.critic(next_state, self.actor(next_state))
+        # target_Q = torch.min(target_Q1, target_Q2)
+        # target_Q = reward + (not_done * self.discount * target_Q).detach()
+        #
+        # current_Q1, current_Q2 = self.critic(state, action)
+        # target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
+        # target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+        critic_loss += (target_ratio * ((current_Q2 - target_Q) ** 2)).mean()
+
+        # target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        # target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        # target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+        critic_loss += ((1 - target_ratio) * ((current_Q2 - target_Q_original) ** 2)).mean()
+
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
+
+        # the core issue is use the same data to update
+        if self.total_it % 2 == 0:
+            # Compute actor loss
+            actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state,
+                                                                                           self.actor(state)).mean()
+
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), target_ratio_original.mean().item(), target_ratio_original.max().item(), target_ratio_original.min().item(), 0
+
+
     def train_heuritic_target(self, replay_buffer, batch_size=256):
         self.total_it += 1
         # Sample replay buffer
@@ -486,6 +571,156 @@ class D4PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(),0,0,0, 0
+
+
+    def train_adv_target(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        # Sample replay buffer
+
+        state, action, next_state, reward, not_done, next_action, not_fake_done = replay_buffer.sample_include_next_actions(batch_size)
+        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
+        target_Q = torch.min(target_Q1, target_Q2)
+        target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+        current_Q1, current_Q2 = self.critic(state, action)
+
+        # assuem we have next_action
+        behavior_target_Q1, behavior_target_Q2 = self.critic(next_state, next_action)
+        target_adv1 = target_Q1 - behavior_target_Q1
+        target_adv2 = target_Q2 - behavior_target_Q2
+
+        target_ratio = torch.sqrt(
+            0.25 * (target_adv1 + target_adv2) ** 2 / ((target_adv1 - target_adv2) ** 2 + 1e-3))  # keep a
+        target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale * not_fake_done
+        critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
+
+
+        target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+
+        critic_loss += ((1 - target_ratio) * ((current_Q1 - target_Q_original) ** 2)).mean()
+
+        '''
+        the second copy to make sure no other stuff
+        '''
+        # state, action, next_state, reward, not_done = replay_buffer.sample(batch_size) # note: we disard the
+        # target_Q1, target_Q2 = self.critic(next_state, self.actor(next_state))
+        # target_Q = torch.min(target_Q1, target_Q2)
+        # target_Q = reward + (not_done * self.discount * target_Q).detach()
+        #
+        # current_Q1, current_Q2 = self.critic(state, action)
+        # target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
+        # target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+        critic_loss += (target_ratio * ((current_Q2 - target_Q) ** 2)).mean()
+
+        # target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        # target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        # target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+        critic_loss += ((1 - target_ratio) * ((current_Q2 - target_Q_original) ** 2)).mean()
+
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
+
+        # the core issue is use the same data to update
+        if self.total_it % 2 == 0:
+            # Compute actor loss
+            actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state,
+                                                                                           self.actor(state)).mean()
+
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(),0,0,0, 0
+
+
+    def train_gradient_target(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        # Sample replay buffer
+
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+        target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
+        target_Q = torch.min(target_Q1, target_Q2)
+        target_Q = reward + (not_done * self.discount * target_Q).detach()
+
+        current_Q1, current_Q2 = self.critic(state, action)
+        target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3)) # keep a
+        target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+        critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
+
+
+
+        target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+
+        target_ratio_original = torch.sqrt(0.25 * (target_Q1_original + target_Q2_original) ** 2 / ((target_Q1_original - target_Q2_original) ** 2 + 1e-3)) # keep a
+        target_ratio_original = (self.ratio_mean_std(target_ratio_original.detach()) + 1 / 2) * self.scale
+
+        critic_loss += ((1 - target_ratio) * ((current_Q1 - target_Q_original) ** 2)).mean()
+
+        '''
+        the second copy to make sure no other stuff
+        '''
+        # state, action, next_state, reward, not_done = replay_buffer.sample(batch_size) # note: we disard the
+        # target_Q1, target_Q2 = self.critic(next_state, self.actor(next_state))
+        # target_Q = torch.min(target_Q1, target_Q2)
+        # target_Q = reward + (not_done * self.discount * target_Q).detach()
+        #
+        # current_Q1, current_Q2 = self.critic(state, action)
+        # target_ratio = torch.sqrt(0.25 * (target_Q1 + target_Q2) ** 2 / ((target_Q1 - target_Q2) ** 2 + 1e-3))  # keep a
+        # target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+        critic_loss += (target_ratio * ((current_Q2 - target_Q) ** 2)).mean()
+
+        # target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
+        # target_Q_original = torch.min(target_Q1_original, target_Q2_original)
+        # target_Q_original = reward + (not_done * self.discount * target_Q_original).detach()
+        critic_loss += ((1 - target_ratio) * ((current_Q2 - target_Q_original) ** 2)).mean()
+
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
+
+        # the core issue is use the same data to update
+        if self.total_it % 2 == 0:
+            # Compute actor loss
+            actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state,
+                                                                                           self.actor(state)).mean()
+
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        return actor_loss.item(), critic_loss.item(), target_ratio.mean().item(), target_ratio.max().item(), target_ratio.min().item(), target_ratio_original.mean().item(), target_ratio_original.max().item(), target_ratio_original.min().item(), 0
+
 
 
     def save(self, filename):

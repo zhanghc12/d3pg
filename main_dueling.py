@@ -199,10 +199,12 @@ if __name__ == "__main__":
         # Perform action
         next_state, reward, done, _ = env.step(action)
         done_bool = float(done) if episode_timesteps < env._max_episode_steps else 0
+        fake_done_bool = float(done) if episode_timesteps < env._max_episode_steps else 1
+
 
         # Store data in replay buffer
-        replay_buffer.add(state, action, next_state, reward, done_bool)
-        onpolicy_buffer.add(state, action, next_state, reward, done_bool)
+        replay_buffer.add(state, action, next_state, reward, done_bool, fake_done_bool)
+        onpolicy_buffer.add(state, action, next_state, reward, done_bool, fake_done_bool)
 
 
         state = next_state
