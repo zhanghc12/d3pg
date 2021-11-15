@@ -669,16 +669,15 @@ class D4PG(object):
         # Sample replay buffer
 
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
-
         target_Q1, target_Q2  = self.critic(next_state, self.actor(next_state))
         target_Q = torch.min(target_Q1, target_Q2)
         target_Q = reward + (not_done * self.discount * target_Q).detach()
-
         current_Q1, current_Q2 = self.critic(state, action)
+
         grad1, grad2 = self.critic.get_grad(next_state, self.actor)
         target_ratio = (torch.sum(grad1 * grad2, dim=1, keepdim=True) / (grad1.norm(dim=1, keepdim=True) + grad2.norm(dim=1, keepdim=True) + 1e-6))
-
         target_ratio = (self.ratio_mean_std(target_ratio.detach()) + 1 / 2) * self.scale
+
         critic_loss = (target_ratio * ((current_Q1 - target_Q) ** 2)).mean()
 
         target_Q1_original, target_Q2_original = self.critic_target(next_state, self.actor_target(next_state))
