@@ -9,6 +9,27 @@ from sac.sac_dueling import DuelingSAC
 from torch.utils.tensorboard import SummaryWriter
 from sac.replay_memory import ReplayMemory
 
+
+def eval_policy(policy, env_name, seed, eval_episodes=10):
+    eval_env = gym.make(env_name)
+    eval_env.seed(seed + 100)
+
+    avg_reward = 0.
+    for _ in range(eval_episodes):
+        state, done = eval_env.reset(), False
+        while not done:
+            action = policy.select_action(np.array(state))
+            state, reward, done, _ = eval_env.step(action)
+            avg_reward += reward
+
+    avg_reward /= eval_episodes
+
+    print("---------------------------------------")
+    print(f"Evaluation over {eval_episodes} episodes: {avg_reward:.3f}")
+    print("---------------------------------------")
+    return avg_reward
+
+
 parser = argparse.ArgumentParser(description='PyTorch Soft Actor-Critic Args')
 parser.add_argument('--env-name', default="HalfCheetah-v2",
                     help='Mujoco Gym environment (default: HalfCheetah-v2)')
@@ -25,7 +46,7 @@ parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
 parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                     help='Temperature parameter α determines the relative importance of the entropy\
                             term against the reward (default: 0.2)')
-parser.add_argument('--automatic_entropy_tuning', type=bool, default=False, metavar='G',
+parser.add_argument('--automatic_entropy_tuning', type=bool, default=True, metavar='G',
                     help='Automaically adjust α (default: False)')
 parser.add_argument('--seed', type=int, default=123456, metavar='N',
                     help='random seed (default: 123456)')
@@ -57,6 +78,10 @@ env = gym.make(args.env_name)
 env.seed(args.seed)
 env.action_space.seed(args.seed)
 
+eval_env = gym.make(args.env_name)
+eval_env.seed(args.seed)
+eval_env.action_space.seed(args.seed)
+
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
@@ -75,7 +100,7 @@ else:
 
 experiment_dir = experiment_dir + '10_27/'
 writer = SummaryWriter(
-    experiment_dir + 'DSAC_{}_s{}_ver{}_thre{}_tau{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version, args.target_threshold, args.tau))
+    experiment_dir + 'DSAC_{}_{}_s{}_ver{}_thre{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version, args.target_threshold))
 
 # Memory
 memory = ReplayMemory(args.replay_size, args.seed)
@@ -128,11 +153,11 @@ for i_episode in itertools.count(1):
     writer.add_scalar('reward/train', episode_reward, i_episode)
     print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
 
-    if i_episode % 10 == 0 and args.eval is True:
+    if total_numsteps % 5000 == 0 and args.eval is True:
         avg_reward = 0.
         episodes = 10
         for _  in range(episodes):
-            state = env.reset()
+            state = eval_env.reset()
             episode_reward = 0
             done = False
             while not done:

@@ -62,7 +62,6 @@ class QNetwork(nn.Module):
         return x1, x2
 
 
-
 class DuelingNetwork(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(DuelingNetwork, self).__init__()

@@ -89,7 +89,7 @@ class DuelingSAC(object):
             adv_pi_2 = adv_pi_2.mean(dim=1)
 
         # todo: enumerate all the samples
-        log_prob = self.policy.log_prob(state_batch, action_batch)
+        log_prob = self.policy.log_prob(state_batch, action_batch).detach()
 
         qf1_loss = F.mse_loss(qf1 - adv_pi_1 + self.alpha * log_prob, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         qf2_loss = F.mse_loss(qf2 - adv_pi_2 + self.alpha * log_prob, next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
@@ -138,7 +138,7 @@ class DuelingSAC(object):
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
-        policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
+        policy_loss = (- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
