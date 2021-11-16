@@ -147,35 +147,34 @@ for i_episode in itertools.count(1):
 
         state = next_state
 
+        if total_numsteps % 5000 == 0 and args.eval is True:
+            eval_avg_reward = 0.
+            eval_episodes = 10
+            for _ in range(eval_episodes):
+                eval_state = eval_env.reset()
+                eval_episode_reward = 0
+                eval_done = False
+                while not eval_done:
+                    eval_action = agent.select_action(eval_state, evaluate=True)
+
+                    eval_next_state, eval_reward, eval_done, _ = eval_env.step(eval_action)
+                    eval_episode_reward += eval_reward
+
+                    eval_state = eval_next_state
+                eval_avg_reward += eval_episode_reward
+            eval_avg_reward /= eval_episodes
+
+            writer.add_scalar('avg_reward/test', eval_avg_reward, total_numsteps)
+
+            print("----------------------------------------")
+            print("Test Episodes: {}, Avg. Reward: {}".format(total_numsteps, round(eval_avg_reward, 2)))
+            print("----------------------------------------")
+
     if total_numsteps > args.num_steps:
         break
 
     writer.add_scalar('reward/train', episode_reward, i_episode)
     print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
 
-    if total_numsteps % 5000 == 0 and args.eval is True:
-        avg_reward = 0.
-        episodes = 10
-        for _  in range(episodes):
-            state = eval_env.reset()
-            episode_reward = 0
-            done = False
-            while not done:
-                action = agent.select_action(state, evaluate=True)
-
-                next_state, reward, done, _ = env.step(action)
-                episode_reward += reward
-
-
-                state = next_state
-            avg_reward += episode_reward
-        avg_reward /= episodes
-
-
-        writer.add_scalar('avg_reward/test', avg_reward, i_episode)
-
-        print("----------------------------------------")
-        print("Test Episodes: {}, Avg. Reward: {}".format(episodes, round(avg_reward, 2)))
-        print("----------------------------------------")
 
 env.close()
