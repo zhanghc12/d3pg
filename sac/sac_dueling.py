@@ -70,7 +70,7 @@ class DuelingSAC(object):
         '''
         with torch.no_grad():
             vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
-            min_vf_next_target = (vf1_next_target +  vf2_next_target)  / 2 # under estimate, value is not accurate enough,
+            min_vf_next_target = (vf1_next_target + vf2_next_target) / 2 # under estimate, value is not accurate enough,
             next_q_value = reward_batch + mask_batch * self.gamma * (min_vf_next_target)  # todo: min -> mean -> variance
             '''
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
@@ -114,8 +114,8 @@ class DuelingSAC(object):
                 vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
                 min_vf_next_target = (vf1_next_target + vf2_next_target) / 2
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target - self.alpha * log_prob  # todo, we need to get entroph here
-                importance_ratio = log_prob.exp() / behavior_log_prob.exp()
-                normalized_importance_ratio = importance_ratio.clamp_(0.5,2)
+                importance_ratio = (log_prob - behavior_log_prob).exp()
+                normalized_importance_ratio = importance_ratio.clamp_(0.1,10)
                 #normalized_importance_ratio = importance_ratio / importance_ratio.sum()
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
