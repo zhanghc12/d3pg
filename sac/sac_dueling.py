@@ -119,7 +119,7 @@ class DuelingSAC(object):
                 normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
 
-            vf1, vf2 = self.critic.get_vf(state_batch)
+            vf1, vf2 = self.critic.get_value(state_batch)
 
             vf1_loss = F.mse_loss(vf1, next_v)
             vf2_loss = F.mse_loss(vf2, next_v)
