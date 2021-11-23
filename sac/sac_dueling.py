@@ -107,7 +107,7 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version == 3:#  and updates >= 10000:
+        if self.version == 3  and updates >= 10000:
             with torch.no_grad():
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
