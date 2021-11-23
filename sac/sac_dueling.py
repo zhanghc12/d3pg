@@ -135,7 +135,7 @@ class DuelingSAC(object):
         '''
         if self.version == 3:
             behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
-            behavior_policy_loss = -behavior_log_prob
+            behavior_policy_loss = -behavior_log_prob.mean()
             self.behavior_policy_optim.zero_grad()
             behavior_policy_loss.backward()
             self.behavior_policy_optim.step()
