@@ -61,8 +61,58 @@ class QNetwork(nn.Module):
 
         return x1, x2
 
-
 class DuelingNetwork(nn.Module):
+    def __init__(self, num_inputs, num_actions, hidden_dim):
+        super(DuelingNetwork, self).__init__()
+
+        self.l1 = nn.Linear(num_inputs, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.lv_1 = nn.Linear(256, 1)
+
+        self.l3 = nn.Linear(num_inputs + num_actions, 256)
+        self.l4 = nn.Linear(256, 256)
+        self.la_1 = nn.Linear(256, 1)
+
+        self.l5 = nn.Linear(num_inputs, 256)
+        self.l6 = nn.Linear(256, 256)
+        self.lv_2 = nn.Linear(256, 1)
+
+        self.l7 = nn.Linear(num_inputs + num_actions, 256)
+        self.l8 = nn.Linear(256, 256)
+        self.la_2 = nn.Linear(256, 1)
+
+        self.apply(weights_init_)
+
+    def forward(self, state, action, return_full=False):
+        sa = torch.cat([state, action], 1)
+        value_1 = self.lv_1(F.relu(self.l2(F.relu(self.l1(state)))))
+        adv_1 = self.la_1(F.relu(self.l4(F.relu(self.l3(sa)))))
+
+        q1 = adv_1 + value_1
+
+        value_2 = self.lv_2(F.relu(self.l6(F.relu(self.l5(state)))))
+        adv_2 = self.la_2(F.relu(self.l8(F.relu(self.l7(sa)))))
+
+        q2 = adv_2 + value_2
+
+        if return_full:
+            return value_1, adv_1, q1, value_2, adv_2, q2
+        return q1, q2
+
+    def get_value(self, state):
+        value_1 = self.lv_1(F.relu(self.l2(F.relu(self.l1(state)))))
+        value_2 = self.lv_2(F.relu(self.l6(F.relu(self.l5(state)))))
+        return value_1, value_2
+
+    def get_adv(self, state, action):
+        sa = torch.cat([state, action], 1)
+        adv_1 = self.la_1(F.relu(self.l4(F.relu(self.l3(sa)))))
+        adv_2 = self.la_2(F.relu(self.l8(F.relu(self.l7(sa)))))
+        return adv_1, adv_2
+
+
+
+class DuelingNetworkBackup(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(DuelingNetwork, self).__init__()
 
