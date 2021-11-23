@@ -66,7 +66,7 @@ parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--cuda', action="store_true",
                     help='run on CUDA (default: False)')
-parser.add_argument('--version', type=int, default=1,
+parser.add_argument('--version', type=int, default=2,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_threshold', type=float, default=0., metavar='G',
                     help='learning rate (default: 0.0003)')
