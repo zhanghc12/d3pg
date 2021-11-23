@@ -115,8 +115,9 @@ class DuelingSAC(object):
                 min_vf_next_target = (vf1_next_target + vf2_next_target) / 2
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = log_prob.exp() / behavior_log_prob.exp()
-                normalized_importance_ratio = importance_ratio / importance_ratio.sum()
-                normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
+                normalized_importance_ratio = importance_ratio.clamp_(0.5,2)
+                #normalized_importance_ratio = importance_ratio / importance_ratio.sum()
+                #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
 
             vf1, vf2 = self.critic.get_value(state_batch)
@@ -124,7 +125,7 @@ class DuelingSAC(object):
             vf1_loss = F.mse_loss(vf1, next_v)
             vf2_loss = F.mse_loss(vf2, next_v)
             vf_loss = vf1_loss + vf2_loss
-            # qf_loss = vf_loss + qf_loss
+            qf_loss = vf_loss + qf_loss
 
         self.critic_optim.zero_grad()
         qf_loss.backward()
