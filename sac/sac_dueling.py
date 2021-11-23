@@ -81,8 +81,8 @@ class DuelingSAC(object):
         value_1, adv_1, qf1, value_2, adv_2, qf2 = self.critic(state_batch, action_batch, return_full=True)
 
         if self.version == 1:
-            _, _, pi = self.policy.sample(state_batch)
-            adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi)
+            _, _, pi_1 = self.policy.sample(state_batch)
+            adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
         if self.version == 2:
             self.num_repeat = 10
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
@@ -142,26 +142,32 @@ class DuelingSAC(object):
         '''
         update actor
         '''
+        #pi, log_pi, _ = self.policy.sample(state_batch)
+
         pi, log_pi, _ = self.policy.sample(state_batch)
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
-        policy_loss = (2 * self.alpha*log_pi- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
+        policy_loss = (2 * self.alpha * log_pi- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
+
+        #policy_loss = (2 * self.alpha*log_pi1).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
 
         self.policy_optim.zero_grad()
         policy_loss.backward()
         self.policy_optim.step()
 
         if self.automatic_entropy_tuning:
+            # i, log_pi, _ = self.policy.sample(state_batch)
+
             alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
 
             self.alpha_optim.zero_grad()
             alpha_loss.backward()
             self.alpha_optim.step()
 
-            self.alpha = self.log_alpha.exp()
-            alpha_tlogs = self.alpha.clone() # For TensorboardX logs
+            self.alpha = self.log_alpha.exp().item()
+            alpha_tlogs = self.alpha# .clone() # For TensorboardX logs
         else:
             alpha_loss = torch.tensor(0.).to(self.device)
             alpha_tlogs = torch.tensor(self.alpha) # For TensorboardX logs
@@ -170,7 +176,7 @@ class DuelingSAC(object):
         if updates % self.target_update_interval == 0:
             soft_update(self.critic_target, self.critic, self.tau)
 
-        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), alpha_tlogs.item()
+        return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), self.alpha
 
     # Save model parameters
     def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
