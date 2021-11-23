@@ -70,7 +70,7 @@ class DuelingSAC(object):
         '''
         with torch.no_grad():
             vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
-            min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
+            min_vf_next_target = torch.mean(vf1_next_target, vf2_next_target)  # under estimate, value is not accurate enough,
             next_q_value = reward_batch + mask_batch * self.gamma * (min_vf_next_target)  # todo: min -> mean -> variance
             '''
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
@@ -83,7 +83,7 @@ class DuelingSAC(object):
         if self.version == 1:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
-        if self.version == 2:
+        if self.version in [2, 3]:
             self.num_repeat = 20
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
             pi_temp, _, _ = self.policy.sample(state_bath_temp)
@@ -107,7 +107,7 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version == 3:
+        if self.version == 3:#  and updates >= 10000:
             with torch.no_grad():
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
@@ -116,6 +116,7 @@ class DuelingSAC(object):
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = log_prob.exp() / behavior_log_prob.exp()
                 normalized_importance_ratio = importance_ratio / importance_ratio.sum()
+                normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
 
             vf1, vf2 = self.critic.get_vf(state_batch)
