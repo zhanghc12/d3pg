@@ -71,13 +71,15 @@ class DuelingNetwork(nn.Module):
         self.lv_1 = nn.Linear(256, 1)
 
         self.l3 = nn.Linear(256 + num_actions, 256)
+        self.l4 = nn.Linear(256, 256)
         self.la_1 = nn.Linear(256, 1)
 
-        self.l4 = nn.Linear(num_inputs, 256)
-        self.l5 = nn.Linear(256, 256)
+        self.l5 = nn.Linear(num_inputs, 256)
+        self.l6 = nn.Linear(256, 256)
         self.lv_2 = nn.Linear(256, 1)
 
-        self.l6 = nn.Linear(256 + num_actions, 256)
+        self.l7 = nn.Linear(256 + num_actions, 256)
+        self.l8 = nn.Linear(256, 256)
         self.la_2 = nn.Linear(256, 1)
 
         self.apply(weights_init_)
@@ -85,13 +87,13 @@ class DuelingNetwork(nn.Module):
     def forward(self, state, action, return_full=False):
         feat = F.relu(self.l2(F.relu(self.l1(state))))
         value_1 = self.lv_1(feat)
-        adv_1 = F.relu(self.l3(torch.cat([feat, action], 1)))
+        adv_1 = F.relu(self.l4(F.relu(self.l3(torch.cat([feat, action], 1)))))
         adv_1 = self.la_1(adv_1)
         q1 = adv_1 + value_1
 
-        feat = F.relu(self.l5(F.relu(self.l4(state))))
+        feat = F.relu(self.l6(F.relu(self.l5(state))))
         value_2 = self.lv_2(feat)
-        adv_2 = F.relu(self.l6(torch.cat([feat, action], 1)))
+        adv_2 = F.relu(self.l8(F.relu(self.l7(torch.cat([feat, action], 1)))))
         adv_2 = self.la_2(adv_2)
         q2 = adv_2 + value_2
 
@@ -103,18 +105,18 @@ class DuelingNetwork(nn.Module):
         feat = F.relu(self.l2(F.relu(self.l1(state))))
         value_1 = self.lv_1(feat)
 
-        feat = F.relu(self.l5(F.relu(self.l4(state))))
+        feat = F.relu(self.l6(F.relu(self.l5(state))))
         value_2 = self.lv_2(feat)
 
         return value_1, value_2
 
     def get_adv(self, state, action):
         feat = F.relu(self.l2(F.relu(self.l1(state))))
-        adv_1 = F.relu(self.l3(torch.cat([feat, action], 1)))
+        adv_1 = F.relu(self.l4(F.relu(self.l3(torch.cat([feat, action], 1)))))
         adv_1 = self.la_1(adv_1)
 
-        feat = F.relu(self.l5(F.relu(self.l4(state))))
-        adv_2 = F.relu(self.l6(torch.cat([feat, action], 1)))
+        feat = F.relu(self.l6(F.relu(self.l5(state))))
+        adv_2 = F.relu(self.l8(F.relu(self.l7(torch.cat([feat, action], 1)))))
         adv_2 = self.la_2(adv_2)
 
         return adv_1, adv_2
