@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Normal
+import numpy as np
+
 
 LOG_SIG_MAX = 2
 LOG_SIG_MIN = -20
@@ -236,6 +238,12 @@ class GaussianPolicy(nn.Module):
         log_prob = log_prob.sum(1, keepdim=True)
 
         return log_prob
+
+    def get_entropy(self, state):
+        mean, log_std = self.forward(state)
+        entropy = (np.log(2 * np.pi) + 1) * mean.shape[1] / 2 + log_std.sum(dim=1, keepdim=True)
+        return entropy
+
 
 class DeterministicPolicy(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
