@@ -293,6 +293,7 @@ class DuelingSAC(object):
         pi, log_pi, _ = self.policy.sample(state_batch)
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
+        '''
         if self.version == 1:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
@@ -310,7 +311,7 @@ class DuelingSAC(object):
 
             qf1_pi = qf1_pi - adv_pi_1
             qf2_pi = qf2_pi - adv_pi_2
-
+        '''
         min_qf_pi = torch.min(qf1_pi, qf2_pi)
 
         policy_loss = (self.alpha*log_pi- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
