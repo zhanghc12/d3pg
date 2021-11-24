@@ -169,7 +169,7 @@ class DuelingSAC(object):
 
         min_qf_pi = (qf1_pi +  qf2_pi) / 2
 
-        policy_loss = (- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
+        policy_loss = (self.alpha*log_pi- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
 
         #policy_loss = (2 * self.alpha*log_pi1).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
 
