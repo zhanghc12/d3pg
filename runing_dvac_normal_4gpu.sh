@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python main_sac.py --cuda  --version $1 --model_version $2 --target_version $3 -env Walker2d-v2 --seed 0 &\
+CUDA_VISIBLE_DEVICES=0 python main_sac.py --cuda  --version $1 --model_version $2 --target_version $3 --env Walker2d-v2 --seed 0 &\
 CUDA_VISIBLE_DEVICES=0 python main_sac.py --cuda --version $1 --model_version $2 --target_version $3  --env Walker2d-v2 --seed 1 &\
 CUDA_VISIBLE_DEVICES=1 python main_sac.py --cuda --version $1 --model_version $2 --target_version $3  --env Hopper-v2 --seed 0 &\
 CUDA_VISIBLE_DEVICES=1 python main_sac.py --cuda --version $1 --model_version $2 --target_version $3  --env Hopper-v2 --seed 1 &\
