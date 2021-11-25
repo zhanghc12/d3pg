@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 from sac.utils import soft_update, hard_update
-from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy, DuelingNetwork
+from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy, DuelingNetworkv0, DuelingNetworkv1
 
 
 class DuelingSAC(object):
@@ -20,11 +20,16 @@ class DuelingSAC(object):
         self.device = torch.device("cuda" if args.cuda else "cpu")
 
         self.version = args.version
-        self.critic = DuelingNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
+        self.model_version = args.model_version
+
+        if self.model_version == 0:
+            self.critic = DuelingNetworkv0(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
+            self.critic_target = DuelingNetworkv0(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        elif self.model_version == 1:
+            self.critic = DuelingNetworkv1(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
+            self.critic_target = DuelingNetworkv1(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
 
         self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
-
-        self.critic_target = DuelingNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
         hard_update(self.critic_target, self.critic)
 
         if self.policy_type == "Gaussian":
