@@ -21,6 +21,7 @@ class DuelingSAC(object):
 
         self.version = args.version
         self.model_version = args.model_version
+        self.target_version = args.target_version
 
         if self.model_version == 0:
             self.critic = DuelingNetworkv0(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
@@ -221,7 +222,11 @@ class DuelingSAC(object):
         '''
         with torch.no_grad():
             vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
-            min_vf_next_target = torch.min(vf1_next_target, vf2_next_target) # under estimate, value is not accurate enough,
+            if self.target_version == 0:
+                min_vf_next_target = torch.min(vf1_next_target, vf2_next_target) # under estimate, value is not accurate enough,
+            else:
+                min_vf_next_target = (vf1_next_target +  vf2_next_target) / 2# under estimate, value is not accurate enough
+
             next_q_value = reward_batch + mask_batch * self.gamma * (min_vf_next_target)  # todo: min -> mean -> variance
             '''
             next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
@@ -320,7 +325,11 @@ class DuelingSAC(object):
             qf1_pi = qf1_pi - adv_pi_1
             qf2_pi = qf2_pi - adv_pi_2
         '''
-        min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        if self.target_version == 0:
+            min_qf_pi = torch.min(qf1_pi, qf2_pi)
+        else:
+            min_qf_pi = (qf1_pi + qf2_pi) / 2
+
 
         policy_loss = (self.alpha*log_pi- min_qf_pi).mean() # Jπ = 𝔼st∼D,εt∼N[α * logπ(f(εt;st)|st) − Q(st,f(εt;st))]  # todo: min_advantage ?
 
