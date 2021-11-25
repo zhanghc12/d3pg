@@ -306,14 +306,17 @@ class DuelingSAC(object):
         pi, log_pi, _ = self.policy.sample(state_batch)
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
-        '''
+
         if self.version == 1:
+            qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
+
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
-            qf1_pi = qf1_pi - adv_pi_1
-            qf2_pi = qf2_pi - adv_pi_2
+            qf1_pi = qf1_pi - adv_pi_1.detach()
+            qf2_pi = qf2_pi - adv_pi_2.detach()
         if self.version in [2, 3]:
-            self.num_repeat = 20
+            qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
+            self.num_repeat = 100
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
             pi_temp, _, _ = self.policy.sample(state_bath_temp)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_bath_temp, pi_temp)
@@ -322,9 +325,9 @@ class DuelingSAC(object):
             adv_pi_2 = adv_pi_2.view(state_batch.shape[0], self.num_repeat, 1)
             adv_pi_2 = adv_pi_2.mean(dim=1)
 
-            qf1_pi = qf1_pi - adv_pi_1
-            qf2_pi = qf2_pi - adv_pi_2
-        '''
+            qf1_pi = qf1_pi - adv_pi_1.detach()
+            qf2_pi = qf2_pi - adv_pi_2.detach()
+
         if self.target_version == 0:
             min_qf_pi = torch.min(qf1_pi, qf2_pi)
         else:
