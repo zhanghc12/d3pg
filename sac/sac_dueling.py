@@ -227,7 +227,7 @@ class DuelingSAC(object):
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
         if self.version in [2, 3]:
-            self.num_repeat = 20
+            self.num_repeat = 100
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
             pi_temp, _, _ = self.policy.sample(state_bath_temp)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_bath_temp, pi_temp)
