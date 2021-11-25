@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 from sac.utils import soft_update, hard_update
-from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy, DuelingNetworkv0, DuelingNetworkv1
+from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy, DuelingNetworkv0, DuelingNetworkv1, DuelingNetworkv2
 
 
 class DuelingSAC(object):
@@ -28,6 +28,9 @@ class DuelingSAC(object):
         elif self.model_version == 1:
             self.critic = DuelingNetworkv1(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
             self.critic_target = DuelingNetworkv1(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        elif self.model_version == 2:
+            self.critic = DuelingNetworkv2(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
+            self.critic_target = DuelingNetworkv2(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
 
         self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
         hard_update(self.critic_target, self.critic)

@@ -63,9 +63,9 @@ class QNetwork(nn.Module):
 
         return x1, x2
 
-class DuelingNetworkNotWork(nn.Module):
+class DuelingNetworkv2(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
-        super(DuelingNetworkNotWork, self).__init__()
+        super(DuelingNetworv2, self).__init__()
 
         self.l1 = nn.Linear(num_inputs, 256)
         self.l2 = nn.Linear(256, 256)
@@ -231,6 +231,8 @@ class DuelingNetworkv1(nn.Module):
         adv_2 = self.la_2(adv_2)
 
         return adv_1, adv_2
+
+
 
 class GaussianPolicy(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim, action_space=None):
