@@ -65,7 +65,7 @@ class QNetwork(nn.Module):
 
 class DuelingNetworkv2(nn.Module):
     def __init__(self, num_inputs, num_actions, hidden_dim):
-        super(DuelingNetworv2, self).__init__()
+        super(DuelingNetworkv2, self).__init__()
 
         self.l1 = nn.Linear(num_inputs, 256)
         self.l2 = nn.Linear(256, 256)
