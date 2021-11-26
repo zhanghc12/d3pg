@@ -307,6 +307,7 @@ class DuelingSAC(object):
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
 
+
         if self.version == 1:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
 

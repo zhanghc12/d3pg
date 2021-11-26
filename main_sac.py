@@ -46,7 +46,7 @@ parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
 parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
                     help='Temperature parameter α determines the relative importance of the entropy\
                             term against the reward (default: 0.2)')
-parser.add_argument('--automatic_entropy_tuning', type=bool, default=True, metavar='G',
+parser.add_argument('--automatic_entropy_tuning', type=bool, default=False, metavar='G',
                     help='Automaically adjust α (default: False)')
 parser.add_argument('--seed', type=int, default=123456, metavar='N',
                     help='random seed (default: 123456)')
@@ -70,7 +70,7 @@ parser.add_argument('--version', type=int, default=2,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_threshold', type=float, default=0., metavar='G',
                     help='learning rate (default: 0.0003)')
-parser.add_argument('--model_version', type=int, default=1,
+parser.add_argument('--model_version', type=int, default=0,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_version', type=int, default=0,
                     help='size of replay buffer (default: 10000000)')
