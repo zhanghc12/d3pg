@@ -224,8 +224,35 @@ class DuelingSAC(object):
             vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
             if self.target_version == 0:
                 min_vf_next_target = torch.min(vf1_next_target, vf2_next_target) # under estimate, value is not accurate enough,
-            else:
-                min_vf_next_target = (vf1_next_target +  vf2_next_target) / 2# under estimate, value is not accurate enough
+            elif self.target_version == 1:
+                min_vf_next_target = (vf1_next_target + vf2_next_target) / 2# under estimate, value is not accurate enough
+            elif self.target_version == 2:
+                next_state_action, next_state_log_pi, _ = self.policy.sample(next_state_batch)
+                adv1_next_target, adv2_next_target = self.critic_target.get_adv(next_state_batch, next_state_action)
+                if self.version == 1:
+                    _, _, target_pi_1 = self.policy.sample(state_batch)
+                    targett_adv_pi_1, target_adv_pi_2 = self.critic_target.get_adv(state_batch, target_pi_1)
+                if self.version in [2]:
+                    self.num_repeat = 100
+                    target_state_bath_temp = next_state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(
+                        next_state_batch.shape[0] * self.num_repeat, next_state_batch.shape[1])
+                    target_pi_temp, _, _ = self.policy.sample(target_state_bath_temp)
+                    target_adv_pi_1, target_adv_pi_2 = self.critic_target.get_adv(target_state_bath_temp, target_pi_temp)
+                    target_adv_pi_1 = target_adv_pi_1.view(state_batch.shape[0], self.num_repeat, 1)
+                    target_adv_pi_1 = target_adv_pi_1.mean(dim=1)
+                    target_adv_pi_2 = target_adv_pi_2.view(state_batch.shape[0], self.num_repeat, 1)
+                    target_adv_pi_2 = target_adv_pi_2.mean(dim=1)
+
+                adv1_next_target = adv1_next_target - target_adv_pi_1
+                adv2_next_target = adv2_next_target - target_adv_pi_2
+
+                target_entropy = self.policy.get_entropy(next_state_batch).detach()
+
+                vf1_next_target = vf1_next_target + adv1_next_target - self.alpha * target_entropy
+                vf2_next_target = vf2_next_target + adv2_next_target - self.alpha * target_entropy
+
+                min_vf_next_target = torch.min(vf1_next_target, vf2_next_target) - self.alpha * next_state_log_pi # under estimate, value is not accurate enough,
+
 
             next_q_value = reward_batch + mask_batch * self.gamma * (min_vf_next_target)  # todo: min -> mean -> variance
             '''
@@ -306,7 +333,6 @@ class DuelingSAC(object):
         pi, log_pi, _ = self.policy.sample(state_batch)
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
-
 
         if self.version == 1:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
