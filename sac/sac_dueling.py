@@ -262,7 +262,7 @@ class DuelingSAC(object):
         if self.version == 1:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
-        if self.version in [2, 3]:
+        if self.version in [2]:
             self.num_repeat = 100
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
             pi_temp, _, _ = self.policy.sample(state_bath_temp)
@@ -287,7 +287,7 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version == 3  and updates >= 10000:
+        if self.version == 3 and updates >= 10000:
             with torch.no_grad():
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
@@ -330,14 +330,14 @@ class DuelingSAC(object):
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
 
-        if self.version == 1:
+        if self.version in [1, 3]:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
 
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
             qf1_pi = qf1_pi - adv_pi_1.detach()
             qf2_pi = qf2_pi - adv_pi_2.detach()
-        if self.version in [2, 3]:
+        if self.version in [3]:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
             self.num_repeat = 100
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
