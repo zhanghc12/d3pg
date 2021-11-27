@@ -345,3 +345,7 @@ class DeterministicPolicy(nn.Module):
         self.action_bias = self.action_bias.to(device)
         self.noise = self.noise.to(device)
         return super(DeterministicPolicy, self).to(device)
+
+
+
+# class AutoregressivePolicy(nn.Module):
