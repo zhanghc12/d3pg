@@ -259,7 +259,7 @@ class DuelingSAC(object):
             '''
         value_1, adv_1, qf1, value_2, adv_2, qf2 = self.critic(state_batch, action_batch, return_full=True)
 
-        if self.version == 1:
+        if self.version in [1,3]:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
         if self.version in [2]:
