@@ -293,7 +293,7 @@ class DuelingSAC(object):
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
                 vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
-                min_vf_next_target = (vf1_next_target + vf2_next_target) / 2
+                min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target # - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = (log_prob - behavior_log_prob).exp()
                 normalized_importance_ratio = importance_ratio.clamp_(0.2,1)
