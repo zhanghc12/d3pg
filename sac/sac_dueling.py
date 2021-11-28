@@ -259,7 +259,7 @@ class DuelingSAC(object):
             '''
         value_1, adv_1, qf1, value_2, adv_2, qf2 = self.critic(state_batch, action_batch, return_full=True)
 
-        if self.version in [1,3]:
+        if self.version in [1,3,4]:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
         if self.version in [2]:
@@ -287,7 +287,7 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version == 3 and updates >= 10000:
+        if self.version in [3, 4] and updates >= 10000:
             with torch.no_grad():
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
@@ -321,6 +321,16 @@ class DuelingSAC(object):
             behavior_policy_loss.backward()
             self.behavior_policy_optim.step()
 
+        if self.version == 4:
+            extended_state_batch, extended_action_batch, extended_reward_batch, extended_next_state_batch, extended_mask_batch = memory.sample(batch_size=batch_size*10)
+            extended_state_batch = torch.FloatTensor(extended_state_batch).to(self.device)
+            extended_action_batch = torch.FloatTensor(extended_action_batch).to(self.device)
+
+            behavior_log_prob = self.behavior_policy.log_prob(extended_state_batch, extended_action_batch)
+            behavior_policy_loss = -behavior_log_prob.mean()
+            self.behavior_policy_optim.zero_grad()
+            behavior_policy_loss.backward()
+            self.behavior_policy_optim.step()
         '''
         update actor
         '''
@@ -330,14 +340,14 @@ class DuelingSAC(object):
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
 
-        if self.version in [1, 3]:
+        if self.version in [1, 3, 4]:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
 
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
             qf1_pi = qf1_pi - adv_pi_1.detach()
             qf2_pi = qf2_pi - adv_pi_2.detach()
-        if self.version in [3]:
+        if self.version in [2]:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
             self.num_repeat = 100
             state_bath_temp = state_batch.unsqueeze(1).repeat(1, self.num_repeat, 1).view(state_batch.shape[0] * self.num_repeat, state_batch.shape[1])
