@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
@@ -322,7 +323,8 @@ class DuelingSAC(object):
             self.behavior_policy_optim.step()
 
         if self.version == 4:
-            extended_state_batch, extended_action_batch, extended_reward_batch, extended_next_state_batch, extended_mask_batch = memory.sample(batch_size=batch_size*10)
+            extended_batch_size = np.min(batch_size*10, len(memory.buffer))
+            extended_state_batch, extended_action_batch, extended_reward_batch, extended_next_state_batch, extended_mask_batch = memory.sample(batch_size=extended_batch_size)
             extended_state_batch = torch.FloatTensor(extended_state_batch).to(self.device)
             extended_action_batch = torch.FloatTensor(extended_action_batch).to(self.device)
 
