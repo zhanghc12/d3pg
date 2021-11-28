@@ -66,13 +66,15 @@ parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--cuda', action="store_true",
                     help='run on CUDA (default: False)')
-parser.add_argument('--version', type=int, default=2,
+parser.add_argument('--version', type=int, default=3,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_threshold', type=float, default=0., metavar='G',
                     help='learning rate (default: 0.0003)')
-parser.add_argument('--model_version', type=int, default=0,
+parser.add_argument('--model_version', type=int, default=1,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_version', type=int, default=0,
+                    help='size of replay buffer (default: 10000000)')
+parser.add_argument('--policy_version', type=int, default=1,
                     help='size of replay buffer (default: 10000000)')
 args = parser.parse_args()
 
@@ -104,7 +106,7 @@ else:
 
 experiment_dir = experiment_dir + '10_27/'
 writer = SummaryWriter(
-    experiment_dir + 'DSAC_{}_{}_s{}_ver{}_thre{}_mv{}_tv{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version, args.target_threshold, args.model_version, args.target_version))
+    experiment_dir + 'DSAC_{}_{}_s{}_ver{}_thre{}_mv{}_tv{}_pv{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.env_name, args.seed, args.version, args.target_threshold, args.model_version, args.target_version, args.policy_version))
 
 # Memory
 memory = ReplayMemory(args.replay_size, args.seed)

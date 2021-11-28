@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from sac.utils import soft_update, hard_update
 from sac.model import GaussianPolicy, QNetwork, DeterministicPolicy, DuelingNetworkv0, DuelingNetworkv1, DuelingNetworkv2
-
+from sac.autoregressive_policy_v1 import AutoRegressiveStochasticActor
 
 class DuelingSAC(object):
     def __init__(self, num_inputs, action_space, args):
@@ -23,6 +23,7 @@ class DuelingSAC(object):
         self.version = args.version
         self.model_version = args.model_version
         self.target_version = args.target_version
+        self.policy_version = args.policy_version
 
         if self.model_version == 0:
             self.critic = DuelingNetworkv0(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
@@ -53,7 +54,10 @@ class DuelingSAC(object):
             self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
-        self.behavior_policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
+        if self.policy_version == 0:
+            self.behavior_policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
+        elif self.policy_version == 1:
+            self.behavior_policy = AutoRegressiveStochasticActor(num_inputs, action_space.shape[0])
         self.behavior_policy_optim = Adam(self.behavior_policy.parameters(), lr=args.lr)
 
 

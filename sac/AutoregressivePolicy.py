@@ -83,7 +83,7 @@ class MADE(nn.Module):
             # arrays in Python are 0-indexed. Implementation adjusted accordingly.
             low = 0 if i == 0 else np.min(conn[i - 1])
             high = self._input_dim - 1
-            conn.append(rng.randint(low, high, size=dim))
+            conn.append(rng.randint(low, high, size=dim)) # low=0, high=5
         conn.append(np.copy(conn[0]))
 
         # Create masks.
