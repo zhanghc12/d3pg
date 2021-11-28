@@ -57,7 +57,7 @@ class DuelingSAC(object):
         if self.policy_version == 0:
             self.behavior_policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
         elif self.policy_version == 1:
-            self.behavior_policy = AutoRegressiveStochasticActor(num_inputs, action_space.shape[0])
+            self.behavior_policy = AutoRegressiveStochasticActor(num_inputs, action_space.shape[0]).to(self.device)
         self.behavior_policy_optim = Adam(self.behavior_policy.parameters(), lr=args.lr)
 
 
