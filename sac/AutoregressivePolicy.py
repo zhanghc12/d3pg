@@ -15,8 +15,6 @@ import torch
 from torch import distributions
 from torch import nn
 
-from pytorch_generative.models import base
-
 
 class MaskedLinear(nn.Linear):
     """A Linear layer with masks that turn off some of the layer's weights."""
@@ -33,10 +31,10 @@ class MaskedLinear(nn.Linear):
         return super().forward(x)
 
 
-class MADE(base.AutoregressiveModel):
+class MADE(nn.Module):
     """The Masked Autoencoder Distribution Estimator (MADE) model."""
 
-    def __init__(self, input_dim, hidden_dims=None, n_masks=1):
+    def __init__(self, input_dim, output_dim, hidden_dims=None, n_masks=1):
         """Initializes a new MADE instance.
         Args:
             input_dim: The dimensionality of the input.
@@ -45,7 +43,8 @@ class MADE(base.AutoregressiveModel):
         """
         super().__init__()
         self._input_dim = input_dim
-        self._dims = [self._input_dim] + (hidden_dims or []) + [self._input_dim]
+        self._output_dim = output_dim
+        self._dims = [self._input_dim] + (hidden_dims or [])
         self._n_masks = n_masks
         self._mask_seed = 0
 
@@ -54,8 +53,13 @@ class MADE(base.AutoregressiveModel):
             in_dim, out_dim = self._dims[i], self._dims[i + 1]
             layers.append(MaskedLinear(in_dim, out_dim))
             layers.append(nn.ReLU())
-        layers[-1] = nn.Sigmoid()  # Output is binary.  # gaussian
+        layers[-1] = nn.Identity()  # Output is binary.  # gaussian
+        # layers[-1] is mean or std, then tanh? not sigmoid
+
         self._net = nn.Sequential(*layers)
+
+        self.mean = MaskedLinear(hidden_dims[-1], self._output_dim)
+        self.std = MaskedLinear(hidden_dims[-1], self._output_dim)
 
     def _sample_masks(self):
         """Samples a new set of autoregressive masks.
@@ -115,6 +119,17 @@ class MADE(base.AutoregressiveModel):
         masks, _ = self._sample_masks()
         return self._forward(x, masks)
 
+    def _get_conditioned_on(self, n_samples, conditioned_on):
+        assert (
+            n_samples is not None or conditioned_on is not None
+        ), 'Must provided one, and only one, of "n_samples" or "conditioned_on"'
+        if conditioned_on is None:
+            shape = (n_samples, self._c, self._h, self._w)
+            conditioned_on = (torch.ones(shape) * -1).to(self.device)
+        else:
+            conditioned_on = conditioned_on.clone()
+        return conditioned_on
+
     def sample(self, n_samples, conditioned_on=None):
         """See the base class."""
         with torch.no_grad():
@@ -133,6 +148,10 @@ class MADE(base.AutoregressiveModel):
             return conditioned_on.view(out_shape)
 
 
+policy = MADE(input_dim=12, output_dim=6, hidden_dims=[256, 256], n_masks=1)
+
+
+'''
 def reproduce(
     n_epochs=85,
     batch_size=64,
@@ -187,3 +206,4 @@ def reproduce(
         device_id=device_id,
     )
     model_trainer.interleaved_train_and_eval(n_epochs)
+'''
