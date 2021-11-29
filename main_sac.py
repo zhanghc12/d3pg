@@ -74,7 +74,7 @@ parser.add_argument('--model_version', type=int, default=1,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_version', type=int, default=0,
                     help='size of replay buffer (default: 10000000)')
-parser.add_argument('--policy_version', type=int, default=1,
+parser.add_argument('--policy_version', type=int, default=0,
                     help='size of replay buffer (default: 10000000)')
 args = parser.parse_args()
 
