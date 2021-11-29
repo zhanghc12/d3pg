@@ -158,8 +158,11 @@ class DuelingSAC(object):
                 min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target # - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = (log_prob - behavior_log_prob).exp()
+                # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
+
+                importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
                 normalized_importance_ratio = importance_ratio.clamp_(0.,10)
-                normalized_importance_ratio = normalized_importance_ratio / importance_ratio.sum()
+
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
 
