@@ -69,6 +69,7 @@ class DuelingSAC(object):
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
 
+    '''
     def update_parameters1(self, memory, batch_size, updates):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
@@ -213,6 +214,7 @@ class DuelingSAC(object):
             soft_update(self.critic_target, self.critic, self.tau)
 
         return qf1_loss.item(), qf2_loss.item(), policy_loss.item(), alpha_loss.item(), self.alpha
+    '''
 
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory
@@ -302,7 +304,7 @@ class DuelingSAC(object):
                 min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
                 next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target # - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = (log_prob - behavior_log_prob).exp()
-                normalized_importance_ratio = importance_ratio.clamp_(0.2,1)
+                normalized_importance_ratio = importance_ratio.clamp_(0.,10)
                 #normalized_importance_ratio = importance_ratio / importance_ratio.sum()
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
