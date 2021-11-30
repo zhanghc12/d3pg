@@ -172,6 +172,8 @@ class DuelingSAC(object):
             vf2_loss = F.mse_loss(vf2, next_v)
             vf_loss = vf1_loss + vf2_loss
             qf_loss = vf_loss + qf_loss
+        else:
+            importance_ratio = torch.tensor(0.)
 
         self.critic_optim.zero_grad()
         qf_loss.backward()
