@@ -61,24 +61,29 @@ class DuelingSAC(object):
         self.behavior_policy_optim = Adam(self.behavior_policy.parameters(), lr=args.lr)
 
 
-    def select_action(self, state, evaluate=False):
+
+    def select_action(self, state, evaluate=False, return_log_prob=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         if evaluate is False:
-            action, _, _ = self.policy.sample(state)
+            action, log_prob, _ = self.policy.sample(state)
         else:
-            _, _, action = self.policy.sample(state)
-        return action.detach().cpu().numpy()[0]
+            _, log_prob, action = self.policy.sample(state)
+        if return_log_prob:
+            return action.detach().cpu().numpy()[0], log_prob.detach().cpu().numpy()[0]
+        else:
+            return action.detach().cpu().numpy()[0]
 
 
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory
-        state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
+        state_batch, action_batch, reward_batch, next_state_batch, mask_batch, behavior_log_prob_batch = memory.sample(batch_size=batch_size)
 
         state_batch = torch.FloatTensor(state_batch).to(self.device)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
         action_batch = torch.FloatTensor(action_batch).to(self.device)
         reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
         mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
+        behavior_log_prob_batch = torch.FloatTensor(behavior_log_prob_batch).to(self.device)
 
         '''
         update Q function
@@ -122,7 +127,7 @@ class DuelingSAC(object):
             '''
         value_1, adv_1, qf1, value_2, adv_2, qf2 = self.critic(state_batch, action_batch, return_full=True)
 
-        if self.version in [1,3,4]:
+        if self.version in [1,3,4,5]:
             _, _, pi_1 = self.policy.sample(state_batch)
             adv_pi_1, adv_pi_2 = self.critic.get_adv(state_batch, pi_1)
         if self.version in [2]:
@@ -150,9 +155,13 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version in [3, 4] and updates >= 1000:
+        if self.version in [3, 4, 5] and updates >= 1000:
             with torch.no_grad():
-                behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
+                if self.version == 5:
+                    behavior_log_prob = behavior_log_prob_batch
+                else:
+                    behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
+
                 log_prob = self.policy.log_prob(state_batch, action_batch)
                 vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
                 min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
@@ -166,8 +175,6 @@ class DuelingSAC(object):
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
-
-
 
             vf1, vf2 = self.critic.get_value(state_batch)
 
@@ -212,7 +219,7 @@ class DuelingSAC(object):
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
 
-        if self.version in [1, 3, 4]:
+        if self.version in [1, 3, 4, 5]:
             qf1_pi, qf2_pi = self.critic.get_adv(state_batch, pi)
 
             _, _, pi_1 = self.policy.sample(state_batch)

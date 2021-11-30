@@ -41,13 +41,16 @@ class SAC(object):
             self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
-    def select_action(self, state, evaluate=False):
+    def select_action(self, state, evaluate=False, return_log_prob=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         if evaluate is False:
-            action, _, _ = self.policy.sample(state)
+            action, log_prob, _ = self.policy.sample(state)
         else:
-            _, _, action = self.policy.sample(state)
-        return action.detach().cpu().numpy()[0]
+            _, log_prob, action = self.policy.sample(state)
+        if return_log_prob:
+            return action.detach().cpu().numpy()[0], log_prob.detach().cpu().numpy()[0]
+        else:
+            return action.detach().cpu().numpy()[0]
 
     def update_parameters(self, memory, batch_size, updates):
         # Sample a batch from memory

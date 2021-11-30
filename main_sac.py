@@ -66,7 +66,7 @@ parser.add_argument('--replay_size', type=int, default=1000000, metavar='N',
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--cuda', action="store_true",
                     help='run on CUDA (default: False)')
-parser.add_argument('--version', type=int, default=3,
+parser.add_argument('--version', type=int, default=5,
                     help='size of replay buffer (default: 10000000)')
 parser.add_argument('--target_threshold', type=float, default=0., metavar='G',
                     help='learning rate (default: 0.0003)')
@@ -123,9 +123,10 @@ for i_episode in itertools.count(1):
 
     while not done:
         if args.start_steps > total_numsteps:
-            action = env.action_space.sample()  # Sample random action
+            # action = env.action_space.sample()  # Sample random action
+            action, behavior_log_prob = agent.select_action(state, return_log_prob=True)
         else:
-            action = agent.select_action(state)  # Sample action from policy
+            action, behavior_log_prob = agent.select_action(state, return_log_prob=True)  # Sample action from policy
 
         if len(memory) > args.batch_size:
             # Number of updates per step in environment
@@ -154,7 +155,7 @@ for i_episode in itertools.count(1):
         # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
         mask = 1 if episode_steps == env._max_episode_steps else float(not done)
 
-        memory.push(state, action, reward, next_state, mask) # Append transition to memory
+        memory.push(state, action, reward, next_state, mask, behavior_log_prob) # Append transition to memory
 
         state = next_state
 
