@@ -161,7 +161,7 @@ class DuelingSAC(object):
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = importance_ratio.clamp_(0., 10)
+                normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
