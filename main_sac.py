@@ -131,13 +131,18 @@ for i_episode in itertools.count(1):
             # Number of updates per step in environment
             for i in range(args.updates_per_step):
                 # Update parameters of all the networks
-                critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha = agent.update_parameters(memory, args.batch_size, updates)
+                critic_1_loss, critic_2_loss, policy_loss, ent_loss, alpha, importance_ratio, importance_ratio_max, importance_ratio_min = agent.update_parameters(memory, args.batch_size, updates)
 
                 writer.add_scalar('loss/critic_1', critic_1_loss, updates)
                 writer.add_scalar('loss/critic_2', critic_2_loss, updates)
                 writer.add_scalar('loss/policy', policy_loss, updates)
                 writer.add_scalar('loss/entropy_loss', ent_loss, updates)
                 writer.add_scalar('entropy_temprature/alpha', alpha, updates)
+                writer.add_scalar('signal/importance_ratio', importance_ratio, updates)
+                writer.add_scalar('signal/importance_ratio_max', importance_ratio_max, updates)
+                writer.add_scalar('signal/importance_ratio_min', importance_ratio_min, updates)
+
+
                 updates += 1
 
         next_state, reward, done, _ = env.step(action) # Step
