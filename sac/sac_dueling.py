@@ -150,7 +150,7 @@ class DuelingSAC(object):
         update value function
         '''
         # v_t = E_pi(r + gamma V(s_t+1))
-        if self.version in [3, 4] and updates >= 10000:
+        if self.version in [3, 4] and updates >= 1000:
             with torch.no_grad():
                 behavior_log_prob = self.behavior_policy.log_prob(state_batch, action_batch)
                 log_prob = self.policy.log_prob(state_batch, action_batch)
@@ -161,10 +161,13 @@ class DuelingSAC(object):
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = importance_ratio.clamp_(0., 3)
+                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 0.5)
+                # normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
                 next_v = normalized_importance_ratio * next_v
+
+
 
             vf1, vf2 = self.critic.get_value(state_batch)
 

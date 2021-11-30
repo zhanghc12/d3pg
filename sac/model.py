@@ -10,6 +10,12 @@ LOG_SIG_MIN = -20
 epsilon = 1e-6
 
 
+def atanh(x):
+    one_plus_x = (1 + x).clamp(min=1e-6)
+    one_minus_x = (1 - x).clamp(min=1e-6)
+    return 0.5 * torch.log(one_plus_x / one_minus_x)
+
+
 # Initialize Policy weights
 def weights_init_(m):
     if isinstance(m, nn.Linear):
@@ -288,14 +294,11 @@ class GaussianPolicy(nn.Module):
         mean, log_std = self.forward(state)
         std = log_std.exp()
         normal = Normal(mean, std)
-        # note: modified by zhc @0425
-        rescaled_action = (action - self.action_bias) / self.action_scale
-        u = 0.5 * torch.log((1 + epsilon + rescaled_action) / (1 + epsilon - rescaled_action))
-        # before tanh
-
-        log_prob = normal.log_prob(u)
+        y_t = action
+        x_t = atanh(y_t)
+        log_prob = normal.log_prob(x_t)
         # Enforcing Action Bound
-        log_prob -= torch.log(self.action_scale * (1 - rescaled_action.pow(2)) + epsilon)
+        log_prob -= torch.log((1 - y_t.pow(2)) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
 
         return log_prob
