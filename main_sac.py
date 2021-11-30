@@ -100,6 +100,8 @@ else:
 
 if torch.cuda.is_available():
     experiment_dir = '/data/zhanghc/d3pg/'
+    args.start_steps = 1000
+
 else:
     experiment_dir = '/tmp/data/zhanghc/d3pg/'
     args.start_steps = 1000
@@ -123,7 +125,7 @@ for i_episode in itertools.count(1):
 
     while not done:
         if args.start_steps > total_numsteps:
-            # action = env.action_space.sample()  # Sample random action
+            action = env.action_space.sample()  # Sample random action
             action, behavior_log_prob = agent.select_action(state, return_log_prob=True)
         else:
             action, behavior_log_prob = agent.select_action(state, return_log_prob=True)  # Sample action from policy
