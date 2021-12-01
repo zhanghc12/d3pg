@@ -170,16 +170,19 @@ class DuelingSAC(object):
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 0.) # 0.5 0.01 0.1
+                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 1.) # 0.5 0.01 0.1
                 # normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
-                next_v = normalized_importance_ratio * next_v
+                # next_v = normalized_importance_ratio * next_v
 
             vf1, vf2 = self.critic.get_value(state_batch)
 
-            vf1_loss = F.mse_loss(vf1, next_v)
-            vf2_loss = F.mse_loss(vf2, next_v)
+            vf1_loss = (normalized_importance_ratio * (vf1 - next_v) ** 2).mean()
+            vf2_loss = (normalized_importance_ratio * (vf2 - next_v) ** 2).mean()
+
+            #vf1_loss = F.mse_loss(vf1, next_v)
+            #vf2_loss = F.mse_loss(vf2, next_v)
             vf_loss = vf1_loss + vf2_loss
             qf_loss = vf_loss + qf_loss
         else:
