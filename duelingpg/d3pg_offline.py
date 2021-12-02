@@ -86,6 +86,8 @@ class D3PG(object):
         self.critic_targets = copy.deepcopy(self.critics)
         self.critic_optimizer = torch.optim.Adam(self.critics.parameters(), lr=3e-4)
 
+        self.critics = self.critics.to(device)
+        self.critic_targets = self.critic_targets.to(device)
         self.discount = discount
         self.tau = tau
         self.version = version
