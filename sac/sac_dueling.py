@@ -170,7 +170,7 @@ class DuelingSAC(object):
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 1.) # 0.5 0.01 0.1
+                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 10.) # 0.5 0.01 0.1
                 # normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
