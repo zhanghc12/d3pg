@@ -16,12 +16,14 @@ class DuelingCritic(nn.Module):
         self.lv = nn.Linear(256, 1)
 
         self.l3 = nn.Linear(256 + action_dim, 256)
+        self.l4 = nn.Linear(256, 256)
         self.la = nn.Linear(256, 1)
 
     def forward(self, state, action):
         feat = F.relu(self.l2(F.relu(self.l1(state))))
         value = self.lv(feat)
         adv = F.relu(self.l3(torch.cat([feat, action], 1)))
+        adv = F.relu(self.l4(adv))
         adv = self.la(adv)
         return value, adv, value + adv
 
