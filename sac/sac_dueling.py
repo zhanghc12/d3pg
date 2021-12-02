@@ -144,8 +144,8 @@ class DuelingSAC(object):
         log_prob = self.policy.log_prob(state_batch, action_batch).detach()
         entropy = self.policy.get_entropy(state_batch).detach()
 
-        qf1_loss = F.mse_loss(qf1 - (adv_pi_1 + self.alpha * entropy) , next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
-        qf2_loss = F.mse_loss(qf2 - (adv_pi_2 + self.alpha * entropy), next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+        qf1_loss = F.mse_loss(value_1.detach() + adv_1 - (adv_pi_1 + self.alpha * entropy) , next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
+        qf2_loss = F.mse_loss(value_2.detach() + adv_2 - (adv_pi_2 + self.alpha * entropy), next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         #qf1_loss = F.mse_loss(qf1 , next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
         #qf2_loss = F.mse_loss(qf2 , next_q_value)  # JQ = 𝔼(st,at)~D[0.5(Q1(st,at) - r(st,at) - γ(𝔼st+1~p[V(st+1)]))^2]
 
@@ -170,7 +170,7 @@ class DuelingSAC(object):
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 10.) # 0.5 0.01 0.1
+                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 1.) # 0.5 0.01 0.1
                 # normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
