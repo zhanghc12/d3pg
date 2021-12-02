@@ -77,12 +77,13 @@ class D3PG(object):
         self.version = version
         self.huber = torch.nn.SmoothL1Loss()
 
+        '''
         self.alpha_prime = torch.zeros(1, requires_grad=True).to(device)
         self.alpha_prime_optimizer = torch.optim.Adam([self.alpha_prime], lr=3e-4)
 
         self.log_beta_prime = torch.zeros(1, requires_grad=True).to(device)
         self.beta_prime_optimizer = torch.optim.Adam([self.log_beta_prime], lr=3e-4)
-
+        '''
         self.target_threshold = target_threshold # note:
         self.total_it = 0
 
