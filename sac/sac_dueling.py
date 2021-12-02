@@ -178,8 +178,8 @@ class DuelingSAC(object):
 
             vf1, vf2 = self.critic.get_value(state_batch)
 
-            vf1_loss = (normalized_importance_ratio * (vf1 - next_v) ** 2).mean()
-            vf2_loss = (normalized_importance_ratio * (vf2 - next_v) ** 2).mean()
+            vf1_loss = ((normalized_importance_ratio * (vf1 - next_v)) ** 2).mean()
+            vf2_loss = ((normalized_importance_ratio * (vf2 - next_v)) ** 2).mean()
 
             #vf1_loss = F.mse_loss(vf1, next_v)
             #vf2_loss = F.mse_loss(vf2, next_v)
