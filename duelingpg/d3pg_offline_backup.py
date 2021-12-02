@@ -32,12 +32,6 @@ class DuelingCritic(nn.Module):
         adv = self.la(adv)
         return adv
 
-    def get_value(self, state):
-        feat = F.relu(self.l2(F.relu(self.l1(state))))
-        value = self.lv(feat)
-        return value
-
-
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -74,17 +68,9 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.critics = nn.ModuleList()
-        self.target_critics = nn.ModuleList()
-        self.qf_criterion = nn.MSELoss()
-        self.num_critic = 5
-        for i in range(self.num_critic):
-            self.critics.append(DuelingCritic(
-                state_dim=state_dim,
-                action_dim=action_dim))
-
-        self.critic_targets = copy.deepcopy(self.critics)
-        self.critic_optimizer = torch.optim.Adam(self.critics.parameters(), lr=3e-4)
+        self.critic = DuelingCritic(state_dim, action_dim).to(device)
+        self.critic_target = copy.deepcopy(self.critic)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
         self.discount = discount
         self.tau = tau
@@ -111,32 +97,12 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
-        next_obs = next_state
-        rewards = reward
-        obs = state
-        actions = action
-
-        target_vs = []
-
-        for i in range(self.num_critic):
-            target_vs.append(self.critic_targets[i].get_value(next_obs))
-
-        target_q_values = torch.mean(torch.squeeze(torch.cat(target_vs, dim=-1)), dim=-1, keepdim=True)  # [0]
-        q_target = rewards + not_done * self.discount * target_q_values
-        q_target = q_target.detach()
-
-        qf_loss = 0.
-        alpha_prime_loss = 0.
-        for i in range(self.num_critic):
-            v_pred, adv_pred, q_pred = self.critics[i](obs, actions)
-            _, adv_pi, _ = self.critics[i](obs, self.actor(obs))
-            # todo: define mask, the i*bs: (i+1)*bs is 1, other is zeros
-            # masks = torch.zeros_like(rewards.to(ptu.device))
-            # masks[i * 256: (i+1) * 256] = 1
-            # qf_loss += (masks * (q_pred - adv_pi - q_target) ** 2).mean()
-            qf_loss += self.qf_criterion(q_pred - adv_pi, q_target)
-
-        critic_loss = qf_loss
+        target_v, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q = reward + (not_done * self.discount * target_v).detach()
+        current_value, current_adv, current_Q = self.critic(state, action)
+        pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
+        current_Q = current_Q - pi_adv
+        critic_loss = F.mse_loss(current_Q, target_Q)
         adv_loss = critic_loss
 
         # Optimize the critic
@@ -144,29 +110,16 @@ class D3PG(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        # actor_loss = -self.critic(state, self.actor(state))[-1].mean()
+        actor_loss = -self.critic(state, self.actor(state))[-1].mean()
 
-        advs = []
-        pi_action = self.actor(state)
-        for i in range(self.num_critic):
-            advs.append(self.critics[i](state, pi_action)[-1])  # -2 to -1
-
-        advs = torch.squeeze(torch.cat(advs, dim=-1))
-        actor_loss = -torch.mean(advs, dim=-1)  # [0]
-        actor_loss = actor_loss.mean()
 
         # Optimize the actor
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
 
-
-        pi_value, pi_adv, pi_Q = self.critics[0](state, self.actor(state))
-        current_value, current_adv, current_Q = self.critics[0](state, action)
-        target_v, target_adv, target_Q = self.critic_targets[0](next_state, self.actor_target(next_state))
-
         # Update the frozen target models
-        for param, target_param in zip(self.critics.parameters(), self.critic_targets.parameters()):
+        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):

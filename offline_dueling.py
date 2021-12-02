@@ -18,8 +18,6 @@ import datetime
 from torch.utils.tensorboard import SummaryWriter
 
 
-
-
 def load_hdf5(dataset, replay_buffer):
     replay_buffer.state = dataset['observations']
     replay_buffer.action = dataset['actions']
