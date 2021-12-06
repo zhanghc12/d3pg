@@ -6,6 +6,7 @@ import os
 import os.path as osp
 import duelingpg.utils as utils
 from duelingpg import d3pg_offline
+from duelingpg import d3pg_offline_1
 from duelingpg import OurDDPG
 from duelingpg import dtpg
 from duelingpg import dhpg
@@ -121,7 +122,10 @@ if __name__ == "__main__":
         kwargs['version'] = args.version
         kwargs['target_threshold'] = args.target_threshold
 
-        policy = d3pg_offline.D3PG(**kwargs)
+        if args.version == 0:
+            policy = d3pg_offline.D3PG(**kwargs)
+        if args.version == 1:
+            policy = d3pg_offline_1.D3PG(**kwargs)
     elif args.policy == "D4PG":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action
