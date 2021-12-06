@@ -83,7 +83,7 @@ class D3PG(object):
         self.critics = nn.ModuleList()
         self.target_critics = nn.ModuleList()
         self.qf_criterion = nn.MSELoss()
-        self.num_critic = 5
+        self.num_critic = 20
         for i in range(self.num_critic):
             self.critics.append(DuelingCritic(
                 state_dim=state_dim,
@@ -129,7 +129,7 @@ class D3PG(object):
         for i in range(self.num_critic):
             target_vs.append(self.critic_targets[i].get_value(next_obs))
 
-        target_q_values = torch.mean(torch.squeeze(torch.cat(target_vs, dim=-1)), dim=-1, keepdim=True)  # [0]
+        target_q_values = torch.min(torch.squeeze(torch.cat(target_vs, dim=-1)), dim=-1, keepdim=True)  # [0]
         q_target = rewards + not_done * self.discount * target_q_values
         q_target = q_target.detach()
 
@@ -160,7 +160,7 @@ class D3PG(object):
             advs.append(self.critics[i](state, pi_action)[-1])  # -2 to -1
 
         advs = torch.squeeze(torch.cat(advs, dim=-1))
-        actor_loss = -torch.mean(advs, dim=-1)  # [0]
+        actor_loss = -torch.min(advs, dim=-1)  # [0]
         actor_loss = actor_loss.mean()
 
         # Optimize the actor
