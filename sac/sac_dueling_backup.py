@@ -165,25 +165,24 @@ class DuelingSAC(object):
                 log_prob = self.policy.log_prob(state_batch, action_batch)
                 vf1_next_target, vf2_next_target = self.critic_target.get_value(next_state_batch)
                 min_vf_next_target = torch.min(vf1_next_target, vf2_next_target)
-                entropy = self.alpha * self.policy.get_entropy(state_batch).detach()
-                next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target  # todo, we need to get entroph here
+                next_v = reward_batch + mask_batch * self.gamma * min_vf_next_target - self.alpha * log_prob  # todo, we need to get entroph here
                 importance_ratio = (log_prob - behavior_log_prob).exp()
                 # normalized_importance_ratio = importance_ratio.clamp_(0.,10)
 
                 # importance_ratio = importance_ratio / (importance_ratio.sum() + 1e-2)
-                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 10.) # 0.5 0.01 0.1
+                normalized_importance_ratio = torch.clamp(importance_ratio, 0, 0.) # 0.5 0.01 0.1
                 # normalized_importance_ratio = importance_ratio.clamp_(0., 3)
 
                 #normalized_importance_ratio = normalized_importance_ratio.clamp_(0.1, 10)
-                next_v = normalized_importance_ratio * next_v
+                # next_v = normalized_importance_ratio * next_v
 
             vf1, vf2 = self.critic.get_value(state_batch)
 
-            #vf1_loss = ((normalized_importance_ratio * (vf1 - next_v)) ** 2).mean()
-            #vf2_loss = ((normalized_importance_ratio * (vf2 - next_v)) ** 2).mean()
+            vf1_loss = ((normalized_importance_ratio * (vf1 - next_v)) ** 2).mean()
+            vf2_loss = ((normalized_importance_ratio * (vf2 - next_v)) ** 2).mean()
 
-            vf1_loss = F.mse_loss(vf1 - entropy, next_v)
-            vf2_loss = F.mse_loss(vf2 - entropy, next_v)
+            #vf1_loss = F.mse_loss(vf1, next_v)
+            #vf2_loss = F.mse_loss(vf2, next_v)
             vf_loss = vf1_loss + vf2_loss
             qf_loss = vf_loss + qf_loss
         else:
