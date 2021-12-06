@@ -129,7 +129,7 @@ class D3PG(object):
         for i in range(self.num_critic):
             target_vs.append(self.critic_targets[i].get_value(next_obs))
 
-        target_q_values = torch.min(torch.squeeze(torch.cat(target_vs, dim=-1)), dim=-1, keepdim=True)  # [0]
+        target_q_values = torch.min(torch.squeeze(torch.cat(target_vs, dim=-1)), dim=-1, keepdim=True)[0]  # [0]
         q_target = rewards + not_done * self.discount * target_q_values
         q_target = q_target.detach()
 
@@ -160,7 +160,7 @@ class D3PG(object):
             advs.append(self.critics[i](state, pi_action)[-1])  # -2 to -1
 
         advs = torch.squeeze(torch.cat(advs, dim=-1))
-        actor_loss = -torch.min(advs, dim=-1)  # [0]
+        actor_loss = -torch.min(advs, dim=-1)[0]  # [0]
         actor_loss = actor_loss.mean()
 
         # Optimize the actor
