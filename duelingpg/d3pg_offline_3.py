@@ -7,6 +7,22 @@ import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def mmd_loss_gaussian(samples1, samples2, sigma=0.2):
+    """MMD constraint with Gaussian Kernel support matching"""
+    # sigma is set to 20.0 for hopper, cheetah and 50 for walker/ant
+    diff_x_x = samples1.unsqueeze(2) - samples1.unsqueeze(1)  # B x N x N x d
+    diff_x_x = torch.mean((-(diff_x_x.pow(2)).sum(-1) / (2.0 * sigma)).exp(), dim=(1, 2))
+
+    diff_x_y = samples1.unsqueeze(2) - samples2.unsqueeze(1)
+    diff_x_y = torch.mean((-(diff_x_y.pow(2)).sum(-1) / (2.0 * sigma)).exp(), dim=(1, 2))
+
+    diff_y_y = samples2.unsqueeze(2) - samples2.unsqueeze(1)  # B x N x N x d
+    diff_y_y = torch.mean((-(diff_y_y.pow(2)).sum(-1) / (2.0 * sigma)).exp(), dim=(1, 2))
+
+    overall_loss = (diff_x_x + diff_y_y - 2.0 * diff_x_y + 1e-6).sqrt()
+    return overall_loss
+
+
 class DuelingCritic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(DuelingCritic, self).__init__()
@@ -74,6 +90,61 @@ class Critic(nn.Module):
         return self.l3(q)
 
 
+class VAEPolicy(nn.Module):
+    def __init__(
+            self,
+            obs_dim,
+            action_dim,
+            latent_dim,
+    ):
+        super().__init__()
+        self.latent_dim = latent_dim
+
+        self.e1 = torch.nn.Linear(obs_dim + action_dim, 750)
+        self.e2 = torch.nn.Linear(750, 750)
+
+        self.mean = torch.nn.Linear(750, self.latent_dim)
+        self.log_std = torch.nn.Linear(750, self.latent_dim)
+
+        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 750)
+        self.d2 = torch.nn.Linear(750, 750)
+        self.d3 = torch.nn.Linear(750, action_dim)
+
+        self.max_action = 1.0
+        self.latent_dim = latent_dim
+
+    def forward(self, state, action):
+        z = F.relu(self.e1(torch.cat([state, action], 1)))
+        z = F.relu(self.e2(z))
+
+        mean = self.mean(z)
+        # Clamped for numerical stability
+        log_std = self.log_std(z).clamp(-4, 15)
+        std = torch.exp(log_std)
+        z = mean + std * torch.from_numpy(np.random.normal(0, 1, size=(std.size()))).float().to(device)
+
+        u = self.decode(state, z)
+
+        return u, mean, std
+
+    def decode(self, state, z=None):
+        if z is None:
+            z = torch.from_numpy(np.random.normal(0, 1, size=(state.size(0), self.latent_dim))).clamp(-0.5, 0.5).float().to(device)
+
+        a = F.relu(self.d1(torch.cat([state, z], 1)))
+        a = F.relu(self.d2(a))
+        return torch.tanh(self.d3(a))
+
+    def decode_multiple(self, state, z=None, num_decode=10):
+        if z is None:
+            z = torch.from_numpy(np.random.normal(0, 1, size=(state.size(0), num_decode, self.latent_dim))).clamp(-0.5,
+                                                                                                                0.5).float().to(device)
+
+        a = F.relu(self.d1(torch.cat([state.unsqueeze(0).repeat(num_decode, 1, 1).permute(1, 0, 2), z], 2)))
+        a = F.relu(self.d2(a))
+        return torch.tanh(self.d3(a)), self.d3(a)
+
+
 class D3PG(object):
     def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
@@ -108,6 +179,17 @@ class D3PG(object):
         '''
         self.target_threshold = target_threshold # note:
         self.total_it = 0
+        self.num_samples_mmd_match = 100
+
+        self.vae = VAEPolicy(
+            obs_dim=state_dim,
+            action_dim=action_dim,
+            latent_dim=action_dim * 2,
+        ).to(device)
+
+        self.vae_optimizer = torch.optim.Adam(self.vae.parameters(), lr=3e-4)
+        self.mmd_sigma = 20
+
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -163,18 +245,34 @@ class D3PG(object):
         actor_loss = -torch.min(advs, dim=-1)[0]  # [0]
         actor_loss = actor_loss.mean()
 
+        recon, mean, std = self.vae(obs, actions)
+        recon_loss = self.qf_criterion(recon, actions)
+        kl_loss = -0.5 * (1 + torch.log(std.pow(2)) - mean.pow(2) - std.pow(2)).mean()
+        vae_loss = recon_loss + 0.5 * kl_loss
+
+        self.vae_optimizer.zero_grad()
+        vae_loss.backward()
+        self.vae_optimizer.step()
+
+
+        sampled_actions, raw_sampled_actions = self.vae.decode_multiple(obs, num_decode=self.num_samples_mmd_match)
+        raw_actor_actions = pi_action.unsqueeze(1).repeat(1, self.num_samples_mmd_match, 1)
+
+        mmd_loss = mmd_loss_gaussian(raw_sampled_actions, raw_actor_actions, sigma=self.mmd_sigma)
+
+        actor_loss = (actor_loss + 100 * mmd_loss).mean()
+
         # Optimize the actor
         if self.total_it % 1000 == 0:
-            #bc_loss = ((pi_action - action) ** 2).mean()
-            #actor_loss += bc_loss * 1.0
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
 
-
         pi_value, pi_adv, pi_Q = self.critics[0](state, self.actor(state))
         current_value, current_adv, current_Q = self.critics[0](state, action)
         target_v, target_adv, target_Q = self.critic_targets[0](next_state, self.actor_target(next_state))
+        action_divergence = ((sampled_actions - raw_actor_actions) ** 2).sum(-1)
+        raw_action_divergence = ((raw_sampled_actions - raw_actor_actions) ** 2).sum(-1)
 
         # Update the frozen target models
         if self.total_it % 2 == 0:

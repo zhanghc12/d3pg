@@ -165,8 +165,8 @@ class D3PG(object):
 
         # Optimize the actor
         if self.total_it % 1000 == 0:
-            #bc_loss = ((pi_action - action) ** 2).mean()
-            #actor_loss += bc_loss * 1.0
+            bc_loss = ((pi_action - action) ** 2).mean()
+            actor_loss += bc_loss * 1.0
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()

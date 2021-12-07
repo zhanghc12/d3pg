@@ -7,6 +7,9 @@ import os.path as osp
 import duelingpg.utils as utils
 from duelingpg import d3pg_offline
 from duelingpg import d3pg_offline_1
+from duelingpg import d3pg_offline_2
+from duelingpg import d3pg_offline_3
+
 from duelingpg import OurDDPG
 from duelingpg import dtpg
 from duelingpg import dhpg
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
-    parser.add_argument("--version", default=6, type=int)
+    parser.add_argument("--version", default=3, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     args = parser.parse_args()
@@ -126,6 +129,10 @@ if __name__ == "__main__":
             policy = d3pg_offline.D3PG(**kwargs)
         if args.version == 1:
             policy = d3pg_offline_1.D3PG(**kwargs)
+        if args.version == 2:
+            policy = d3pg_offline_2.D3PG(**kwargs)
+        if args.version == 3:
+            policy = d3pg_offline_3.D3PG(**kwargs)
     elif args.policy == "D4PG":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action

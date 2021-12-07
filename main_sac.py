@@ -101,7 +101,6 @@ else:
 if torch.cuda.is_available():
     experiment_dir = '/data/zhanghc/d3pg/'
     args.start_steps = 1000
-
 else:
     experiment_dir = '/tmp/data/zhanghc/d3pg/'
     args.start_steps = 1000

@@ -1,5 +1,5 @@
-CUDA_VISIBLE_DEVICES=0 python main_sac.py --cuda --version $1 --model_version $2  --policy_version $3 --alpha $4 --env Ant-v2 --seed 0 &\
-CUDA_VISIBLE_DEVICES=1 python main_sac.py --cuda --version $1 --model_version $2 --policy_version $3 --alpha $4 --env Ant-v2 --seed 1
+CUDA_VISIBLE_DEVICES=0 python main_sac.py --cuda --version $1 --model_version $2 --policy_version $3 --alpha $4 --target_version $5 --env Ant-v2 --seed 0 &\
+CUDA_VISIBLE_DEVICES=1 python main_sac.py --cuda --version $1 --model_version $2 --policy_version $3 --alpha $4 --target_version $5 --env Ant-v2 --seed 1
 
 
 # CUDA_VISIBLE_DEVICES=3 python main_sac.py --cuda --version 0  --env Ant-v2 --seed 1 --start_steps 1000
