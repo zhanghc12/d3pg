@@ -100,11 +100,11 @@ class TanhNormal(Distribution):
 
 
 class TQC(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, top_quantiles_to_drop_per_net=2):
         n_quantiles = 25
         n_nets = 5
         target_entropy = - action_dim
-        top_quantiles_to_drop = 2 * n_nets
+        top_quantiles_to_drop = top_quantiles_to_drop_per_net * n_nets
 
         self.actor = Actor(state_dim, action_dim).to(device)
         self.critic = Critic(state_dim, action_dim, n_quantiles, n_nets).to(device)
