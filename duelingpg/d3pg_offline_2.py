@@ -161,12 +161,14 @@ class D3PG(object):
 
         advs = torch.squeeze(torch.cat(advs, dim=-1))
         actor_loss = -torch.min(advs, dim=-1)[0]  # [0]
+        lmbda = 2.5 / actor_loss.abs().mean().detach()
         actor_loss = actor_loss.mean()
 
         # Optimize the actor
-        if self.total_it % 1000 == 0:
+        if self.total_it % 2 == 0:
             bc_loss = ((pi_action - action) ** 2).mean()
-            actor_loss += bc_loss * 1.0
+            actor_loss = actor_loss * lmbda + bc_loss
+            # actor_loss += bc_loss * 1.0
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
