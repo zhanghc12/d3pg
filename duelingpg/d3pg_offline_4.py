@@ -266,7 +266,6 @@ class D3PG(object):
         # Optimize the actor
         if self.total_it % 2 == 0:
             actor_loss = actor_loss * lmbda + mmd_loss.mean()
-
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()

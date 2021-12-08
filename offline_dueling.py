@@ -9,6 +9,7 @@ from duelingpg import d3pg_offline
 from duelingpg import d3pg_offline_1
 from duelingpg import d3pg_offline_2
 from duelingpg import d3pg_offline_3
+from duelingpg import d3pg_offline_4
 
 from duelingpg import OurDDPG
 from duelingpg import dtpg
@@ -133,6 +134,8 @@ if __name__ == "__main__":
             policy = d3pg_offline_2.D3PG(**kwargs)
         if args.version == 3:
             policy = d3pg_offline_3.D3PG(**kwargs)
+        if args.version == 4:
+            policy = d3pg_offline_4.D3PG(**kwargs)
     elif args.policy == "D4PG":
         #kwargs["policy_noise"] = args.policy_noise * max_action
         #kwargs["noise_clip"] = args.noise_clip * max_action
