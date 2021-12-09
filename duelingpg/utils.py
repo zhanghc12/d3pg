@@ -244,7 +244,6 @@ def test_mc(env, policy, onpolicy_buffer):
         fake_done_bool = float(
             done) if episode_step < eval_env._max_episode_steps else 1
 
-
         states.append(state)
         actions.append(action)
         rewards.append(reward)
@@ -270,7 +269,10 @@ def test_mc(env, policy, onpolicy_buffer):
                     timestep)
 
             state, done = eval_env.reset(), False
-
+            states = []
+            actions = []
+            rewards = []
+            timesteps = []
             episode_step = 0
     for _ in range(50000):
         policy.train_value_mc(onpolicy_buffer, batch_size=256)
