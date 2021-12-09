@@ -213,13 +213,13 @@ def test_td(env, policy, onpolicy_buffer):
         iter += 1
         state = next_state
 
-        if iter > 100000:
+        if iter > 1000:
             break
         if done:
             state, done = eval_env.reset(), False
             episode_reward = 0
             episode_step = 0
-    for _ in range(50000):
+    for _ in range(1):
         policy.train_value(onpolicy_buffer, batch_size=256)
     onpolicy_buffer.clear()
 
@@ -252,7 +252,7 @@ def test_mc(env, policy, onpolicy_buffer):
 
         iter += 1
         state = next_state
-        if iter > 100000:
+        if iter > 1000:
             break
         if done:
             for i in reversed(range(len(rewards) - 1)):
@@ -272,6 +272,6 @@ def test_mc(env, policy, onpolicy_buffer):
             state, done = eval_env.reset(), False
 
             episode_step = 0
-    for _ in range(50000):
+    for _ in range(1):
         policy.train_value_mc(onpolicy_buffer, batch_size=256)
     onpolicy_buffer.clear()
