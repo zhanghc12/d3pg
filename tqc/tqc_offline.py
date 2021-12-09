@@ -100,9 +100,9 @@ class TanhNormal(Distribution):
 
 
 class TQC(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, top_quantiles_to_drop_per_net=2):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, top_quantiles_to_drop_per_net=2, n_nets=5):
         n_quantiles = 25
-        n_nets = 5
+        n_nets = n_nets
         target_entropy = - action_dim
         top_quantiles_to_drop = top_quantiles_to_drop_per_net * n_nets
 
@@ -146,7 +146,7 @@ class TQC(object):
             sorted_z_part = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
 
             # compute target
-            target = reward + not_done * self.discount * (sorted_z_part - alpha * next_log_pi)
+            target = reward + not_done * self.discount * (sorted_z_part) #  - alpha * next_log_pi)
 
         cur_z = self.critic(state, action)
         critic_loss = quantile_huber_loss_f(cur_z, target)
@@ -162,7 +162,7 @@ class TQC(object):
         # --- Policy and alpha loss ---
         new_action, log_pi = self.actor(state)
         alpha_loss = -self.log_alpha * (log_pi + self.target_entropy).detach().mean()
-        actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
+        actor_loss = (- self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()

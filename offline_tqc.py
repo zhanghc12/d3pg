@@ -96,7 +96,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
     experiment_dir = experiment_dir + '1202/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")
@@ -133,6 +133,7 @@ if __name__ == "__main__":
     kwargs['version'] = args.version
     kwargs['target_threshold'] = args.target_threshold
     kwargs['top_quantiles_to_drop_per_net'] = args.top_quantiles_to_drop_per_net
+    kwards['n_nets'] = args.n_nets
     policy = tqc_offline.TQC(**kwargs)
 
 
