@@ -98,7 +98,7 @@ class D3PG(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.critic_eval = DuelingCritic(state_dim, action_dim).to(device)
+        self.critic_eval = DuelingCriticv2(state_dim, action_dim).to(device)
         self.critic_eval_target = copy.deepcopy(self.critic_eval)
         self.critic_eval_optimizer = torch.optim.Adam(self.critic_eval.parameters(), lr=3e-4)
 
@@ -185,7 +185,7 @@ class D3PG(object):
 
         # Compute actor loss
 
-        actor_loss = -self.critic(state, self.actor(state))[-1].mean()
+        actor_loss = -self.critic(state, self.actor(state))[1].mean()
 
 
         # Optimize the actor
