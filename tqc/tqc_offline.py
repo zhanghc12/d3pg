@@ -104,7 +104,7 @@ class TQC(object):
         n_quantiles = 25
         n_nets = n_nets
         target_entropy = - action_dim
-        top_quantiles_to_drop = top_quantiles_to_drop_per_net * n_nets
+        top_quantiles_to_drop = top_quantiles_to_drop_per_net
 
         self.actor = Actor(state_dim, action_dim).to(device)
         self.critic = Critic(state_dim, action_dim, n_quantiles, n_nets).to(device)
