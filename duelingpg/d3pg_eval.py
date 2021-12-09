@@ -32,6 +32,32 @@ class DuelingCritic(nn.Module):
         adv = self.la(adv)
         return adv
 
+class DuelingCriticv2(nn.Module):
+    def __init__(self, num_inputs, num_actions):
+        super(DuelingCriticv2, self).__init__()
+
+        self.l1 = nn.Linear(num_inputs, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.lv_1 = nn.Linear(256, 1)
+
+        self.l3 = nn.Linear(num_inputs + num_actions, 256)
+        self.l4 = nn.Linear(256, 256)
+        self.la_1 = nn.Linear(256, 1)
+
+
+    def forward(self, state, action, return_full=False):
+        sa = torch.cat([state, action], 1)
+        value_1 = self.lv_1(F.relu(self.l2(F.relu(self.l1(state)))))
+        adv_1 = self.la_1(F.relu(self.l4(F.relu(self.l3(sa)))))
+
+        q1 = adv_1 + value_1
+        return value_1, adv_1, q1
+
+    def get_value(self, state):
+        value_1 = self.lv_1(F.relu(self.l2(F.relu(self.l1(state)))))
+        return value_1
+
+
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -68,7 +94,7 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.critic = DuelingCritic(state_dim, action_dim).to(device)
+        self.critic = DuelingCriticv2(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
