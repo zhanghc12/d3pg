@@ -133,7 +133,7 @@ if __name__ == "__main__":
     kwargs['version'] = args.version
     kwargs['target_threshold'] = args.target_threshold
     kwargs['top_quantiles_to_drop_per_net'] = args.top_quantiles_to_drop_per_net
-    kwards['n_nets'] = args.n_nets
+    kwargs['n_nets'] = args.n_nets
     policy = tqc_offline.TQC(**kwargs)
 
 
