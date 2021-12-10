@@ -187,7 +187,7 @@ class D3PG(object):
 
         actor_loss = -self.critic(state, self.actor(state))[1].mean()
 
-        if self.total_it % 10 == 0:
+        if self.total_it % 1000 == 0:
 
             # Optimize the actor
             self.actor_optimizer.zero_grad()

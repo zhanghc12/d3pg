@@ -84,8 +84,8 @@ if __name__ == "__main__":
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     parser.add_argument("--n_quantiles", default=25, type=int)
-    parser.add_argument("--top_quantiles_to_drop_per_net", default=2, type=int)
-    parser.add_argument("--n_nets", default=5, type=int)
+    parser.add_argument("--top_quantiles_to_drop_per_net", default=249, type=int)
+    parser.add_argument("--n_nets", default=10, type=int)
 
 
     args = parser.parse_args()
