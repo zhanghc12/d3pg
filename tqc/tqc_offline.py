@@ -189,10 +189,10 @@ class TQC(object):
         normalized_std_z_ood = std_z_ood / next_z.mean()
         self.normalized_std_z_ood = self.normalized_std_z_ood * 0.9 + 0.1 * normalized_std_z_ood.item()
 
-        if self.normalized_std_z_ood > self.normalized_std_z_iod * 2:
-            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 1.1, self.quantiles_total - 1), 50))
+        if self.normalized_std_z_ood > self.normalized_std_z_iod * 1.1:
+            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 1.1, self.quantiles_total - 10), 50))
         else:
-            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 0.9, self.quantiles_total - 1), 50))
+            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 0.9, self.quantiles_total - 10), 50))
 
         return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood
 
