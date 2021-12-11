@@ -126,6 +126,9 @@ class TQC(object):
 
         self.top_quantiles_to_drop = top_quantiles_to_drop
         self.quantiles_total = n_quantiles * n_nets
+        self.normalized_std_z_ood = 0
+        self.normalized_std_z_iod = 0
+
 
     def select_action(self, state):
         return self.actor.select_action(state)
@@ -144,7 +147,6 @@ class TQC(object):
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
             sorted_z_part = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
-
             # compute target
             target = reward + not_done * self.discount * (sorted_z_part - alpha * next_log_pi)
 
@@ -173,6 +175,23 @@ class TQC(object):
         self.alpha_optimizer.step()
 
         self.total_it += 1
+
+        cur_z = self.critic_target(state, action)
+        std_z_iid = torch.std(cur_z, dim=1, keepdim=False)
+        std_z_iid = std_z_iid.mean()
+        normalized_std_z_iid = std_z_iid / cur_z.mean()
+
+        self.normalized_std_z_iod = self.normalized_std_z_iod * 0.995 + 0.005 * normalized_std_z_iid
+
+        std_z_ood = torch.std(next_z, dim=1, keepdim=False)
+        std_z_ood = std_z_ood.mean()
+        normalized_std_z_ood = std_z_ood / next_z.mean()
+        self.normalized_std_z_ood = self.normalized_std_z_ood * 0.9 + 0.1 * normalized_std_z_ood
+
+        if self.normalized_std_z_ood > self.normalized_std_z_iod * 1.2:
+            self.top_quantiles_to_drop = max(min(self.top_quantiles_to_drop * 1.2, self.quantiles_total - 1), 0)
+        else:
+            self.top_quantiles_to_drop = max(min(self.top_quantiles_to_drop * 0.8, self.quantiles_total - 1), 0)
 
         return actor_loss.item(), critic_loss.item()
 
