@@ -155,10 +155,14 @@ if __name__ == "__main__":
 
         episode_timesteps += 1
 
-        actor_loss, critic_loss = policy.train(replay_buffer, args.batch_size)
+        actor_loss, critic_loss, top_quantiles_to_drop, normalized_std_z_iod, normalized_std_z_ood = policy.train(replay_buffer, args.batch_size)
 
         writer.add_scalar('loss/actor_loss', actor_loss, t)
         writer.add_scalar('loss/critic_loss', critic_loss, t)
+        writer.add_scalar('loss/top_quantiles_to_drop', top_quantiles_to_drop, t)
+        writer.add_scalar('loss/normalized_std_z_iod', normalized_std_z_iod, t)
+        writer.add_scalar('loss/normalized_std_z_ood', normalized_std_z_ood, t)
+
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
