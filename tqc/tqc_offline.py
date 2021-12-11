@@ -176,6 +176,7 @@ class TQC(object):
 
         self.total_it += 1
 
+        '''
         cur_z = self.critic_target(state, action)
         std_z_iid = torch.std(cur_z, dim=1, keepdim=False)
         std_z_iid = std_z_iid.mean()
@@ -192,7 +193,7 @@ class TQC(object):
             self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 1.2, self.quantiles_total - 1), 50))
         else:
             self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 0.8, self.quantiles_total - 1), 50))
-
+        '''
         return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood
 
 
