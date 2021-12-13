@@ -228,7 +228,9 @@ class TQC(object):
         std_z_ood = torch.std(next_z, dim=1, keepdim=False)  # batch * quantiles
         std_z_ood = std_z_ood / (torch.abs(next_z).mean(dim=1, keepdim=False) + 1e-2)  # batch * quantile
         std_z_ood = std_z_ood.mean(dim=1, keepdim=True)  # batch * 1
-        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 > 0, 10 * self.base_tensor, 150 * self.base_tensor)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 2 > 0, 10 * self.base_tensor, 50 * self.base_tensor)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 < 0, 150 * self.base_tensor, cond)  # batch * 1
+
         mask = (self.mask < cond).float()  # batch * total_quantile
 
         critic_loss = quantile_huber_loss_f(cur_z, target, mask)
