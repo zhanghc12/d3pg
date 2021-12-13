@@ -228,8 +228,8 @@ class TQC(object):
         std_z_ood = torch.std(next_z, dim=1, keepdim=False)  # batch * quantiles
         std_z_ood = std_z_ood / (torch.abs(next_z).mean(dim=1, keepdim=False) + 1e-2)  # batch * quantile
         std_z_ood = std_z_ood.mean(dim=1, keepdim=True)  # batch * 1
-        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 2 > 0, 10 * self.base_tensor, 50 * self.base_tensor)  # batch * 1
-        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 < 0, 150 * self.base_tensor, cond)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 2 > 0, 0.04 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 < 0, 0.6 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
 
         # version rl1 : x > 1.1, 10 |  x < 1.1, 150
         # version rl3 : x > 2, 10,  | 1.1 < x < 2, 50, | x < 1.1, 150
