@@ -18,27 +18,19 @@ class DuelingCritic(nn.Module):
         self.l3 = nn.Linear(256 + action_dim, 256)
         self.la = nn.Linear(256, 1)
 
-
-        self.l4 = nn.Linear(state_dim, 256)
-        self.l5 = nn.Linear(256, 256)
-        self.lv2 = nn.Linear(256, 1)
-
-        self.l6 = nn.Linear(256 + action_dim, 256)
-        self.la2 = nn.Linear(256, 1)
-
     def forward(self, state, action):
         feat = F.relu(self.l2(F.relu(self.l1(state))))
         value = self.lv(feat)
         adv = F.relu(self.l3(torch.cat([feat, action], 1)))
         adv = self.la(adv)
+        return value, adv, value + adv
 
-        feat2 = F.relu(self.l5(F.relu(self.l4(state))))
-        value2 = self.lv2(feat2)
-        adv2 = F.relu(self.l6(torch.cat([feat2, action], 1)))
-        adv2 = self.la2(adv2)
-
-        return value, adv, value + adv, value2, adv2, value2 + adv2
-
+    def forward_adv(self, state, action):
+        feat = F.relu(self.l2(F.relu(self.l1(state))))
+        feat = feat.detach()
+        adv = F.relu(self.l3(torch.cat([feat, action], 1)))
+        adv = self.la(adv)
+        return adv
 
 class DuelingCriticv2(nn.Module):
     def __init__(self, num_inputs, num_actions):
@@ -102,11 +94,11 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.critic = DuelingCritic(state_dim, action_dim).to(device)
+        self.critic = DuelingCriticv2(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.critic_eval = DuelingCritic(state_dim, action_dim).to(device)
+        self.critic_eval = DuelingCriticv2(state_dim, action_dim).to(device)
         self.critic_eval_target = copy.deepcopy(self.critic_eval)
         self.critic_eval_optimizer = torch.optim.Adam(self.critic_eval.parameters(), lr=3e-4)
 
@@ -127,10 +119,10 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
-        target_v1, _, _, target_v2, _, _ = self.critic_eval_target(next_state, self.actor_target(next_state))
-        target_v = reward + (not_done * self.discount * (target_v1 + target_v2) / 2).detach()
-        pi_value1, _, _, pi_value2, _, _ = self.critic_eval(state, action)
-        critic_loss = F.mse_loss(pi_value1, target_v) + F.mse_loss(pi_value2, target_v)
+        target_v, _, _ = self.critic_eval_target(next_state, self.actor_target(next_state))
+        target_v = reward + (not_done * self.discount * target_v).detach()
+        pi_value, _, _ = self.critic_eval(state, action)
+        critic_loss = F.mse_loss(pi_value, target_v)
 
         # Optimize the critic
         self.critic_eval_optimizer.zero_grad()
@@ -141,17 +133,16 @@ class D3PG(object):
         for param, target_param in zip(self.critic_eval.parameters(), self.critic_eval_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return critic_loss, ((pi_value1 + pi_value2) / 2).mean().item()
+        return critic_loss, pi_value.mean().item()
 
     def train_value_mc(self, replay_buffer, batch_size=256):
         # Sample replay buffer
         state, action, next_state, reward, not_done, timestep = replay_buffer.sample_include_timestep(batch_size)
 
-        target_v1, _, _, target_v2, _, _ = self.critic_eval_target(next_state, self.actor_target(next_state))
-        target_v = reward + (not_done * torch.pow(self.discount, timestep) * (target_v1 + target_v2) / 2).detach()
-        pi_value1, _, _, pi_value2, _, _ = self.critic_eval(state, action)
-        critic_loss = F.mse_loss(pi_value1, target_v) + F.mse_loss(pi_value2, target_v)
-
+        target_v, _, _ = self.critic_eval_target(next_state, self.actor_target(next_state))
+        target_v = reward + (not_done * torch.pow(self.discount, timestep) * target_v).detach()
+        pi_value, _, _ = self.critic_eval(state, action)
+        critic_loss = F.mse_loss(pi_value, target_v)
 
         # Optimize the critic
         self.critic_eval_optimizer.zero_grad()
@@ -162,16 +153,13 @@ class D3PG(object):
         for param, target_param in zip(self.critic_eval.parameters(), self.critic_eval_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return critic_loss, ((pi_value1 + pi_value2) / 2).mean().item()
+        return critic_loss, pi_value.mean().item()
 
     def eval_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size * 10)
-        eval_value1, _, _, eval_value2, _, _ = self.critic_eval(state, action)
-        train_value1, _, _, train_value2, _, _ = self.critic(state, action)
-
-        eval_value = (eval_value1 + eval_value2)/2
-        train_value = (train_value1 + train_value2)/2
+        eval_value, _, _ = self.critic_eval(state, action)
+        train_value, _, _ = self.critic(state, action)
 
         return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item()
 
@@ -181,14 +169,12 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
-        target_v1, target_adv1, target_Q1, target_v2, target_adv2, target_Q2, = self.critic_target(next_state, self.actor_target(next_state))
-        target_Q = reward + (not_done * self.discount * (target_v1 + target_v2) / 2).detach()
-
-        current_value1, current_adv1, current_Q1, current_value2, current_adv2, current_Q2 = self.critic(state, action)
-        pi_value1, pi_adv1, pi_Q1,  pi_value2, pi_adv2, pi_Q2 = self.critic(state, self.actor(state))
-        current_Q1 = current_Q1 - pi_adv1
-        current_Q2 = current_Q2 - pi_adv2
-        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+        target_v, target_adv, target_Q = self.critic_target(next_state, self.actor_target(next_state))
+        target_Q = reward + (not_done * self.discount * target_v).detach()
+        current_value, current_adv, current_Q = self.critic(state, action)
+        pi_value, pi_adv, pi_Q = self.critic(state, self.actor(state))
+        current_Q = current_Q - pi_adv
+        critic_loss = F.mse_loss(current_Q, target_Q)
         adv_loss = critic_loss
 
         # Optimize the critic
@@ -196,12 +182,12 @@ class D3PG(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
+
         # Compute actor loss
 
-        pi_value1, pi_adv1, pi_Q1,  pi_value2, pi_adv2, pi_Q2 = self.critic(state, self.actor(state))
-        actor_loss = -torch.min(pi_adv1, pi_adv2).mean()
+        actor_loss = -self.critic(state, self.actor(state))[1].mean()
 
-        if self.total_it % 1 == 0:
+        if self.total_it % 1000000 == 0:
 
             # Optimize the actor
             self.actor_optimizer.zero_grad()
