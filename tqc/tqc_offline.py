@@ -231,6 +231,8 @@ class TQC(object):
         cond = torch.where(std_z_ood - self.normalized_std_z_iod * 2 > 0, 10 * self.base_tensor, 50 * self.base_tensor)  # batch * 1
         cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 < 0, 150 * self.base_tensor, cond)  # batch * 1
 
+        # version rl1 : x > 1.1, 10 |  x < 1.1, 150
+        # version rl3 : x > 2, 10,  | 1.1 < x < 2, 50, | x < 1.1, 150
         mask = (self.mask < cond).float()  # batch * total_quantile
 
         critic_loss = quantile_huber_loss_f(cur_z, target, mask)
