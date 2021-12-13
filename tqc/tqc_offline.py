@@ -132,6 +132,7 @@ class TQC(object):
         self.n_quantiles = n_quantiles
         self.base_tensor = torch.ones([256, 1]).to(device)
         self.mask = torch.arange(self.quantiles_total).repeat(256, 1).to(device) # batch * totoal_quantile
+        self.remained_quantiles = self.quantiles_total - self.top_quantiles_to_drop
 
     def select_action(self, state):
         return self.actor.select_action(state)
@@ -212,7 +213,7 @@ class TQC(object):
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            # sorted_z_part = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
             # compute target
             target = reward + not_done * self.discount * (sorted_z - alpha * next_log_pi)
 
