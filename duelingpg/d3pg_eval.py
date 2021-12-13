@@ -200,7 +200,7 @@ class D3PG(object):
 
         pi_value1, pi_adv1, pi_Q1,  pi_value2, pi_adv2, pi_Q2 = self.critic(state, self.actor(state))
         # actor_loss = -torch.min(pi_adv1, pi_adv2).mean()
-        actor_loss = ((pi_adv1 + pi_adv2) / 2).mean()
+        actor_loss = -((pi_adv1 + pi_adv2) / 2).mean()
 
         if self.total_it % 1 == 0:
 
