@@ -202,8 +202,8 @@ if __name__ == "__main__":
 
     offline_dataset = d4rl.qlearning_dataset(env)
 
-    train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
-    train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
+    train_x = torch.from_numpy(offline_dataset['observations']).float().to(device)
+    train_y = torch.from_numpy(offline_dataset['actions']).float().to(device)
 
     # Initialize likelihood and model
     gp_likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=action_dim).to(device)
