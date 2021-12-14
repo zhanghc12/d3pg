@@ -277,3 +277,95 @@ def test_mc(env, policy, onpolicy_buffer):
     for _ in range(50000):
         policy.train_value_mc(onpolicy_buffer, batch_size=256)
     onpolicy_buffer.clear()
+
+
+
+def test_td_cpu(env, policy, onpolicy_buffer):
+    eval_env = gym.make(env)
+    state, done, iter = eval_env.reset(), False, 0
+    episode_reward = 0
+    episode_step = 0
+
+    while not done:
+        episode_step += 1
+        action = policy.select_action(np.array(state))
+        next_state, reward, done, _ = eval_env.step(action)
+        done_bool = float(
+            done) if episode_step < eval_env._max_episode_steps else 0
+        fake_done_bool = float(
+            done) if episode_step < eval_env._max_episode_steps else 1
+        onpolicy_buffer.add(
+            state,
+            action,
+            next_state,
+            reward,
+            done_bool,
+            fake_done_bool)
+        episode_reward += reward
+        iter += 1
+        state = next_state
+
+        if iter > 1000:
+            break
+        if done:
+            state, done = eval_env.reset(), False
+            episode_reward = 0
+            episode_step = 0
+    for _ in range(5):
+        policy.train_value(onpolicy_buffer, batch_size=256)
+    onpolicy_buffer.clear()
+
+
+def test_mc_cpu(env, policy, onpolicy_buffer):
+    eval_env = gym.make(env)
+    state, done, iter = eval_env.reset(), False, 0
+    episode_reward = 0
+    episode_step = 0
+
+    states = []
+    actions = []
+    rewards = []
+    timesteps = []
+
+    while not done:
+        episode_step += 1
+        action = policy.select_action(np.array(state))
+        next_state, reward, done, _ = eval_env.step(action)
+        done_bool = float(
+            done) if episode_step < eval_env._max_episode_steps else 0
+        fake_done_bool = float(
+            done) if episode_step < eval_env._max_episode_steps else 1
+
+        states.append(state)
+        actions.append(action)
+        rewards.append(reward)
+        timesteps.append(episode_step + 1)
+
+        iter += 1
+        state = next_state
+        if iter > 1000:
+            break
+        if done:
+            for i in reversed(range(len(rewards) - 1)):
+                rewards[i] = 0.99 * rewards[i + 1] + rewards[i]
+
+            for state, action, reward, timestep in zip(
+                    states, actions, rewards, timesteps):
+                onpolicy_buffer.add(
+                    state,
+                    action,
+                    next_state,
+                    reward,
+                    done_bool,
+                    fake_done_bool,
+                    timestep)
+
+            state, done = eval_env.reset(), False
+            states = []
+            actions = []
+            rewards = []
+            timesteps = []
+            episode_step = 0
+    for _ in range(5):
+        policy.train_value_mc(onpolicy_buffer, batch_size=256)
+    onpolicy_buffer.clear()
