@@ -139,6 +139,72 @@ class TQC(object):
     def select_action(self, state):
         return self.actor.select_action(state)
 
+    def train(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        alpha = torch.exp(self.log_alpha)
+        # Sample replay buffer
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+
+        with torch.no_grad():
+            # get policy action
+            new_next_action, next_log_pi = self.actor(next_state)
+
+            # compute and cut quantiles at the next state
+            next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
+            sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))  # batch * 250
+            sorted_z_part = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop] # batch * 200
+            # compute target
+            target = reward + not_done * self.discount * (sorted_z_part - alpha * next_log_pi)
+
+        cur_z = self.critic(state, action)
+        critic_loss = quantile_huber_loss_f(cur_z, target)
+
+        # --- Update ---
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        # --- Policy and alpha loss ---
+        new_action, log_pi = self.actor(state)
+        alpha_loss = -self.log_alpha * (log_pi + self.target_entropy).detach().mean()
+        actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
+
+        # policy_log_prob = self.actor.log_prob(state, action)
+
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
+
+        self.total_it += 1
+
+
+        cur_z = self.critic_target(state, action)
+        std_z_iid = torch.std(cur_z, dim=1, keepdim=False)
+        std_z_iid = std_z_iid.mean()
+        normalized_std_z_iid = std_z_iid / cur_z.mean()
+
+        self.normalized_std_z_iod = self.normalized_std_z_iod * 0.995 + 0.005 * normalized_std_z_iid.item()
+
+        std_z_ood = torch.std(next_z, dim=1, keepdim=False)
+        std_z_ood = std_z_ood.mean()
+        normalized_std_z_ood = std_z_ood / next_z.mean()
+        self.normalized_std_z_ood = self.normalized_std_z_ood * 0.9 + 0.1 * normalized_std_z_ood.item()
+
+        if self.normalized_std_z_ood > self.normalized_std_z_iod * 1.1:
+            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 1.1, self.quantiles_total - 10), 50))
+        else:
+            self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 0.9, self.quantiles_total - 10), 50))
+
+        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood
+
+
     def train_without_mask(self, replay_buffer, batch_size=256):
         self.total_it += 1
         alpha = torch.exp(self.log_alpha)
@@ -202,7 +268,7 @@ class TQC(object):
 
         return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood
 
-    def train(self, replay_buffer, batch_size=256):
+    def train_adaptive(self, replay_buffer, batch_size=256):
         self.total_it += 1
         alpha = torch.exp(self.log_alpha)
         # Sample replay buffer
