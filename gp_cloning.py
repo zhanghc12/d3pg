@@ -256,7 +256,7 @@ if __name__ == "__main__":
             writer.add_scalar('loss/eval_rew', eval_rew, epoch)
             writer.add_scalar('loss/eval_std', eval_std, epoch)
 
-            torch.save(gp_model.state_dict(), f'{file_name}/gp_{args.gp_type}_{epoch}.pt')
+            torch.save(gp_model.state_dict(), f'{file_name}/gp_{args.kernel_type}_{epoch}.pt')
 
 
 
