@@ -224,7 +224,7 @@ class D3PG(object):
         for i in range(self.num_critic):
             pi_value, pi_adv, pi_Q = self.critics[i](state, self.actor(state))
             pi_advs.append(pi_adv)
-        pi_advs = torch.min(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)
+        pi_advs = torch.min(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)[0]
         # actor_loss = -torch.min(pi_adv1, pi_adv2).mean()
         actor_loss = -(pi_advs).mean()
 
