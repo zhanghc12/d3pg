@@ -226,6 +226,8 @@ class D3PG(object):
             pi_advs.append(pi_adv)
         pi_advs = torch.min(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)[0]
         # actor_loss = -torch.min(pi_adv1, pi_adv2).mean()
+
+        pi_advs = torch.mean(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)
         actor_loss = -(pi_advs).mean()
 
         if self.total_it % 1 == 0:
