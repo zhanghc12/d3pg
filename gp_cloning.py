@@ -10,6 +10,9 @@ import gpytorch
 from tqc.gp_models import MultitaskGPModel
 from torch.distributions import Normal
 from scipy.stats import norm
+import os
+import shutil
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -180,7 +183,11 @@ if __name__ == "__main__":
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets))
 
-    file_name = experiment_dir + args.env
+    file_name = experiment_dir + args.env + '/'
+    if os.path.exists(file_name):
+        shutil.rmtree(file_name)
+    os.makedirs(file_name)
+
 
     env = gym.make(args.env)
 
