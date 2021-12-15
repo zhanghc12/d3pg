@@ -334,8 +334,7 @@ class TQC(object):
 
         self.total_it += 1
 
-
-        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, std_z_ood.mean().item()
+        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_iod
 
 
 
