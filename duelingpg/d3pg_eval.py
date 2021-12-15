@@ -84,12 +84,12 @@ class Critic(nn.Module):
 
 
 class D3PG(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, num_critic=2):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.num_critic = 2
+        self.num_critic = num_critic
         self.critics = nn.ModuleList()
         for i in range(self.num_critic):
             self.critics.append(DuelingCritic(state_dim, action_dim))

@@ -55,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
     parser.add_argument("--version", default=1, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
+    parser.add_argument("--num_critic", default=2, type=float)
 
     args = parser.parse_args()
 
@@ -64,7 +65,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
     experiment_dir = experiment_dir + '10_27/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic))
 
     file_name = "{}_{}_{}".format(args.policy, args.env, args.seed)
     print("---------------------------------------")
@@ -95,6 +96,7 @@ if __name__ == "__main__":
         "max_action": max_action,
         "discount": args.discount,
         "tau": args.tau,
+        "num_critic": args.num_critic
     }
 
     # Initialize policy
