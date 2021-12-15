@@ -9,6 +9,17 @@ from torch.distributions import Distribution, Normal
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOG_STD_MIN_MAX = (-20, 2)
 
+epsilon = 1e-6
+
+
+def atanh(x):
+    one_plus_x = (1 + x).clamp(min=1e-6)
+    one_minus_x = (1 - x).clamp(min=1e-6)
+    return 0.5 * torch.log(one_plus_x / one_minus_x)
+
+
+
+
 class Mlp(nn.Module):
     def __init__(
             self,
@@ -78,6 +89,22 @@ class Actor(nn.Module):
         action, _ = self.forward(obs)
         action = action[0].cpu().detach().numpy()
         return action
+
+    def log_prob(self, obs, action):
+        mean, log_std = self.net(obs).split([self.action_dim, self.action_dim], dim=1)
+        log_std = log_std.clamp(*LOG_STD_MIN_MAX)
+        std = log_std.exp()
+
+        normal = Normal(mean, std)
+        y_t = action
+        x_t = atanh(y_t)
+        log_prob = normal.log_prob(x_t)
+        # Enforcing Action Bound
+        log_prob -= torch.log((1 - y_t.pow(2)) + epsilon)
+        log_prob = log_prob.sum(1, keepdim=True)
+
+        return log_prob
+
 
 
 class TanhNormal(Distribution):
@@ -322,7 +349,13 @@ class TQC(object):
         sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
         pi_value = sorted_z.mean(1, keepdim=True)
         # actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
-        actor_loss = (alpha * log_pi - pi_value).mean()
+        actor_loss = (alpha * log_pi - pi_value)
+        lmbda = 2.5 / actor_loss.abs().mean().detach()
+        actor_loss = actor_loss.mean()
+
+        if self.version == 1:
+            behavior_log_prob = self.actor.log_prob(state, action)
+            actor_loss = actor_loss * lmbda - behavior_log_prob.mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
