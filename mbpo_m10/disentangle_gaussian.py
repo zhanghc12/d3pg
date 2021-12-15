@@ -196,6 +196,13 @@ class EnsembleModel(nn.Module):
         disentangle_loss = torch.sum(torch.mean(torch.mean(torch.abs(sa_mean * s_mean), dim=-1), dim=-1))
         return disentangle_loss
 
+        # p1(sa_mean, sa_std), p2(s_mean, s_std)
+        # min KL(p1, p2) ~ max -(sa_mean - s_mean) ** 2
+        # l_aux =  min  sa_mean * s_mean,
+        # l1 = sa_mean -> target
+        # l2 = s_mean -> target
+
+
     def get_separate_loss(self, sa_mean, s_mean, sa_logvar, s_logvar, labels, inc_var_loss=True):
         s_inv_var = torch.exp(-s_logvar)
         if inc_var_loss:

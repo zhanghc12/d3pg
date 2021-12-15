@@ -92,7 +92,7 @@ class D3PG(object):
         self.num_critic = num_critic
         self.critics = nn.ModuleList()
         for i in range(self.num_critic):
-            self.critics.append(Critic(state_dim, action_dim))
+            self.critics.append(DuelingCritic(state_dim, action_dim))
         self.critics.to(device)
 
         self.critics_target = copy.deepcopy(self.critics)
@@ -100,7 +100,7 @@ class D3PG(object):
 
         self.critics_eval = nn.ModuleList()
         for i in range(self.num_critic):
-            self.critics_eval.append(Critic(state_dim, action_dim))
+            self.critics_eval.append(DuelingCritic(state_dim, action_dim))
         self.critics_eval.to(device)
 
         self.critics_eval_target = copy.deepcopy(self.critics_eval)
@@ -124,14 +124,14 @@ class D3PG(object):
 
         target_vs = []
         for i in range(self.num_critic):
-            target_v = self.critics_eval_target[i](next_state, self.actor_target(next_state))
+            target_v, _, _ = self.critics_eval_target[i](next_state, self.actor_target(next_state))
             target_vs.append(target_v)
         target_v = torch.mean(torch.cat(target_vs, dim=1), dim=1, keepdim=True)
         target_v = reward + (not_done * self.discount * target_v).detach()
 
         critic_loss = 0.
         for i in range(self.num_critic):
-            pi_value = self.critics_eval[i](state, action)
+            pi_value, _, _ = self.critics_eval[i](state, self.actor(state))
             critic_loss += F.mse_loss(pi_value, target_v)
 
         # Optimize the critic
@@ -151,14 +151,14 @@ class D3PG(object):
 
         target_vs = []
         for i in range(self.num_critic):
-            target_v = self.critics_eval_target[i](next_state, self.actor_target(next_state))
+            target_v, _, _ = self.critics_eval_target[i](next_state, self.actor_target(next_state))
             target_vs.append(target_v)
         target_v = torch.mean(torch.cat(target_vs, dim=1), dim=1, keepdim=True)
         target_v = reward + (not_done * torch.pow(self.discount, timestep) * target_v).detach()
 
         critic_loss = 0.
         for i in range(self.num_critic):
-            pi_value = self.critics_eval[i](state, action)
+            pi_value, _, _ = self.critics_eval[i](state, self.actor(state))
             critic_loss += F.mse_loss(pi_value, target_v)
 
         # Optimize the critic
@@ -178,8 +178,8 @@ class D3PG(object):
         eval_values = []
         train_values = []
         for i in range(self.num_critic):
-            eval_value = self.critics_eval[i](state, action)
-            train_value = self.critics[i](state, action)
+            eval_value, _, _ = self.critics_eval[i](state, action)
+            train_value, _, _ = self.critics[i](state, action)
             eval_values.append(eval_value)
             train_values.append(train_value)
 
@@ -188,23 +188,29 @@ class D3PG(object):
 
         return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item()
 
-    def train(self, replay_buffer, batch_size=256):
+    def train_original(self, replay_buffer, batch_size=256):
         self.total_it += 1
 
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
         target_vs = []
+        #target_advs = []
+        #target_Qs = []
         for i in range(self.num_critic):
-            target_Q = self.critics_target[i](next_state, self.actor_target(next_state))
-            target_vs.append(target_Q)
+            target_v, target_adv, target_Q = self.critics_target[i](next_state, self.actor_target(next_state))
+            target_vs.append(target_v)
+            #target_advs.append(target_adv)
+            #target_Qs.append(target_Q)
 
         target_v = torch.mean(torch.cat(target_vs, dim=1), dim=1, keepdim=True)
         target_Q = reward + (not_done * self.discount * target_v).detach()
 
         critic_loss = 0.
         for i in range(self.num_critic):
-            current_Q = self.critics[i](state, action)
+            current_value, current_adv, current_Q = self.critics[i](state, action)
+            pi_value, pi_adv, pi_Q = self.critics[i](state, self.actor(state))
+            current_Q = current_Q - pi_adv
             critic_loss += F.mse_loss(current_Q, target_Q)
         adv_loss = critic_loss
 
@@ -216,7 +222,64 @@ class D3PG(object):
         # Compute actor loss
         pi_advs = []
         for i in range(self.num_critic):
-            pi_Q = self.critics[i](state, self.actor(state))
+            pi_value, pi_adv, pi_Q = self.critics[i](state, self.actor(state))
+            pi_advs.append(pi_Q)
+        pi_advs = torch.min(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)[0]
+        # pi_advs = torch.mean(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)
+        actor_loss = -(pi_advs).mean()
+
+        if self.total_it % 2 == 0:
+
+            # Optimize the actor
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critics.parameters(), self.critics_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+
+        return actor_loss.item(), critic_loss.item(), adv_loss.item(), 0, 0, 0, 0, 0, 0
+
+    def train(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+
+        # Sample replay buffer
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+
+        target_vs = []
+        #target_advs = []
+        #target_Qs = []
+        for i in range(self.num_critic):
+            target_v, target_adv, target_Q = self.critics_target[i](next_state, self.actor_target(next_state))
+            target_vs.append(target_Q)
+            #target_advs.append(target_adv)
+            #target_Qs.append(target_Q)
+
+        target_v = torch.mean(torch.cat(target_vs, dim=1), dim=1, keepdim=True)
+        target_Q = reward + (not_done * self.discount * target_v).detach()
+
+        critic_loss = 0.
+        for i in range(self.num_critic):
+            current_value, current_adv, current_Q = self.critics[i](state, action)
+            pi_value, pi_adv, pi_Q = self.critics[i](state, self.actor(state))
+            current_Q = current_Q - pi_adv
+            critic_loss += F.mse_loss(current_Q, target_Q)
+        adv_loss = critic_loss
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        pi_advs = []
+        for i in range(self.num_critic):
+            pi_value, pi_adv, pi_Q = self.critics[i](state, self.actor(state))
             pi_advs.append(pi_Q)
         pi_advs = torch.min(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)[0]
         # pi_advs = torch.mean(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)
