@@ -180,7 +180,7 @@ if __name__ == "__main__":
             # np.save(f"./results/{file_name}", evaluations)
 
 
-        if (t + 1) % 50000 == 0 and args.version == 0:
+        if (t + 1) % 5000000 == 0 and args.version == 0:
             utils.test_td(args.env, policy, onpolicy_buffer)
 
             # evaluate state, observe difference
@@ -189,7 +189,7 @@ if __name__ == "__main__":
             writer.add_scalar('value/train_v', value_train, t)
             writer.add_scalar('value/diff_v', value_diff, t)
 
-        if (t + 1) % 50000 == 0 and args.version == 1:
+        if (t + 1) % 5000000 == 0 and args.version == 1:
 
             utils.test_mc(args.env, policy, onpolicy_buffer)
             # evaluate state, observe difference
