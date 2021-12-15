@@ -34,7 +34,7 @@ class MultitaskGPModel(gpytorch.models.ExactGP):
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultitaskMultivariateNormal(mean_x, covar_x)
 
-'''
+
 class VariMultitaskGPModel(gpytorch.models.ApproximateGP):
     def __init__(self, inducing_points, num_tasks, ard_num_dims=None, kernel_type='matern12'):
         variational_distribution = gpytorch.variational.CholeskyVariationalDistribution(
@@ -71,7 +71,7 @@ class VariMultitaskGPModel(gpytorch.models.ApproximateGP):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
-'''
+
 
 class BatchIndependentMultitaskGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood, num_tasks, ard_num_dims=None,
