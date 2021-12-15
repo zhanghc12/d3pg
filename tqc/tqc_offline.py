@@ -200,7 +200,7 @@ class TQC(object):
 
         return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood
 
-    def train(self, replay_buffer, batch_size=256):
+    def train_mask(self, replay_buffer, batch_size=256):
         self.total_it += 1
         alpha = torch.exp(self.log_alpha)
         # Sample replay buffer
@@ -263,6 +263,81 @@ class TQC(object):
 
 
         return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, std_z_ood.mean().item()
+
+    def train(self, replay_buffer, batch_size=256):
+        self.total_it += 1
+        alpha = torch.exp(self.log_alpha)
+        # Sample replay buffer
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+
+        with torch.no_grad():
+            # get policy action
+            new_next_action, next_log_pi = self.actor(next_state)
+
+            # compute and cut quantiles at the next state
+            next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
+            sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
+            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            # compute target
+            target = reward + not_done * self.discount * (sorted_z - alpha * next_log_pi)
+
+        cur_z = self.critic(state, action)
+        # define an mask matrix
+        '''
+        cur_tar_z = self.critic_target(state, action)  # batch * nets * quantiles
+        std_z_iid = torch.std(cur_tar_z, dim=1, keepdim=False)  # batch * quantiles
+        std_z_iid = std_z_iid / (torch.abs(cur_tar_z).mean(dim=1, keepdim=False) + 1e-2) # batch * quantiles
+        normalized_std_z_iid = std_z_iid.mean()
+        self.normalized_std_z_iod = self.normalized_std_z_iod * 0.995 + 0.005 * normalized_std_z_iid.item()
+
+        std_z_ood = torch.std(next_z, dim=1, keepdim=False)  # batch * quantiles
+        std_z_ood = std_z_ood / (torch.abs(next_z).mean(dim=1, keepdim=False) + 1e-2)  # batch * quantile
+        std_z_ood = std_z_ood.mean(dim=1, keepdim=True)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 2 > 0, 0.04 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        cond = torch.where(std_z_ood - self.normalized_std_z_iod * 1.1 < 0, 0.6 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+
+        # version rl1 : x > 1.1, 10 |  x < 1.1, 150
+        # version rl3 : x > 2, 10,  | 1.1 < x < 2, 50, | x < 1.1, 150
+        mask = (self.mask < cond).float()  # batch * total_quantile
+        '''
+        critic_loss = quantile_huber_loss_f(cur_z, target)
+
+
+        # --- Update ---
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        # --- Policy and alpha loss ---
+        new_action, log_pi = self.actor(state)
+        alpha_loss = -self.log_alpha * (log_pi + self.target_entropy).detach().mean()
+
+        # the core idea is the actor things, actor must stay in the distribution,
+
+        pi_value = self.critic(state, new_action)  # batch x nets x quantiles
+        sorted_z, _ = torch.sort(pi_value.reshape(batch_size, -1))
+        sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+        pi_value = sorted_z.mean(1, keepdim=True)
+        # actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
+        actor_loss = (alpha * log_pi - pi_value).mean()
+
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
+
+        self.total_it += 1
+
+
+        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, std_z_ood.mean().item()
+
+
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
