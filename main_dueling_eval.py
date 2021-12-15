@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
     parser.add_argument("--version", default=1, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
-    parser.add_argument("--num_critic", default=2, type=float)
+    parser.add_argument("--num_critic", default=2, type=int)
 
     args = parser.parse_args()
 
