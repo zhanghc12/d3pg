@@ -89,7 +89,7 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.num_critic = 5
+        self.num_critic = 2
         self.critics = nn.ModuleList()
         for i in range(self.num_critic):
             self.critics.append(DuelingCritic(state_dim, action_dim))
