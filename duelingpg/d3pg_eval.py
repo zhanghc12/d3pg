@@ -256,7 +256,7 @@ class D3PG(object):
         #target_Qs = []
         for i in range(self.num_critic):
             target_v, target_adv, target_Q = self.critics_target[i](next_state, self.actor_target(next_state))
-            target_vs.append(target_Q)
+            target_vs.append(target_v)
             #target_advs.append(target_adv)
             #target_Qs.append(target_Q)
 
