@@ -354,11 +354,17 @@ class TQC(object):
         actor_loss = actor_loss.mean()
 
         if self.version == 1:
+            true_actor_loss = actor_loss
             behavior_log_prob = self.actor.log_prob(state, action)
+            bc_loss = 0.1 * behavior_log_prob.mean()
+
             actor_loss = actor_loss * lmbda - 0.1 * behavior_log_prob.mean()
 
         if self.version == 2:
+            true_actor_loss = actor_loss
             behavior_log_prob = self.actor.log_prob(state, action)
+            bc_loss = 0.01 * behavior_log_prob.mean()
+
             actor_loss = actor_loss * lmbda - 0.01 * behavior_log_prob.mean()
 
 
@@ -372,7 +378,7 @@ class TQC(object):
 
         self.total_it += 1
 
-        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_iod
+        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_iod, true_actor_loss.item(), bc_loss.item()
 
 
 
