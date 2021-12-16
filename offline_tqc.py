@@ -86,6 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_quantiles", default=25, type=int)
     parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
+    parser.add_argument("--bc_scale", type=float)
 
 
     args = parser.parse_args()
@@ -96,7 +97,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/d3pg/'
     experiment_dir = experiment_dir + '1216/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}_bs{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets, args.bc_scale))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")
@@ -127,6 +128,7 @@ if __name__ == "__main__":
         "max_action": max_action,
         "discount": args.discount,
         "tau": args.tau,
+        'bc_scale': args.bc_scale
     }
 
     # Initialize policy

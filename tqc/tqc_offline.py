@@ -127,7 +127,7 @@ class TanhNormal(Distribution):
 
 
 class TQC(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, top_quantiles_to_drop_per_net=2, n_nets=5):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, top_quantiles_to_drop_per_net=2, n_nets=5, bc_scale=0.2):
         n_quantiles = 25
         n_nets = n_nets
         target_entropy = - action_dim
@@ -160,6 +160,7 @@ class TQC(object):
         self.base_tensor = torch.ones([256, 1]).to(device)
         self.mask = torch.arange(self.quantiles_total).repeat(256, 1).to(device) # batch * totoal_quantile
         self.remained_quantiles = self.quantiles_total - self.top_quantiles_to_drop
+        self.bc_scale = bc_scale
 
     def select_action(self, state):
         return self.actor.select_action(state)
@@ -356,17 +357,9 @@ class TQC(object):
         if self.version == 1:
             true_actor_loss = actor_loss
             behavior_log_prob = self.actor.log_prob(state, action)
-            bc_loss = 0.1 * behavior_log_prob.mean()
+            bc_loss = self.bc_scale * behavior_log_prob.mean()
 
-            actor_loss = actor_loss * lmbda - 0.1 * behavior_log_prob.mean()
-
-        if self.version == 2:
-            true_actor_loss = actor_loss
-            behavior_log_prob = self.actor.log_prob(state, action)
-            bc_loss = 0.01 * behavior_log_prob.mean()
-
-            actor_loss = actor_loss * lmbda - 0.01 * behavior_log_prob.mean()
-
+            actor_loss = actor_loss * lmbda - self.bc_scale * behavior_log_prob.mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
