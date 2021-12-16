@@ -357,6 +357,11 @@ class TQC(object):
             behavior_log_prob = self.actor.log_prob(state, action)
             actor_loss = actor_loss * lmbda - 0.1 * behavior_log_prob.mean()
 
+        if self.version == 2:
+            behavior_log_prob = self.actor.log_prob(state, action)
+            actor_loss = actor_loss * lmbda - 0.01 * behavior_log_prob.mean()
+
+
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
