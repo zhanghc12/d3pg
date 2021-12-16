@@ -350,12 +350,12 @@ class TQC(object):
         pi_value = sorted_z.mean(1, keepdim=True)
         # actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
         actor_loss = (alpha * log_pi - pi_value)
-        lmbda = 0.25 / actor_loss.abs().mean().detach()
+        lmbda = 2.5 / actor_loss.abs().mean().detach()
         actor_loss = actor_loss.mean()
 
         if self.version == 1:
             behavior_log_prob = self.actor.log_prob(state, action)
-            actor_loss = actor_loss * lmbda - behavior_log_prob.mean()
+            actor_loss = actor_loss * lmbda - 0.1 * behavior_log_prob.mean()
 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
