@@ -222,7 +222,7 @@ class D3PG(object):
         # pi_advs = torch.mean(torch.cat(pi_advs, dim=1), dim=1, keepdim=True)
         actor_loss = -(pi_advs).mean()
 
-        if self.total_it % 1 == 0:
+        if self.total_it % 2 == 0:
 
             # Optimize the actor
             self.actor_optimizer.zero_grad()
