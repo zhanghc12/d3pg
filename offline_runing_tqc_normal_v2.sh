@@ -19,3 +19,15 @@ CUDA_VISIBLE_DEVICES=7 python offline_tqc.py --policy TQC  --version $1  --top_q
 
 
 
+# CUDA_VISIBLE_DEVICES=0 python offline_tqc.py --env hopper-random-v2
+
+# pip3 install torch==1.10.0+cu110  -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
+# conda install pytorch  cudatoolkit=11.0 -c pytorch-lts -c nvidia
+
+# conda install pytorch  cudatoolkit=11.3 -c pytorch
+
+# conda install pytorch  cudatoolkit=11.3 -c pytorch
+
+# pip3 install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+

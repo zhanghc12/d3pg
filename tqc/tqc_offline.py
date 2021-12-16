@@ -350,7 +350,7 @@ class TQC(object):
         pi_value = sorted_z.mean(1, keepdim=True)
         # actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
         actor_loss = (alpha * log_pi - pi_value)
-        lmbda = 2.5 / actor_loss.abs().mean().detach()
+        lmbda = 0.25 / actor_loss.abs().mean().detach()
         actor_loss = actor_loss.mean()
 
         if self.version == 1:
