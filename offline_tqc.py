@@ -26,7 +26,7 @@ import torch
 import gym
 import argparse
 import os
-from tqc import tqc_offline
+from tqc import tqc_offline, lip_tqc_offline
 
 
 def load_hdf5(dataset, replay_buffer):
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_quantiles", default=25, type=int)
     parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
-    parser.add_argument("--bc_scale", type=float)
+    parser.add_argument("--bc_scale", type=float, default=0.5)
 
 
     args = parser.parse_args()
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     kwargs['target_threshold'] = args.target_threshold
     kwargs['top_quantiles_to_drop_per_net'] = args.top_quantiles_to_drop_per_net
     kwargs['n_nets'] = args.n_nets
-    policy = tqc_offline.TQC(**kwargs)
+    policy = lip_tqc_offline.TQC(**kwargs)
 
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)

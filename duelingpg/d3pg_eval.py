@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.autograd as autograd
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -117,6 +119,24 @@ class D3PG(object):
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         return self.actor(state).cpu().data.numpy().flatten()
+
+    def select_noise(self, state):
+        state = torch.FloatTensor(state.reshape(1, -1)).to(device)
+
+        Qs = []
+        action = self.actor(state)
+
+        for i in range(self.num_critic):
+            Q = self.critics[i](state, action)
+            Qs.append(Q)
+
+        # get grad
+        Qs = torch.cat(Qs, dim=1)
+        std_Q = torch.std(Qs, dim=1) # Qs to action's
+        action_grad = autograd.grad(std_Q.mean(), action, retain_graph=True)[0]
+
+        return action_grad
+
 
     def train_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
