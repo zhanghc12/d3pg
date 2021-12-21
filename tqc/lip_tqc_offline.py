@@ -234,7 +234,7 @@ class TQC(object):
             self.top_quantiles_to_drop = int(max(min(self.top_quantiles_to_drop * 0.9, self.quantiles_total - 10), 50))
         '''
 
-        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood, 0, 0
+        return actor_loss.item(), critic_loss.item(), self.top_quantiles_to_drop, self.normalized_std_z_iod, self.normalized_std_z_ood, 0, (gp * self.bc_scale).item()
 
 
     def save(self, filename):
