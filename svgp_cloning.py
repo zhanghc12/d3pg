@@ -317,8 +317,11 @@ if __name__ == "__main__":
         with torch.no_grad():
             for x_batch, y_batch in test_loader:
                 preds = model(x_batch)
-                means = torch.cat([means, preds.mean.cpu()])
-        means = means[1:]
+                predictions = likelihood(preds)
+                mean = predictions.mean
+
+                lower, upper = predictions.confidence_region()
+        # means = means[1:]
 
 
         # trainl, trains, avg_v = batch_assess(model, likelihood, train_x, train_y)
