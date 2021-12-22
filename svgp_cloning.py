@@ -241,7 +241,6 @@ if __name__ == "__main__":
         shutil.rmtree(file_name)
     os.makedirs(file_name)
 
-
     env = gym.make(args.env)
 
     # Set seeds
@@ -256,11 +255,18 @@ if __name__ == "__main__":
     offline_dataset = d4rl.qlearning_dataset(env)
 
     if torch.cuda.is_available():
-        train_x = torch.from_numpy(offline_dataset['observations']).float().to(device)
-        train_y = torch.from_numpy(offline_dataset['actions']).float().to(device)
+        train_len = int(len(offline_dataset['observations']) * 0.9)
+        train_x = torch.from_numpy(offline_dataset['observations'][:train_len]).float().to(device)
+        train_y = torch.from_numpy(offline_dataset['actions'][:train_len]).float().to(device)
+
+        test_x = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
+        test_y = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
     else:
         train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
         train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
+
+        test_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
+        test_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
     # Initialize likelihood and model
 
     from torch.utils.data import TensorDataset, DataLoader
@@ -268,7 +274,10 @@ if __name__ == "__main__":
     train_dataset = TensorDataset(train_x, train_y)
     train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
 
-    inducing_points = train_x[:500, :] # todo
+    test_dataset = TensorDataset(test_x, test_y)
+    test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
+
+    inducing_points = train_x[:5000, :] # todo
 
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)
     model = IndependentMultitaskGPModel(inducing_points=inducing_points, num_tasks=train_y.shape[1])
@@ -302,16 +311,28 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
 
+        model.eval()
+        likelihood.eval()
+        means = torch.tensor([0.])
+        with torch.no_grad():
+            for x_batch, y_batch in test_loader:
+                preds = model(x_batch)
+                means = torch.cat([means, preds.mean.cpu()])
+        means = means[1:]
 
-        trainl, trains, avg_v = batch_assess(model, likelihood, train_x, train_y)
+
+        # trainl, trains, avg_v = batch_assess(model, likelihood, train_x, train_y)
 
         print('Iter %d/%d - Loss: %.3f, Train mean log likelihood: %.3f, Train RMSE: %.3f' % (
-            epoch, epochs, loss.item(), trainl, trains
+            epoch, epochs, loss.item(), loss.item(), loss.item()
         ))
         writer.add_scalar('loss/loss.item()', loss, epoch)
-        writer.add_scalar('loss/trainl', trainl, epoch)
-        writer.add_scalar('loss/trains', trains, epoch)
+        #writer.add_scalar('loss/trainl', trainl, epoch)
+        #writer.add_scalar('loss/trains', trains, epoch)
 
+        torch.save(model.state_dict(), f'{file_name}/gp_{args.kernel_type}_{epoch}.pt')
+
+        '''
         if epoch % args.evaluation_interval == 0:
             model.eval()
             likelihood.eval()
@@ -337,8 +358,8 @@ if __name__ == "__main__":
             print(f'Epoch {epoch}, Offline Return: {eval_rew}, Std: {eval_std}')
             writer.add_scalar('loss/eval_rew', eval_rew, epoch)
             writer.add_scalar('loss/eval_std', eval_std, epoch)
-
+            
             torch.save(model.state_dict(), f'{file_name}/gp_{args.kernel_type}_{epoch}.pt')
 
-
+            '''
 
