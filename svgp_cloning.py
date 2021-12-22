@@ -271,7 +271,7 @@ if __name__ == "__main__":
 
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)
     model = IndependentMultitaskGPModel(inducing_points=inducing_points, num_tasks=train_y.shape[1])
-    likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1])
+    likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1]).to(device)
 
     if torch.cuda.is_available():
         model = model.to(device)
