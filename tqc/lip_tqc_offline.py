@@ -187,7 +187,7 @@ class TQC(object):
 
         action.requires_grad_(True)
         cur_z = self.critic(state, action) # cur_z is
-        std_z_iid = torch.std(cur_z, dim=1, keepdim=False)  # batch * quantiles
+        std_z_iid = torch.std(cur_z, dim=1, keepdim=False).mean(dim=1, keepdim=True)  # batch * quantiles
 
         gp = utils.calc_gradient_penalty(action, std_z_iid)
         critic_loss += gp * self.bc_scale

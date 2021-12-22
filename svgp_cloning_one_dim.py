@@ -254,12 +254,9 @@ if __name__ == "__main__":
 
     offline_dataset = d4rl.qlearning_dataset(env)
 
-    if torch.cuda.is_available():
-        train_x = torch.from_numpy(offline_dataset['observations']).float().to(device)
-        train_y = torch.from_numpy(offline_dataset['actions']).float().to(device)
-    else:
-        train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
-        train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
+    train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
+    train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
+
     # Initialize likelihood and model
 
     from torch.utils.data import TensorDataset, DataLoader
@@ -267,11 +264,9 @@ if __name__ == "__main__":
     train_dataset = TensorDataset(train_x, train_y)
     train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
 
-    inducing_points = train_x[:500, :] # todo
-
-    inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)
-    model = IndependentMultitaskGPModel(inducing_points=inducing_points, num_tasks=train_y.shape[1])
-    likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1])
+    inducing_points = train_x[:500, :]
+    model = GPModel(inducing_points=inducing_points)
+    likelihood = gpytorch.likelihoods.GaussianLikelihood()
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -287,6 +282,7 @@ if __name__ == "__main__":
     mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
 
     epochs = 1000
+
 
     for epoch in range(epochs):
         model.train()
