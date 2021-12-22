@@ -262,6 +262,8 @@ if __name__ == "__main__":
 
         train_y = torch.from_numpy(offline_dataset['rewards'][:train_len]).float().to(device)
         train_y = train_y.squeeze().unsqueeze(1)
+        train_next_obs = torch.from_numpy(offline_dataset['next_observations'][:train_len]).float().to(device)
+        train_y = torch.cat([train_next_obs - train_obs, train_y], dim=1)
 
         test_obs = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
         test_act = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
@@ -270,6 +272,9 @@ if __name__ == "__main__":
 
         test_y = torch.from_numpy(offline_dataset['rewards'][train_len:]).float().to(device)
         test_y = test_y.squeeze().unsqueeze(1)
+        test_next_obs = torch.from_numpy(offline_dataset['next_observations'][train_len:]).float().to(device)
+        test_y = torch.cat([test_next_obs - test_obs, test_y], dim=1)
+
 
     else:
         train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
