@@ -219,7 +219,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
     parser.add_argument("--version", default=3, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
-    parser.add_argument('--evaluation_interval', help='Evaluation interval', type=int, default=20)
+    parser.add_argument('--evaluation_interval', help='Evaluation interval', type=int, default=10)
     parser.add_argument("--n_quantiles", default=25, type=int)
     parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     offline_dataset = d4rl.qlearning_dataset(env)
 
     if torch.cuda.is_available():
-        train_len = int(len(offline_dataset['observations']) * 0.9)
+        train_len = int(len(offline_dataset['observations']) * 1)
         train_obs = torch.from_numpy(offline_dataset['observations'][:train_len]).float().to(device)
         train_act = torch.from_numpy(offline_dataset['actions'][:train_len]).float().to(device)
         train_x = torch.cat([train_obs, train_act], dim=1)
@@ -265,13 +265,13 @@ if __name__ == "__main__":
         #train_next_obs = torch.from_numpy(offline_dataset['next_observations'][:train_len]).float().to(device)
         #train_y = torch.cat([train_next_obs - train_obs, train_y], dim=1)
 
-        test_obs = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
-        test_act = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
+        #test_obs = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
+        #test_act = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
 
-        test_x = torch.cat([test_obs, test_act], dim=1)
+        #test_x = torch.cat([test_obs, test_act], dim=1)
 
-        test_y = torch.from_numpy(offline_dataset['rewards'][train_len:]).float().to(device)
-        test_y = test_y.squeeze().unsqueeze(1)
+        #test_y = torch.from_numpy(offline_dataset['rewards'][train_len:]).float().to(device)
+        #test_y = test_y.squeeze().unsqueeze(1)
         # test_next_obs = torch.from_numpy(offline_dataset['next_observations'][train_len:]).float().to(device)
         # test_y = torch.cat([test_next_obs - test_obs, test_y], dim=1)
 
@@ -280,8 +280,8 @@ if __name__ == "__main__":
         train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
         train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
 
-        test_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
-        test_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
+        #test_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
+        #test_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
     # Initialize likelihood and model
 
     from torch.utils.data import TensorDataset, DataLoader
@@ -289,8 +289,8 @@ if __name__ == "__main__":
     train_dataset = TensorDataset(train_x, train_y)
     train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
 
-    test_dataset = TensorDataset(test_x, test_y)
-    test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
+    #test_dataset = TensorDataset(test_x, test_y)
+    #test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
 
     inducing_points = train_x[:5000, :] # todo
 
@@ -326,9 +326,12 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
 
+        '''
         model.eval()
         likelihood.eval()
+        
         means = torch.tensor([0.])
+        
         with torch.no_grad():
             for x_batch, y_batch in test_loader:
                 preds = model(x_batch)
@@ -337,6 +340,7 @@ if __name__ == "__main__":
 
                 lower, upper = predictions.confidence_region()
         # means = means[1:]
+        '''
 
 
         # trainl, trains, avg_v = batch_assess(model, likelihood, train_x, train_y)
