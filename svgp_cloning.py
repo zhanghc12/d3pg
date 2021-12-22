@@ -256,11 +256,21 @@ if __name__ == "__main__":
 
     if torch.cuda.is_available():
         train_len = int(len(offline_dataset['observations']) * 0.9)
-        train_x = torch.from_numpy(offline_dataset['observations'][:train_len]).float().to(device)
-        train_y = torch.from_numpy(offline_dataset['actions'][:train_len]).float().to(device)
+        train_obs = torch.from_numpy(offline_dataset['observations'][:train_len]).float().to(device)
+        train_act = torch.from_numpy(offline_dataset['actions'][:train_len]).float().to(device)
+        train_x = torch.cat([train_obs, train_act], dim=1)
 
-        test_x = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
-        test_y = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
+        train_y = torch.from_numpy(offline_dataset['rewards'][:train_len]).float().to(device)
+        train_y = train_y.squeeze().unsqueeze(1)
+
+        test_obs = torch.from_numpy(offline_dataset['observations'][train_len:]).float().to(device)
+        test_act = torch.from_numpy(offline_dataset['actions'][train_len:]).float().to(device)
+
+        test_x = torch.cat([test_obs, test_act], dim=1)
+
+        train_y = torch.from_numpy(offline_dataset['rewards'][train_len:]).float().to(device)
+        train_y = train_y.squeeze().unsqueeze(1)
+
     else:
         train_x = torch.from_numpy(offline_dataset['observations'][:1000]).float().to(device)
         train_y = torch.from_numpy(offline_dataset['actions'][:1000]).float().to(device)
@@ -332,8 +342,8 @@ if __name__ == "__main__":
         writer.add_scalar('loss/loss.item()', loss, epoch)
         #writer.add_scalar('loss/trainl', trainl, epoch)
         #writer.add_scalar('loss/trains', trains, epoch)
-
-        torch.save(model.state_dict(), f'{file_name}/gp_{args.kernel_type}_{epoch}.pt')
+        if epoch % args.evaluation_interval == 0:
+            torch.save(model.state_dict(), f'{file_name}/gp_{args.kernel_type}_{epoch}.pt')
 
         '''
         if epoch % args.evaluation_interval == 0:
