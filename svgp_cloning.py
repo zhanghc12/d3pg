@@ -284,7 +284,7 @@ if __name__ == "__main__":
         {'params': likelihood.parameters()},
     ], lr=0.01)
 
-    mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0))
+    mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0)).to(device)
 
     epochs = 1000
 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
             optimizer.zero_grad()
             output = model(x_batch)
             #print(output.device)
-            #print(y_batch.device)
+            print(y_batch.device)
             loss = -mll(output, y_batch)
             loss.backward()
             optimizer.step()
