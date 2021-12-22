@@ -287,7 +287,7 @@ if __name__ == "__main__":
     test_dataset = TensorDataset(test_x, test_y)
     test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
 
-    inducing_points = train_x[:500, :] # todo
+    inducing_points = train_x[:10000, :] # todo
 
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)
     model = IndependentMultitaskGPModel(inducing_points=inducing_points, num_tasks=train_y.shape[1])
