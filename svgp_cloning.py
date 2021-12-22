@@ -1,6 +1,7 @@
 import d4rl
 import datetime
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -292,11 +293,11 @@ if __name__ == "__main__":
         model.train()
         likelihood.train()
 
-        for x_batch, y_batch in train_loader:
+        for x_batch, y_batch in tqdm(train_loader):
             optimizer.zero_grad()
             output = model(x_batch)
-            #print(output.device)
-            print(y_batch.device)
+            # print(output.device)
+            # print(y_batch.device)
             loss = -mll(output, y_batch)
             loss.backward()
             optimizer.step()
