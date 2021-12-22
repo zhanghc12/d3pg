@@ -295,8 +295,8 @@ if __name__ == "__main__":
         for x_batch, y_batch in train_loader:
             optimizer.zero_grad()
             output = model(x_batch)
-            print(output.device)
-            print(y_batch.device)
+            #print(output.device)
+            #print(y_batch.device)
             loss = -mll(output, y_batch)
             loss.backward()
             optimizer.step()
