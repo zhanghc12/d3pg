@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.autograd as autograd
+from duelingpg import utils
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -36,6 +37,19 @@ class Critic(nn.Module):
         q = F.relu(self.l1(torch.cat([state, action], 1)))
         q = F.relu(self.l2(q))
         return self.l3(q)
+
+
+class LipRandomReward(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(LipRandomReward, self).__init__()
+        self.l1 = nn.Linear(state_dim + action_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, 1)
+
+    def forward(self, state, action):
+        r = F.relu(self.l1(torch.cat([state, action], 1)))
+        r = F.relu(self.l2(r))
+        return self.l3(r)
 
 
 class D3PG(object):
@@ -79,6 +93,12 @@ class D3PG(object):
 
         self.critics_eval_target = copy.deepcopy(self.critics_eval)
         self.critic_eval_optimizer = torch.optim.Adam(self.critics_eval.parameters(), lr=3e-4)
+
+        '''
+        define the random reward 
+        '''
+        self.random_reward_net = LipRandomReward(state_dim, action_dim).to(device)
+        self.random_reward_optimizer = torch.optim.Adam(self.random_reward_net.parameters(), lr=3e-4)
 
         self.discount = discount
         self.tau = tau
@@ -246,6 +266,7 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
         constant_reward = torch.ones_like(reward).to(device)
+        random_reward = self.random_reward_net(state, action)
 
         '''
         Compute critic loss
@@ -283,8 +304,10 @@ class D3PG(object):
         exp_target_Q = torch.mean(torch.cat(exp_target_Qs, dim=1), dim=1, keepdim=True)
         if self.exp_version == 0:
             exp_target_Q = reward + (not_done * self.discount * exp_target_Q).detach()
-        else:
+        elif self.exp_version == 1:
             exp_target_Q = constant_reward + (not_done * self.discount * exp_target_Q).detach()
+        elif self.exp_version == 2:
+            exp_target_Q = random_reward + (not_done * self.discount * exp_target_Q).detach()
 
         # get the critic loss
         exp_critic_loss = 0.
@@ -324,8 +347,21 @@ class D3PG(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
+        '''
+        compute random reward loss
+        '''
+        random_reward_loss = 0
+        if self.exp_version == 2:
+            random_reward = self.random_reward_net(state, action)
+            # gradient clip
+            state_action = torch.cat([state, action], dim=1)
+            random_reward_loss = utils.calc_gradient_penalty(state_action, random_reward)
+            self.random_reward_optimizer.zero_grad()
+            random_reward_loss.backward()
+            self.random_reward_optimizer.step()
+            random_reward_loss = random_reward_loss.item()
 
-        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), 0, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), random_reward_loss, 0, 0, 0, 0, 0
 
 
     def save(self, filename):
