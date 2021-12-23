@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=1, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
     parser.add_argument("--num_critic", default=2, type=int)
-    parser.add_argument("--exp_version", default=0, type=int)
+    parser.add_argument("--exp_version", default=2, type=int)
 
     args = parser.parse_args()
 
@@ -152,12 +152,12 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, weight_loss, mc_value, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            actor_loss, critic_loss, exp_critic_loss, random_reward_loss, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
 
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
-            writer.add_scalar('loss/weight_loss', weight_loss, t)
-            writer.add_scalar('value/mc_value', mc_value, t)
+            writer.add_scalar('loss/exp_critic_loss', exp_critic_loss, t)
+            writer.add_scalar('value/random_reward_loss', random_reward_loss, t)
             writer.add_scalar('value/q_value', q_value, t)
             writer.add_scalar('value/target_qvalue', target_qvalue, t)
             writer.add_scalar('value/r1', r1, t)
