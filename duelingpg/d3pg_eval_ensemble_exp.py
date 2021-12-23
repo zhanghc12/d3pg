@@ -91,9 +91,10 @@ class D3PG(object):
     def select_noise(self, state, exp_noise):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         action = self.actor(state)
-
+        noise = np.random.normal(0, exp_noise, size=action.shape[1])
+        noise_scale = np.linalg.norm(noise)
         if self.version == 0:
-            return np.random.normal(0, exp_noise, size=action.shape[1])
+            return noise
 
         exp_Qs = []
         if self.version == 1:
@@ -106,7 +107,7 @@ class D3PG(object):
         std_Q = torch.std(exp_Qs, dim=1).mean()
         action_grad = autograd.grad(std_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
-        return exp_noise * action_grad.cpu().data.numpy().flatten()
+        return noise_scale * action_grad.cpu().data.numpy().flatten()
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
