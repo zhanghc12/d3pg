@@ -355,6 +355,7 @@ class D3PG(object):
             random_reward = self.random_reward_net(state, action)
             # gradient clip
             state_action = torch.cat([state, action], dim=1)
+            state_action.requires_grad_(True)
             random_reward_loss = utils.calc_gradient_penalty(state_action, random_reward)
             self.random_reward_optimizer.zero_grad()
             random_reward_loss.backward()
