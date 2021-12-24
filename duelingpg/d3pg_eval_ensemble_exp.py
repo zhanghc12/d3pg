@@ -74,7 +74,7 @@ class D3PG(object):
         define the exploration critics
         '''
         exp_num_critic = num_critic
-        self.exp_num_critic = exp_num_critic
+        self.exp_num_critic = 4
         self.exp_critics = nn.ModuleList()
         for i in range(self.exp_num_critic):
             self.exp_critics.append(Critic(state_dim, action_dim))
