@@ -309,7 +309,7 @@ class D3PG(object):
             exp_target_Q = reward + (not_done * self.discount * exp_target_Q).detach()
         elif self.exp_version == 1:
             exp_target_Q = constant_reward + (not_done * self.discount * exp_target_Q).detach()
-        elif self.exp_version == 2:
+        elif self.exp_version in [2, 3]:
             exp_target_Q = random_reward + (not_done * self.discount * exp_target_Q).detach()
 
         # get the critic loss
