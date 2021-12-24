@@ -117,7 +117,7 @@ class D3PG(object):
             return noise
 
         exp_Qs = []
-        if self.version == 1:
+        if self.version in [1,3]:
             for i in range(self.exp_num_critic):
                 exp_Qs.append(self.exp_critics[i](state, action))
         elif self.version == 2:
@@ -301,7 +301,10 @@ class D3PG(object):
         for i in range(self.exp_num_critic):
             exp_target_Q = self.exp_critics_target[i](next_state, self.actor_target(next_state))
             exp_target_Qs.append(exp_target_Q)
-        exp_target_Q = torch.mean(torch.cat(exp_target_Qs, dim=1), dim=1, keepdim=True)
+        if self.version == 3:
+            exp_target_Q = torch.max(torch.cat(exp_target_Qs, dim=1), dim=1, keepdim=True)[0]
+        else:
+            exp_target_Q = torch.mean(torch.cat(exp_target_Qs, dim=1), dim=1, keepdim=True)
         if self.exp_version == 0:
             exp_target_Q = reward + (not_done * self.discount * exp_target_Q).detach()
         elif self.exp_version == 1:
