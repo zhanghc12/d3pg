@@ -57,6 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--target_threshold", default=0.1, type=float)
     parser.add_argument("--num_critic", default=2, type=int)
     parser.add_argument("--exp_version", default=2, type=int)
+    parser.add_argument("--exp_num_critic", default=2, type=int)
 
     args = parser.parse_args()
 
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         args.start_timesteps = 2000
     experiment_dir = experiment_dir + '12_23/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}_ever{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic, args.exp_version))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}_ever{}_en{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic, args.exp_version, args.exp_num_critic))
 
     file_name = "{}_{}_{}".format(args.policy, args.env, args.seed)
     print("---------------------------------------")
@@ -98,7 +99,9 @@ if __name__ == "__main__":
         "max_action": max_action,
         "discount": args.discount,
         "tau": args.tau,
-        "num_critic": args.num_critic
+        "num_critic": args.num_critic,
+        "exp_num_critic": args.exp_num_critic
+
     }
 
     # Initialize policy

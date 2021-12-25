@@ -53,7 +53,7 @@ class LipRandomReward(nn.Module):
 
 
 class D3PG(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, num_critic=2, exp_version=0):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, num_critic=2, exp_version=0, exp_num_critic=2):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
@@ -73,8 +73,7 @@ class D3PG(object):
         '''
         define the exploration critics
         '''
-        exp_num_critic = num_critic
-        self.exp_num_critic = 4
+        self.exp_num_critic = exp_num_critic
         self.exp_critics = nn.ModuleList()
         for i in range(self.exp_num_critic):
             self.exp_critics.append(Critic(state_dim, action_dim))
