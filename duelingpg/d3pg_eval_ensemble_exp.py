@@ -58,6 +58,10 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
+        self.exp_actor = Actor(state_dim, action_dim, max_action).to(device)
+        self.exp_actor_optimizer = torch.optim.Adam(self.exp_actor.parameters(), lr=3e-4)
+
+
         '''
         define the ensemble critics
         '''
@@ -114,6 +118,8 @@ class D3PG(object):
         noise_scale = np.linalg.norm(noise)
         if self.version == 0:
             return noise
+        if self.target_threshold > 0:
+            return np.zeros_like(noise)
 
         exp_Qs = []
         if self.version in [1,3]:
@@ -128,9 +134,12 @@ class D3PG(object):
         action_grad = action_grad / action_grad.norm()
         return noise_scale * action_grad.cpu().data.numpy().flatten()
 
-    def select_action(self, state):
+    def select_action(self, state, noisy=True):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
-        return self.actor(state).cpu().data.numpy().flatten()
+        if self.target_threshold > 0. and noisy == True:
+            return self.exp_actor(state).cpu().data.numpy().flatten()
+        else:
+            return self.actor(state).cpu().data.numpy().flatten()
 
     def train_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
@@ -332,12 +341,42 @@ class D3PG(object):
         pi_Qs = torch.mean(torch.cat(pi_Qs, dim=1), dim=1, keepdim=True)
         actor_loss = -(pi_Qs).mean()
 
+        exp_actor_loss = torch.zeros([1])
+        if self.target_threshold > 0:
+            exp_pi_Qs = []
+            for i in range(self.num_critic):
+                exp_pi_Q = self.critics[i](state, self.exp_actor(state))
+                exp_pi_Qs.append(exp_pi_Q)
+            exp_pi_Qs = torch.mean(torch.cat(exp_pi_Qs, dim=1), dim=1, keepdim=True)
+            exp_actor_loss_1 = -(exp_pi_Qs).mean() / (exp_pi_Qs.abs().mean().detach() + 1e-3)
+
+            exp_Qs = []
+            if self.version in [1, 3]:
+                for i in range(self.exp_num_critic):
+                    exp_Qs.append(self.exp_critics[i](state, action))
+            elif self.version == 2:
+                for i in range(self.num_critic):
+                    exp_Qs.append(self.critics[i](state, action))
+            else:
+                raise NotImplementedError
+
+            exp_Qs = torch.cat(exp_Qs, dim=1)
+            std_Q = torch.std(exp_Qs, dim=1)
+            exp_actor_loss_2 = - std_Q.mean() / (std_Q.abs().mean().detach() + 1e-3)
+            exp_actor_loss = (1 - self.target_threshold) * exp_actor_loss_1 + self.target_threshold * exp_actor_loss_2
+
         if self.total_it % 2 == 0:
 
             # Optimize the actor
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
+
+            if self.target_threshold > 0:
+                # Optimize the actor
+                self.exp_actor_optimizer.zero_grad()
+                exp_actor_loss.backward()
+                self.exp_actor_optimizer.step()
 
             # Update the frozen target models
             for param, target_param in zip(self.critics.parameters(), self.critics_target.parameters()):
@@ -365,7 +404,7 @@ class D3PG(object):
             self.random_reward_optimizer.step()
             random_reward_loss = random_reward_loss.item()
 
-        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), random_reward_loss, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), random_reward_loss, exp_actor_loss.item(), 0, 0, 0, 0
 
 
     def save(self, filename):

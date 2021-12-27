@@ -23,7 +23,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
     for _ in range(eval_episodes):
         state, done = eval_env.reset(), False
         while not done:
-            action = policy.select_action(np.array(state))
+            action = policy.select_action(np.array(state), noisy=False)
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
 
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
-    parser.add_argument("--version", default=1, type=int)
-    parser.add_argument("--target_threshold", default=0.1, type=float)
+    parser.add_argument("--version", default=4, type=int)
+    parser.add_argument("--target_threshold", default=0., type=float)
     parser.add_argument("--num_critic", default=2, type=int)
     parser.add_argument("--exp_version", default=2, type=int)
     parser.add_argument("--exp_num_critic", default=2, type=int)
@@ -155,13 +155,13 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, exp_critic_loss, random_reward_loss, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            actor_loss, critic_loss, exp_critic_loss, random_reward_loss, exp_actor_loss, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
 
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('loss/exp_critic_loss', exp_critic_loss, t)
             writer.add_scalar('value/random_reward_loss', random_reward_loss, t)
-            writer.add_scalar('value/q_value', q_value, t)
+            writer.add_scalar('loss/q_value', exp_actor_loss, t)
             writer.add_scalar('value/target_qvalue', target_qvalue, t)
             writer.add_scalar('value/r1', r1, t)
             writer.add_scalar('value/r2', r2, t)
