@@ -52,11 +52,18 @@ class Critic(nn.Module):
         self.l3 = nn.Linear(256, 1)
         self.l4 = nn.Linear(256, 1)
 
+        self.max_logvar = nn.Parameter((torch.ones((1, 1)).float() / 2).to(device), requires_grad=True)
+        self.min_logvar = nn.Parameter((-torch.ones((1, 1)).float() * 10).to(device), requires_grad=True)
+
     def forward(self, state, action):
         q = F.relu(self.l1(torch.cat([state, action], 1)))
         q = F.relu(self.l2(q))
         mean = self.l3(q)
         log_std = self.l4(q)
+
+        log_std = self.max_logvar - F.softplus(self.max_logvar - log_std)
+        log_std = self.min_logvar + F.softplus(log_std - self.min_logvar)
+
         return mean, log_std
 
     def sample(self, state, action):
@@ -245,6 +252,9 @@ class D3PG(object):
             exp_current_Q_mean, exp_current_Q_log_std = self.exp_critics[i](state, action)
             exp_current_Q_inv_var = torch.exp(-exp_current_Q_log_std)
             exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) * exp_current_Q_inv_var)
+
+        for i in range(self.exp_num_critic):
+            exp_critic_loss += torch.sum(0.01 * self.exp_critics[i].max_logvar) -  torch.sum(0.01 * self.exp_critics[i].min_logvar)
 
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
