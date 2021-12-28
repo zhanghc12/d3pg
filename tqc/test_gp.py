@@ -17,6 +17,14 @@ train_y = torch.rand(100) * 0.1
 # True function is sin(2*pi*x) with Gaussian noise
 # train_y = torch.sin(train_x * (2 * math.pi)) + torch.randn(train_x.size()) * math.sqrt(0.04)
 
+train_x1 = torch.linspace(0.2, 0.8, 50)
+train_x2 = torch.linspace(0.2, 0.8, 50)
+train_x = torch.cat([train_x1, train_x2])
+train_y1 = torch.ones(50) * 0.1
+train_y2 = torch.ones(50) * 0.9
+train_y = torch.cat([train_y1, train_y2])
+
+
 # We will use the simplest form of GP model, exact inference
 class ExactGPModel(models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
@@ -36,7 +44,7 @@ model = ExactGPModel(train_x, train_y, likelihood)
 
 
 smoke_test = ('CI' in os.environ)
-training_iter = 2 if smoke_test else 10
+training_iter = 2 if smoke_test else 100
 
 # model.covar_module.base_kernel.lengthscale = 0.01
 # Find optimal model hyperparameters
@@ -55,7 +63,7 @@ for i in range(training_iter):
     # Output from model
     output = model(train_x)
     # Calc loss and backprop gradients
-    loss = -mll(output, train_y)  #+  (model.covar_module.base_kernel.lengthscale - 0.01) ** 2
+    loss = -mll(output, train_y) # +  (model.covar_module.base_kernel.lengthscale - 0.1) ** 2
     loss.backward()
 
     model.covar_module.base_kernel.lengthscale = 0.1

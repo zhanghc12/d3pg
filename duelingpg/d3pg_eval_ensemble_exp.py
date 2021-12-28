@@ -353,10 +353,10 @@ class D3PG(object):
             exp_Qs = []
             if self.version in [1, 3]:
                 for i in range(self.exp_num_critic):
-                    exp_Qs.append(self.exp_critics[i](state, action))
+                    exp_Qs.append(self.exp_critics[i](state, self.exp_actor(state)))
             elif self.version == 2:
                 for i in range(self.num_critic):
-                    exp_Qs.append(self.critics[i](state, action))
+                    exp_Qs.append(self.critics[i](state, self.exp_actor(state)))
             else:
                 raise NotImplementedError
 
