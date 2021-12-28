@@ -6,7 +6,7 @@ import os
 import os.path as osp
 import duelingpg.utils as utils
 
-from duelingpg import d3pg_eval_ensemble_exp
+from duelingpg import d3pg_eval_ensemble_exp_aux
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     kwargs['exp_version'] = args.exp_version
     kwargs['target_threshold'] = args.target_threshold
 
-    policy = d3pg_eval_ensemble_exp.D3PG(**kwargs)
+    policy = d3pg_eval_ensemble_exp_aux.D3PG(**kwargs)
 
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
