@@ -233,7 +233,7 @@ class D3PG(object):
 
         exp_actor_loss = torch.zeros([1])
         if self.target_threshold > 0:
-            pi_action = self.actor(state)
+            pi_action = self.actor(state).detach()
             exp_action = (pi_action + self.exp_actor(state, pi_action)).clamp_(-1, 1)
 
             exp_Qs = []
