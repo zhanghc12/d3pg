@@ -118,6 +118,7 @@ class D3PG(object):
         '''
         define the evaluation critics
         '''
+        '''
         self.critics_eval = nn.ModuleList()
         for i in range(self.num_critic):
             self.critics_eval.append(Critic(state_dim, action_dim))
@@ -125,6 +126,7 @@ class D3PG(object):
 
         self.critics_eval_target = copy.deepcopy(self.critics_eval)
         self.critic_eval_optimizer = torch.optim.Adam(self.critics_eval.parameters(), lr=3e-4)
+        '''
 
         '''
         define the random reward 
@@ -206,8 +208,9 @@ class D3PG(object):
         critic_loss = 0.
         for i in range(self.num_critic):
             current_Q_mean, current_Q_log_std = self.critics[i](state, action)
-            current_Q_inv_var = torch.exp(-current_Q_log_std)
-            critic_loss += torch.mean(torch.pow(current_Q_mean - target_Q, 2) * current_Q_inv_var)
+            # current_Q_inv_var = torch.exp(-current_Q_log_std)
+            #critic_loss += torch.mean(torch.pow(current_Q_mean - target_Q, 2) * current_Q_inv_var)
+            critic_loss += F.mse_loss(current_Q_mean, target_Q)
             # var_loss = torch.mean(torch.mean(logvar, dim=-1), dim=-1)
 
         # Optimize the critic
