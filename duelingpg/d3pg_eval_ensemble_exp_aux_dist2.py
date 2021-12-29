@@ -58,7 +58,8 @@ class Critic(nn.Module):
         mean = self.l3(q)
         sigma = self.l4(q)
 
-        sigma = torch.log(1 + torch.exp(sigma)) + 1e-2
+        sigma = torch.log(1 + torch.exp(sigma)) + 1e-4
+        sigma = torch.clamp_max(sigma, 5)
         # output_sig_pos = tf.log(1 + tf.exp(output_sig)) + 1e-06
 
         return mean, sigma
@@ -177,10 +178,10 @@ class D3PG(object):
 
         action_grad = autograd.grad(var_exp_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
-        print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs, action)
+        #print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs, action)
 
-        if torch.any(torch.isnan(action_grad)):
-            print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs, action)
+        #if torch.any(torch.isnan(action_grad)):
+        #    print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs, action)
         return noise_scale * action_grad.cpu().data.numpy().flatten()
 
     def select_action(self, state, noisy=True):
@@ -253,7 +254,7 @@ class D3PG(object):
             exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) / exp_current_Q_log_std)
             exp_critic_loss += torch.mean(torch.log(exp_current_Q_log_std))
             exp_current_Q_log_stds.append(exp_current_Q_log_std)
-        print(exp_current_Q_log_stds)
+        # print(exp_current_Q_log_stds)
 
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
