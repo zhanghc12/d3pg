@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="D4PG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
-    parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
+    parser.add_argument("--env", default="Walker2d-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
     parser.add_argument("--eval_freq", default=5e3, type=int)  # How often (time steps) we evaluate
@@ -56,8 +56,8 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=3, type=int)
     parser.add_argument("--target_threshold", default=0, type=float)
     parser.add_argument("--num_critic", default=2, type=int)
-    parser.add_argument("--exp_version", default=1, type=int)
-    parser.add_argument("--exp_num_critic", default=2, type=int)
+    parser.add_argument("--exp_version", default=0, type=int)
+    parser.add_argument("--exp_num_critic", default=4, type=int)
 
     args = parser.parse_args()
 

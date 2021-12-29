@@ -185,6 +185,7 @@ class D3PG(object):
 
         action_grad = autograd.grad(var_exp_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
+
         return noise_scale * action_grad.cpu().data.numpy().flatten()
 
     def select_action(self, state, noisy=True):

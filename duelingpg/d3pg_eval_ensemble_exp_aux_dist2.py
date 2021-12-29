@@ -177,6 +177,10 @@ class D3PG(object):
 
         action_grad = autograd.grad(var_exp_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
+        print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs)
+
+        if torch.any(torch.isnan(action_grad)):
+            print('here', action_grad, var_exp_Q, exp_Qs_stds, mean_exp_Qs, exp_Qs)
         return noise_scale * action_grad.cpu().data.numpy().flatten()
 
     def select_action(self, state, noisy=True):
@@ -251,7 +255,7 @@ class D3PG(object):
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
         exp_critic_loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.exp_critics.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(self.exp_critics.parameters(), 1)
         self.exp_critic_optimizer.step()
 
         '''
