@@ -259,7 +259,7 @@ class D3PG(object):
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
         exp_critic_loss.backward()
-        print('exp_critic_loss', exp_critic_loss)
+        # print('exp_critic_loss', exp_critic_loss)
         torch.nn.utils.clip_grad_norm_(self.exp_critics.parameters(), 1)
         self.exp_critic_optimizer.step()
 
