@@ -250,7 +250,7 @@ class D3PG(object):
         for i in range(self.exp_num_critic):
             exp_current_Q_mean, exp_current_Q_log_std = self.exp_critics[i](state, action)
             exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) / exp_current_Q_log_std)
-            exp_critic_loss += torch.mean(torch.log(exp_current_Q_log_std))
+            # exp_critic_loss += torch.mean(torch.log(exp_current_Q_log_std))
 
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
