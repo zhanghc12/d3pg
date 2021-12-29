@@ -57,9 +57,9 @@ class Critic(nn.Module):
         q = F.relu(self.l2(q))
         mean = self.l3(q)
         sigma = self.l4(q)
+        sigma = torch.clamp_max(sigma, 5)
 
         sigma = torch.log(1 + torch.exp(sigma)) + 1e-4
-        sigma = torch.clamp_max(sigma, 5)
         # output_sig_pos = tf.log(1 + tf.exp(output_sig)) + 1e-06
 
         return mean, sigma
