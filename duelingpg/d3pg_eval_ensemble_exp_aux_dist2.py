@@ -253,7 +253,7 @@ class D3PG(object):
             exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) / exp_current_Q_log_std)
             exp_critic_loss += torch.mean(torch.log(exp_current_Q_log_std))
             exp_current_Q_log_stds.append(exp_current_Q_log_stds)
-        print(exp_current_Q_log_stds,)
+        print(exp_current_Q_log_stds[0], exp_current_Q_log_stds[1], exp_current_Q_log_stds[2], exp_current_Q_log_stds[3])
 
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
