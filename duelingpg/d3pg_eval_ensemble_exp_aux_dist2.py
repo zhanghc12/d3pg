@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.autograd as autograd
 from duelingpg import utils
 from torch.distributions import Normal
-
+# import torch.nn.utils.clip_gradnorm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -52,22 +52,16 @@ class Critic(nn.Module):
         self.l3 = nn.Linear(256, 1)
         self.l4 = nn.Linear(256, 1)
 
-        self.max_logvar = nn.Parameter((torch.ones((1, 1)).float() / 2).to(device), requires_grad=True)
-        self.min_logvar = nn.Parameter((-torch.ones((1, 1)).float() * 10).to(device), requires_grad=True)
-
     def forward(self, state, action):
         q = F.relu(self.l1(torch.cat([state, action], 1)))
         q = F.relu(self.l2(q))
         mean = self.l3(q)
-        log_std = self.l4(q)
+        sigma = self.l4(q)
 
-        #log_std = torch.log(1 + torch.exp(log_std)) + 1e-6
+        sigma = torch.log(1 + torch.exp(sigma)) + 1e-6
         # output_sig_pos = tf.log(1 + tf.exp(output_sig)) + 1e-06
 
-        log_std = self.max_logvar - F.softplus(self.max_logvar - log_std)
-        log_std = self.min_logvar + F.softplus(log_std - self.min_logvar)
-
-        return mean, log_std
+        return mean, sigma
 
     def sample(self, state, action):
         mean, log_std = self.forward(state, action)
@@ -168,20 +162,18 @@ class D3PG(object):
         if self.version in [1,3]:
             for i in range(self.exp_num_critic):
                 Q_mean, Q_log_std = self.exp_critics[i](state, action)
-                Q_std = torch.exp(Q_log_std)
                 exp_Qs.append(Q_mean)
-                exp_Qs_stds.append(Q_std)
+                exp_Qs_stds.append(Q_log_std)
         elif self.version == 2:
             for i in range(self.num_critic):
                 Q_mean, Q_log_std = self.critics[i](state, action)
-                Q_std = torch.exp(Q_log_std)
                 exp_Qs.append(Q_mean)
-                exp_Qs_stds.append(Q_std)
+                exp_Qs_stds.append(Q_log_std)
 
         exp_Qs = torch.cat(exp_Qs, dim=1)
         exp_Qs_stds = torch.cat(exp_Qs_stds, dim=1)
         mean_exp_Qs = torch.mean(exp_Qs, dim=1)
-        var_exp_Q = (torch.mean(exp_Qs ** 2, dim=1) + torch.mean(exp_Qs_stds, dim=1) - mean_exp_Qs ** 2).mean()
+        var_exp_Q = torch.sqrt((torch.mean(exp_Qs ** 2 + exp_Qs_stds, dim=1) - mean_exp_Qs ** 2).mean())
 
         action_grad = autograd.grad(var_exp_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
@@ -253,17 +245,13 @@ class D3PG(object):
         exp_critic_loss = 0.
         for i in range(self.exp_num_critic):
             exp_current_Q_mean, exp_current_Q_log_std = self.exp_critics[i](state, action)
-            exp_current_Q_inv_var = torch.exp(-exp_current_Q_log_std)
-            exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) * exp_current_Q_inv_var)
-            exp_critic_loss += torch.mean(exp_current_Q_log_std)
-
-
-        for i in range(self.exp_num_critic):
-            exp_critic_loss += torch.sum(0.01 * self.exp_critics[i].max_logvar) -  torch.sum(0.01 * self.exp_critics[i].min_logvar)
+            exp_critic_loss += torch.mean(torch.pow(exp_current_Q_mean - exp_target_Q, 2) / exp_current_Q_log_std)
+            exp_critic_loss += torch.mean(torch.log(exp_current_Q_log_std))
 
         # Optimize the critic
         self.exp_critic_optimizer.zero_grad()
         exp_critic_loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.exp_critics.parameters(), 1)
         self.exp_critic_optimizer.step()
 
         '''
@@ -286,15 +274,13 @@ class D3PG(object):
             if self.version in [1, 3]:
                 for i in range(self.exp_num_critic):
                     Q_mean, Q_log_std = self.exp_critics[i](state, exp_action)
-                    Q_std = torch.exp(Q_log_std)
                     exp_Qs.append(Q_mean)
-                    exp_Qs_stds.append(Q_std)
+                    exp_Qs_stds.append(Q_log_std)
             elif self.version == 2:
                 for i in range(self.num_critic):
                     Q_mean, Q_log_std = self.critics[i](state, exp_action)
-                    Q_std = torch.exp(Q_log_std)
                     exp_Qs.append(Q_mean)
-                    exp_Qs_stds.append(Q_std)
+                    exp_Qs_stds.append(Q_log_std)
             else:
                 raise NotImplementedError
 
@@ -302,7 +288,7 @@ class D3PG(object):
             exp_Qs_stds = torch.cat(exp_Qs_stds, dim=1)
             mean_exp_Qs = torch.mean(exp_Qs, dim=1)
 
-            var_exp_Q = torch.mean((torch.mean(exp_Qs ** 2, dim=1) + torch.mean(exp_Qs_stds, dim=1) - mean_exp_Qs ** 2))
+            var_exp_Q = torch.sqrt((torch.mean(exp_Qs ** 2 + exp_Qs_stds, dim=1) - mean_exp_Qs ** 2).mean())
             # exp_actor_loss_2 = - std_Q.mean() / (std_Q.abs().mean().detach() + 1e-3)
             exp_actor_loss = -var_exp_Q
 
