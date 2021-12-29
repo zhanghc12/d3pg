@@ -58,7 +58,7 @@ class Critic(nn.Module):
         mean = self.l3(q)
         sigma = self.l4(q)
 
-        sigma = torch.log(1 + torch.exp(sigma)) + 1e-6
+        sigma = torch.log(1 + torch.exp(sigma)) + 1e-2
         # output_sig_pos = tf.log(1 + tf.exp(output_sig)) + 1e-06
 
         return mean, sigma
