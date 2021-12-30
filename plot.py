@@ -9,7 +9,7 @@ sns.set()#style="dark", palette="muted", color_codes=True)
 fig, axes = plt.subplots(1, 1, figsize=(10, 6.5))
 le = []
 
-env= 'HalfCheetah'
+env = 'HalfCheetah'
 line_labels = ['HalfCheetah-v2']
 fontsize=22
 colorplus = ["#2CAFAC"]#, "#C11CAD", "#8338EC"]#, M2PG":"#FF006E"}
@@ -31,12 +31,14 @@ seg_data = []
 for file_name in filenames:
     ea = event_accumulator.EventAccumulator(file_name)
     ea.Reload()
+    print(file_name)
     val_psnr = ea.scalars.Items('test/return')
     seed_data_value = []
     for i in val_psnr:
         seed_data_value.append(i.value)
     seed_data_value = np.convolve(seed_data_value, np.ones(average_num) / average_num, mode='valid')
     seg_data.append(seed_data_value)
+
 
 mean_data = []
 std_data = []
