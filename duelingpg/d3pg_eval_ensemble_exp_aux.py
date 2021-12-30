@@ -126,6 +126,7 @@ class D3PG(object):
         self.total_it = 0
 
         self.exp_version = exp_version
+        self.isnan = 0
 
     def select_noise(self, state, exp_noise):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -148,6 +149,9 @@ class D3PG(object):
         std_Q = torch.std(exp_Qs, dim=1).mean()
         action_grad = autograd.grad(std_Q, action, retain_graph=True)[0]
         action_grad = action_grad / action_grad.norm()
+        if torch.any(torch.isnan(action_grad)):
+            self.isnan += 1
+            return noise
         return noise_scale * action_grad.cpu().data.numpy().flatten()
 
     def select_action(self, state, noisy=True):
@@ -290,7 +294,7 @@ class D3PG(object):
             self.random_reward_optimizer.step()
             random_reward_loss = random_reward_loss.item()
 
-        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), random_reward_loss, exp_actor_loss.item(), 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), exp_critic_loss.item(), random_reward_loss, exp_actor_loss.item(), self.isnan, 0, 0, 0
 
 
     def save(self, filename):

@@ -58,7 +58,7 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=3, type=int)
     parser.add_argument("--target_threshold", default=0., type=float)
     parser.add_argument("--num_critic", default=2, type=int)
-    parser.add_argument("--exp_version", default=1, type=int)
+    parser.add_argument("--exp_version", default=0, type=int)
     parser.add_argument("--exp_num_critic", default=2, type=int)
 
     args = parser.parse_args()
