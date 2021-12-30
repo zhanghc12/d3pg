@@ -33,6 +33,7 @@ seg_data = []
 for file_name in filenames:
     ea = event_accumulator.EventAccumulator(file_name)
     ea.Reload()
+    print(file_name)
     val_psnr = ea.scalars.Items('test/return')
     seed_data_value = []
     for i in val_psnr:
