@@ -8,6 +8,7 @@ import duelingpg.utils as utils
 
 from duelingpg import d3pg_eval_ensemble_exp_aux
 from duelingpg import d3pg_eval_ensemble_exp_base
+from duelingpg import d3pg_eval_ensemble_exp_base2
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -113,6 +114,8 @@ if __name__ == "__main__":
 
     if args.version == 0:
         policy = d3pg_eval_ensemble_exp_base.D3PG(**kwargs)
+    if args.version == 2:
+        policy = d3pg_eval_ensemble_exp_base2.D3PG(**kwargs)
     else:
         policy = d3pg_eval_ensemble_exp_aux.D3PG(**kwargs)
 
@@ -161,15 +164,16 @@ if __name__ == "__main__":
         if t >= args.start_timesteps:
             actor_loss, critic_loss, exp_critic_loss, random_reward_loss, exp_actor_loss, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
 
-            writer.add_scalar('loss/actor_loss', actor_loss, t)
-            writer.add_scalar('loss/critic_loss', critic_loss, t)
-            writer.add_scalar('loss/exp_critic_loss', exp_critic_loss, t)
-            writer.add_scalar('value/random_reward_loss', random_reward_loss, t)
-            writer.add_scalar('loss/q_value', exp_actor_loss, t)
-            writer.add_scalar('value/target_qvalue', target_qvalue, t)
-            writer.add_scalar('value/r1', r1, t)
-            writer.add_scalar('value/r2', r2, t)
-            writer.add_scalar('value/r3', r3, t)
+            if (t + 1) % args.eval_freq == 0:
+                writer.add_scalar('loss/actor_loss', actor_loss, t)
+                writer.add_scalar('loss/critic_loss', critic_loss, t)
+                writer.add_scalar('loss/exp_critic_loss', exp_critic_loss, t)
+                writer.add_scalar('value/random_reward_loss', random_reward_loss, t)
+                writer.add_scalar('loss/q_value', exp_actor_loss, t)
+                writer.add_scalar('value/target_qvalue', target_qvalue, t)
+                writer.add_scalar('value/r1', r1, t)
+                writer.add_scalar('value/r2', r2, t)
+                writer.add_scalar('value/r3', r3, t)
 
         if done:
             writer.add_scalar('train/return', episode_reward, t)
