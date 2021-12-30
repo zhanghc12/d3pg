@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
     parser.add_argument("--version", default=3, type=int)
-    parser.add_argument("--target_threshold", default=0.3, type=float)
+    parser.add_argument("--target_threshold", default=0., type=float)
     parser.add_argument("--num_critic", default=2, type=int)
     parser.add_argument("--exp_version", default=1, type=int)
     parser.add_argument("--exp_num_critic", default=2, type=int)

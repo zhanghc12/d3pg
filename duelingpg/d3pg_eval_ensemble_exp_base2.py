@@ -100,16 +100,10 @@ class D3PG(object):
         action = self.actor(state)
         noise = np.random.normal(0, exp_noise, size=action.shape[1])
         noise_scale = np.linalg.norm(noise)
-        if self.version == 0:
-            return noise
-        if self.target_threshold > 0:
-            return np.zeros_like(noise)
-
         exp_Qs = []
 
-        if self.version == 2:
-            for i in range(self.num_critic):
-                exp_Qs.append(self.critics[i](state, action))
+        for i in range(self.num_critic):
+            exp_Qs.append(self.critics[i](state, action))
         exp_Qs = torch.cat(exp_Qs, dim=1)
         std_Q = torch.std(exp_Qs, dim=1).mean()
         action_grad = autograd.grad(std_Q, action, retain_graph=True)[0]
