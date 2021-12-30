@@ -21,7 +21,9 @@ version_names = [dirname + '2021-12-30_02-16-31_Dueling_' + env]
 filenames = []
 for l1 in os.listdir(dirname):
     if l1.startswith('2021-12-30_02-16-31_Dueling_' + env):
-        filenames.append(dirname + l1)
+        for l2 in os.listdir(dirname + l1 + '/'):
+            filenames.append(dirname + l1 + '/' + l2)
+print(file_names)
 
 color = 'blue'
 shade_colors = 'lightblue'
@@ -31,7 +33,6 @@ seg_data = []
 for file_name in filenames:
     ea = event_accumulator.EventAccumulator(file_name)
     ea.Reload()
-    print(file_name)
     val_psnr = ea.scalars.Items('test/return')
     seed_data_value = []
     for i in val_psnr:
