@@ -23,7 +23,7 @@ for l1 in os.listdir(dirname):
     if l1.startswith('2021-12-30_02-16-31_Dueling_' + env):
         for l2 in os.listdir(dirname + l1 + '/'):
             filenames.append(dirname + l1 + '/' + l2)
-print(file_names)
+print(filenames)
 
 color = 'blue'
 shade_colors = 'lightblue'
