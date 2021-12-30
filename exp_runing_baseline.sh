@@ -21,5 +21,12 @@ CUDA_VISIBLE_DEVICES=3 python main_exp.py --policy Dueling  --version 0  --env A
 CUDA_VISIBLE_DEVICES=0 python main_exp.py --policy Dueling  --version 0  --env Walker2d-v2 --seed 5 &\
 CUDA_VISIBLE_DEVICES=1 python main_exp.py --policy Dueling  --version 0  --env Hopper-v2 --seed 5 &\
 CUDA_VISIBLE_DEVICES=2 python main_exp.py --policy Dueling  --version 0  --env HalfCheetah-v2 --seed 5 &\
-CUDA_VISIBLE_DEVICES=3 python main_exp.py --policy Dueling  --version 0  --env Ant-v2 --seed 5
-
+CUDA_VISIBLE_DEVICES=3 python main_exp.py --policy Dueling  --version 0  --env Ant-v2 --seed 5 &\
+CUDA_VISIBLE_DEVICES=0 python main_exp.py --policy Dueling  --version 0  --env Walker2d-v2 --seed 6 &\
+CUDA_VISIBLE_DEVICES=1 python main_exp.py --policy Dueling  --version 0  --env Hopper-v2 --seed 6 &\
+CUDA_VISIBLE_DEVICES=2 python main_exp.py --policy Dueling  --version 0  --env HalfCheetah-v2 --seed 6 &\
+CUDA_VISIBLE_DEVICES=3 python main_exp.py --policy Dueling  --version 0  --env Ant-v2 --seed 6 &\
+CUDA_VISIBLE_DEVICES=0 python main_exp.py --policy Dueling  --version 0  --env Walker2d-v2 --seed 7 &\
+CUDA_VISIBLE_DEVICES=1 python main_exp.py --policy Dueling  --version 0  --env Hopper-v2 --seed 7 &\
+CUDA_VISIBLE_DEVICES=2 python main_exp.py --policy Dueling  --version 0  --env HalfCheetah-v2 --seed 7 &\
+CUDA_VISIBLE_DEVICES=3 python main_exp.py --policy Dueling  --version 0  --env Ant-v2 --seed 7
