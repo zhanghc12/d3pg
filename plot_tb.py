@@ -12,12 +12,13 @@ fig, axes = plt.subplots(1, 1, figsize=(10, 6.5))
 le = []
 
 env = 'HalfCheetah'
-env = 'Walker2d'
-env = 'Ant'
-env = 'Hopper'
+# env = 'Walker2d'
+#env = 'Ant'
+# env = 'Hopper'
 
 ver = 'ver3ever0'
 ver = 'ver1ever2'
+ver = 'v1'
 
 line_labels = [env]
 fontsize=22
@@ -34,7 +35,7 @@ for l1 in os.listdir(dirname):
 print(filenames)
 '''
 
-dirname = '/Users/peixiaoqi/data/exp2022/v1ev2/'
+dirname = '/Users/peixiaoqi/data/exp2022/v1/'
 filenames = []
 for l1 in os.listdir(dirname):
     if env in l1:
@@ -92,7 +93,7 @@ axes.set_ylabel('Return', fontsize=fontsize)
 
 
 axes.legend(le, line_labels, fontsize=22, loc="upper left", ncol=1)
-fig.savefig('./fig/plot' + env + '-' + ver + '.png', bbox_inches='tight')
+fig.savefig('/Users/peixiaoqi/Documents/exp2022/fig/plot' + env + '-' + ver + '.png', bbox_inches='tight')
 # plt.show()
 
 

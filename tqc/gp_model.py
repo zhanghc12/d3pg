@@ -5,6 +5,8 @@ import torch.nn as nn
 from gpytorch.models import ApproximateGP
 from gpytorch.variational import CholeskyVariationalDistribution
 from gpytorch.variational import VariationalStrategy
+from tqc.spectral_normalization import spectral_norm
+import math
 
 
 class IndependentMultitaskGPModel(gpytorch.models.ApproximateGP):
@@ -70,8 +72,19 @@ class FeatureExtractor(nn.Module):
     def forward(self, state, action):
         q = F.relu(self.l1(torch.cat([state, action], 1)))
         q = F.relu(self.l2(q))
-        return F.relu(self.l3(q))
+        return spectral_norm(F.relu(self.l3(q)), norm_bound=0.95, n_power_iterations=1) # todo: if relu or not
 
+def RandomFeatureLinear(i_dim, o_dim, bias=True, require_grad=False):
+    m = nn.Linear(i_dim, o_dim, bias)
+    # https://github.com/google/uncertainty-baselines/blob/main/uncertainty_baselines/models/bert_sngp.py
+    nn.init.normal_(m.weight, mean=0.0, std=0.05)
+    # freeze weight
+    m.weight.requires_grad = require_grad
+    if bias:
+        nn.init.uniform_(m.bias, a=0.0, b=2. * math.pi)
+        # freeze bias
+        m.bias.requires_grad = require_grad
+    return m
 
 class DKLModel(gpytorch.Module):
     def __init__(self, feature_extractor, num_dim, grid_bounds=(-10., 10.)):
@@ -88,14 +101,35 @@ class DKLModel(gpytorch.Module):
         features = self.feature_extractor(x)
         features = self.scale_to_bounds(features)
         # This next line makes it so that we learn a GP for each feature
-        features = features.transpose(-1, -2).unsqueeze(-1)
+        # features = features.transpose(-1, -2).unsqueeze(-1)
         res = self.gp_layer(features)
         return res
 
-num_feature = 64
-feature_extractor = FeatureExtractor(state_dim=state_dim, action_dim=action_dim, num_feature=num_feature)
 
-model = DKLModel(feature_extractor, num_dim=num_features)
+state_dim = 10
+action_dim = 5
+num_feature = 64
+num_inducing = 500
+gp_kernel_scale = 1
+num_output = state_dim + 1
+gp_input_scale = 1. / math.sqrt(gp_kernel_scale)
+scale_random_features = True
+feature_extractor = FeatureExtractor(state_dim=state_dim, action_dim=action_dim, num_feature=num_feature)
+gp_inputs = torch.nn.LayerNorm(num_feature, eps=1e-12)
+
+random_feature = RandomFeatureLinear(num_feature, num_inducing)
+gp_feature = random_feature(gp_inputs)
+gp_feature = torch.cos(gp_feature)  # batch * num_inducing
+if scale_random_features:
+    gp_feature = gp_feature * gp_input_scale
+
+# in classification, we get num_inducing points, b * DL. then how to do last layer
+
+gp_output_layer = nn.Linear(num_inducing, num_output, bias=False)
+
+
+# after we get feature
+model = DKLModel(feature_extractor, num_dim=num_feature)
 # likelihood = gpytorch.likelihoods.GaussianLikelihood()
 likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1]).to(device)
 
