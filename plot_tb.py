@@ -13,20 +13,22 @@ le = []
 
 env = 'HalfCheetah'
 #env = 'Walker2d'
-#env = 'Ant'
-# env = 'Hopper'
+# env = 'Ant'
+#env = 'Hopper'
 
 ver = 'ver3ever0'
 ver = 'ver1ever2'
 ver = 'v1'
 ver = 'ver3ever3'
+ver = 'ver3ever2'
+ver = 'ver3ever0thre0.1'
 
 line_labels = [env]
 fontsize=22
 colorplus = ["#2CAFAC"]#, "#C11CAD", "#8338EC"]#, M2PG":"#FF006E"}
 
 '''
-dirname = '/Users/peixiaoqi/data/exp2022/v3ev3/'
+dirname = '/Users/peixiaoqi/data/exp2022/v3ev2/'
 
 filenames = []
 for l1 in os.listdir(dirname):
@@ -36,7 +38,7 @@ for l1 in os.listdir(dirname):
 print(filenames)
 '''
 
-dirname = '/Users/peixiaoqi/data/exp2022/v3ev3/'
+dirname = '/Users/peixiaoqi/data/exp2022/v3ev0th0.1/'
 filenames = []
 for l1 in os.listdir(dirname):
     if env in l1:

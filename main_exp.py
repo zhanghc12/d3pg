@@ -9,6 +9,7 @@ import duelingpg.utils as utils
 from duelingpg import d3pg_eval_ensemble_exp_aux
 from duelingpg import d3pg_eval_ensemble_exp_base
 from duelingpg import d3pg_eval_ensemble_exp_base2
+from duelingpg import d3pg_eval_ensemble_exp_base3
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     parser.add_argument("--num_critic", default=2, type=int)
     parser.add_argument("--exp_version", default=0, type=int)
     parser.add_argument("--exp_num_critic", default=2, type=int)
+    parser.add_argument("--dist", default=0, type=int)
 
     args = parser.parse_args()
 
@@ -70,7 +72,7 @@ if __name__ == "__main__":
         args.start_timesteps = 2000
     experiment_dir = experiment_dir + '12_23/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}_ever{}_en{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic, args.exp_version, args.exp_num_critic))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}_ever{}_en{}_d{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic, args.exp_version, args.exp_num_critic, args.dist))
 
     file_name = "{}_{}_{}".format(args.policy, args.env, args.seed)
     print("---------------------------------------")
@@ -117,8 +119,10 @@ if __name__ == "__main__":
     if args.version == 2:
         policy = d3pg_eval_ensemble_exp_base2.D3PG(**kwargs)
     else:
-        policy = d3pg_eval_ensemble_exp_aux.D3PG(**kwargs)
-
+        if args.dist == 0:
+            policy = d3pg_eval_ensemble_exp_aux.D3PG(**kwargs)
+        else:
+            policy = d3pg_eval_ensemble_exp_base3.D3PG(**kwargs)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     onpolicy_buffer = utils.ReplayBuffer(state_dim, action_dim)
