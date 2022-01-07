@@ -1,4 +1,5 @@
 import d4rl
+import d4rl.gym_mujoco
 import datetime
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
