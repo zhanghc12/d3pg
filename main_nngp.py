@@ -91,7 +91,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
 
     # define the model
-    feature_extractor = FeatureExtractor(state_dim=state_dim, action_dim=action_dim, num_feature=128)
+    feature_extractor = FeatureExtractor(state_dim=state_dim, action_dim=action_dim, num_feature=128).to(device)
     if not torch.cuda.is_available():
         inducing_points = train_x[:500, :]  # todo
     else:
