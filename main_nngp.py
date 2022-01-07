@@ -41,9 +41,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if torch.cuda.is_available():
-        experiment_dir = '/data/zhanghc/gp/'  + args.num_points + '/'
+        experiment_dir = '/data/zhanghc/gp/' + str(args.num_points) + '/'
     else:
-        experiment_dir = '/tmp/data/zhanghc/gp/' + args.num_points + '/'
+        experiment_dir = '/tmp/data/zhanghc/gp/' + str(args.num_points) + '/'
     experiment_dir = experiment_dir + '0107/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}'.format(
