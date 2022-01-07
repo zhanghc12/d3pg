@@ -36,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_test_episodes', help='Number of test episodes', type=int, default=10)
     parser.add_argument('--enable_ngd', help='use ngd or not', type=int, default=1)
     parser.add_argument('--evaluation_interval', help='evaluation period', type=int, default=10)
+    parser.add_argument('--num_points', help='evaluation period', type=int, default=10)
 
     args = parser.parse_args()
 
@@ -93,9 +94,9 @@ if __name__ == "__main__":
     # define the model
     feature_extractor = FeatureExtractor(state_dim=state_dim, action_dim=action_dim, num_feature=128).to(device)
     if not torch.cuda.is_available():
-        inducing_points = train_x[:500, :]  # todo
+        inducing_points = train_x[:args.num_points, :]  # todo
     else:
-        inducing_points = train_x[:5000, :] # todo
+        inducing_points = train_x[:args.num_points, :] # todo
 
     inducing_points = feature_extractor(inducing_points).to(device)  # initialize the inducing points
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)  # y_shape * ibatch * 128
