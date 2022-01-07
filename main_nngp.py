@@ -97,7 +97,7 @@ if __name__ == "__main__":
     else:
         inducing_points = train_x[:5000, :] # todo
 
-    inducing_points = feature_extractor(inducing_points)  # initialize the inducing points
+    inducing_points = feature_extractor(inducing_points).to(device)  # initialize the inducing points
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)  # y_shape * ibatch * 128
     model = NeuralGP(feature_extractor, inducing_points, num_tasks=train_y.shape[1], enable_ngd=args.enable_ngd).to(device)
     likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1]).to(device)
