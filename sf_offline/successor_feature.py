@@ -98,6 +98,10 @@ class IdpSF(nn.Module):
         self.weight_l2 = nn.Linear(hidden_dim, hidden_dim)
         self.weight_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
 
+        # self.weight = nn.Parameter(torch.zeros(self.feat_dim, 1), requires_grad=True)
+
+        self.weight = nn.Linear(self.feat_dim, 1) # w : 1 * feat_dim
+
         self.phi_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
         self.phi_l2 = nn.Linear(hidden_dim, hidden_dim)
         self.phi_l3 = nn.Linear(hidden_dim, self.feat_dim) # phi: 1 * feat_dim
@@ -109,36 +113,38 @@ class IdpSF(nn.Module):
     def forward(self, state, action, fix_feature=True):
         # get successor feature of (state, action) pair: w(s,a): reward
         input = torch.cat([state, action], dim=1)
-        w = F.relu(self.weight_l1(input))
-        w = F.relu(self.weight_l2(w))
-        w = self.weight_l3(w)
+        #w = F.relu(self.weight_l1(input))
+        #w = F.relu(self.weight_l2(w))
+        #w = self.weight_l3(w)
 
         psi = F.relu(self.psi_l1(input))
         psi = F.relu(self.psi_l2(psi))
         psi = self.psi_l3(psi)
 
-        Q = (w * psi).sum(dim=1, keepdim=True)
+        # Q = (w * psi).sum(dim=1, keepdim=True)
+        Q = self.weight(psi)
         return Q
 
     def forward_reward(self, state, action, fix_feature=True):
         # get successor feature of (state, action) pair: w(s,a): reward
         input = torch.cat([state, action], dim=1)
-        w = F.relu(self.weight_l1(input))
-        w = F.relu(self.weight_l2(w))
-        w = self.weight_l3(w)
+        #w = F.relu(self.weight_l1(input))
+        #w = F.relu(self.weight_l2(w))
+        #w = self.weight_l3(w)
 
         phi = self.get_phi(state, action)
         if fix_feature:
             phi = phi.detach()
 
-        Q = (w * phi).sum(dim=1, keepdim=True)
+        # Q = (w * phi).sum(dim=1, keepdim=True)
+        Q = self.weight(phi)
         return Q
 
     def get_phi(self, state, action):
         input = torch.cat([state, action], dim=1)
         phi = F.relu(self.phi_l1(input))
         phi = F.relu(self.phi_l2(phi))
-        phi = F.relu(self.phi_l3(phi))
+        phi = self.phi_l3(phi)
         phi = phi.norm(dim=-1, keepdim=True) + 1e-6
         return phi
 
