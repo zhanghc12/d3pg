@@ -74,10 +74,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if torch.cuda.is_available():
-        experiment_dir = '/data/zhanghc/d3pg/'
+        experiment_dir = '/data/zhanghc/sf/'
     else:
-        experiment_dir = '/tmp/data/zhanghc/d3pg/'
-    experiment_dir = experiment_dir + '1216/'
+        experiment_dir = '/tmp/data/zhanghc/sf/'
+    experiment_dir = experiment_dir + '0108/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}_bs{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets, args.bc_scale))
 
