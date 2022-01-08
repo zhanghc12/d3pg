@@ -8,9 +8,8 @@ import torch
 import gym
 import argparse
 import os
-from tqc import tqc_offline, lip_tqc_offline
 from sf_offline import td3
-from sf_offline import successor_feature
+import d4rl.gym_mujoco
 
 
 def load_hdf5(dataset, replay_buffer):
