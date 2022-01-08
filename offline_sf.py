@@ -123,6 +123,7 @@ if __name__ == "__main__":
         if t % 100 == 0:
             writer.add_scalar('loss/psi_loss', psi_loss, t)
             writer.add_scalar('loss/policy_loss', policy_loss, t)
+            print('iteration: {}, policy loss :{:6f}, psi loss: {:6f}'.format(t, policy_loss, psi_loss))
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
