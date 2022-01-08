@@ -127,7 +127,7 @@ class IdpSF(nn.Module):
 
     def forward_reward(self, state, action, fix_feature=True):
         # get successor feature of (state, action) pair: w(s,a): reward
-        input = torch.cat([state, action], dim=1)
+        # input = torch.cat([state, action], dim=1)
         #w = F.relu(self.weight_l1(input))
         #w = F.relu(self.weight_l2(w))
         #w = self.weight_l3(w)

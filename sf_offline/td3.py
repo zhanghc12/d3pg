@@ -29,7 +29,7 @@ class TD3(object):
 
     def train_reward(self, memory, batch_size):
         state_batch, action_batch, next_state_batch, reward_batch, mask_batch = memory.sample(batch_size)
-        predict_reward = self.sf.forward_reward(state_batch, action_batch, fix_feature=True)
+        predict_reward = self.sf.forward_reward(state_batch, action_batch, fix_feature=False)
         reward_loss = F.mse_loss(predict_reward, reward_batch)
         self.sf_optim.zero_grad()
         reward_loss.backward()
