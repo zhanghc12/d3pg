@@ -112,8 +112,8 @@ if __name__ == "__main__":
     #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
     for t in range(int(args.max_timesteps / 10)):
         phi_loss = policy.train_reward(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
-        print('iteration', t, phi_loss)
         if t % 100 == 0:
+            print('iteration', t, phi_loss)
             writer.add_scalar('loss/phi_loss', phi_loss, t)
 
 
