@@ -66,7 +66,7 @@ class TD3(object):
         for param, target_param in zip(self.sf.parameters(), self.sf_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        for param, target_param in zip(self.policy.parameters(), self.policy.parameters()):
+        for param, target_param in zip(self.policy.parameters(), self.policy_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         return psi_loss.item(), policy_loss.item()
