@@ -63,7 +63,7 @@ class TD3(object):
         self.policy_optim.step()
 
         # update the target network
-        for param, target_param in zip(self.sf.parameters(), self.sf.parameters()):
+        for param, target_param in zip(self.sf.parameters(), self.sf_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         for param, target_param in zip(self.policy.parameters(), self.policy.parameters()):
