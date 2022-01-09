@@ -54,7 +54,7 @@ class TD3(object):
             psi_next_target = self.bc_critic_target.get_psi(next_state_batch, next_action_batch)
             phi_state_action = self.bc_critic.get_phi(state_batch, action_batch)
             psi_next_target = (phi_state_action + mask_batch * self.gamma * psi_next_target).detach()
-            q_next_target = self.bc_critic(next_action_batch, next_action_batch)
+            q_next_target = self.bc_critic(next_state_batch, next_action_batch)
             q_next_target = (reward_batch + mask_batch * self.gamma * q_next_target).detach()
 
         curr_psi = self.bc_critic.get_psi(state_batch, action_batch)
