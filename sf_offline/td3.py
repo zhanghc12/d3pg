@@ -8,7 +8,7 @@ import copy
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale):
         self.gamma = gamma
         self.tau = tau
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,6 +21,8 @@ class TD3(object):
         self.policy = Actor(state_dim, action_dim, 1).to(self.device)
         self.policy_optim = Adam(self.policy.parameters(), lr=3e-4)
         self.policy_target = copy.deepcopy(self.policy)
+
+        self.bc_scale = bc_scale
 
     def select_action(self, state, evaluate=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -56,7 +58,8 @@ class TD3(object):
         self.sf_optim.step()
 
         # policy improvement
-        curr_Q = self.sf(state_batch, self.policy(state_batch))
+        psi_state_action = self.sf.get_psi(state_batch, self.policy(state_batch))
+        curr_Q = self.sf(state_batch, self.policy(state_batch)) - self.bc_scale / (psi_state_action.norm(dim=1, keep_dim=True)  + 1e-6)
         policy_loss = -curr_Q.mean()
         self.policy_optim.zero_grad()
         policy_loss.backward()

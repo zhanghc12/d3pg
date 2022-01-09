@@ -100,7 +100,7 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    policy = td3.TD3(state_dim, action_dim, args.discount, args.tau)
+    policy = td3.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
