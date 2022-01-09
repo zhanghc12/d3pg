@@ -86,8 +86,9 @@ if __name__ == "__main__":
     print("Policy: {}, Env: {}, Seed: {}".format(args.policy, args.env, args.seed))
     print("---------------------------------------")
 
-    if args.save_model and not os.path.exists("./models"):
-        os.makedirs("./models")
+    model_path = experiment_dir + 'models' + str(args.bc_scale)
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
 
     env = gym.make(args.env)
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     evaluations = [eval_policy(0, policy, args.env, args.seed)]
 
     #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
-    for t in range(int(args.max_timesteps / 10)):
+    for t in range(int(args.max_timesteps/1000)):
         reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
         if t % 100 == 0:
             print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
@@ -129,7 +130,11 @@ if __name__ == "__main__":
     print(policy.min_psi_norm)
     print(policy.partion_psi_norm)
     print(policy.max_psi_norm)
+    writer.add_scalar('test/min_psi_norm', policy.min_psi_norm, 0)
+    writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
+    writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
+    torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
         psi_loss, policy_loss = policy.train_policy(replay_buffer, args.batch_size)

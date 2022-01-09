@@ -89,7 +89,8 @@ class TD3(object):
             i += batch_size
             self.psi_list.extend(psi_norm.detach().cpu().numpy())
         self.min_psi_norm = np.min(self.psi_list)
-        self.partion_psi_norm = np.array(self.psi_list)[np.argpartition(self.psi_list, 10000)][10000]
+        partion_num = np.int32((memory.size * self.bc_scale))
+        self.partion_psi_norm = np.array(self.psi_list)[np.argpartition(self.psi_list, partion_num)][partion_num]
         self.max_psi_norm = np.max(self.psi_list)
 
     def train_policy(self, memory, batch_size):
