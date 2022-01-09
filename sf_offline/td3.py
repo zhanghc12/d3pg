@@ -59,7 +59,7 @@ class TD3(object):
 
         # policy improvement
         psi_state_action = self.sf.get_psi(state_batch, self.policy(state_batch))
-        curr_Q = self.sf(state_batch, self.policy(state_batch)) - self.bc_scale / (psi_state_action.norm(dim=1, keep_dim=True)  + 1e-6)
+        curr_Q = self.sf(state_batch, self.policy(state_batch)) - self.bc_scale / (psi_state_action.norm(dim=1, keepdim=True)  + 1e-6)
         policy_loss = -curr_Q.mean()
         self.policy_optim.zero_grad()
         policy_loss.backward()
