@@ -221,7 +221,7 @@ class MixedSF(nn.Module):
         feature = F.relu(self.feature_l3(feature))
         return feature
 
-    def get_Q(self, state, action, fix_feature=True):
+    def forward(self, state, action, fix_feature=True):
         feature = self.get_feature(state, action)
         psi = F.relu(self.psi_l1(feature))
         Q = self.weight_l1(psi)
