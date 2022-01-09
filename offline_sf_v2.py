@@ -90,6 +90,7 @@ if __name__ == "__main__":
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
+    model_path = model_path + '/critic'
     env = gym.make(args.env)
 
     # Set seeds
