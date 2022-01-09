@@ -234,6 +234,12 @@ class MixedSF(nn.Module):
         R = self.weight_l1(phi)
         return R
 
+    def get_phi(self, state, action):
+        feature = self.get_feature(state, action)
+        phi = F.relu(self.phi_l1(feature))
+        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
+        return phi
+
     def get_psi(self, state, action):
         feature = self.get_feature(state, action)
         psi = F.relu(self.psi_l1(feature))
