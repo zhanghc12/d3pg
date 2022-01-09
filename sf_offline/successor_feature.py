@@ -145,7 +145,7 @@ class IdpSF(nn.Module):
         phi = F.relu(self.phi_l1(input))
         phi = F.relu(self.phi_l2(phi))
         phi = self.phi_l3(phi)
-        # phi = phi.norm(dim=-1, keepdim=True) + 1e-6
+        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
         return phi
 
     def get_psi(self, state, action):
