@@ -59,8 +59,10 @@ class TD3(object):
 
         # policy improvement
         psi_state_action = self.sf.get_psi(state_batch, self.policy(state_batch))
-        curr_Q = self.sf(state_batch, self.policy(state_batch)) - self.bc_scale / (psi_state_action.norm(dim=1, keepdim=True)  + 1e-6)
-        policy_loss = -curr_Q.mean()
+        curr_Q = self.sf(state_batch, self.policy(state_batch))
+        lmbda = 1 / (curr_Q.abs().mean() + 1e-2).detach()
+        bc_loss = self.bc_scale / (psi_state_action.norm(dim=1, keepdim=True) + 1e-6)
+        policy_loss = -lmbda * curr_Q.mean() + bc_loss.mean()
         self.policy_optim.zero_grad()
         policy_loss.backward()
         self.policy_optim.step()
@@ -72,7 +74,7 @@ class TD3(object):
         for param, target_param in zip(self.policy.parameters(), self.policy_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return psi_loss.item(), policy_loss.item()
+        return psi_loss.item(), -curr_Q.mean().item()
 
     # Save model parameters
     def save_model(self, env_name, suffix="", actor_path=None, critic_path=None):
