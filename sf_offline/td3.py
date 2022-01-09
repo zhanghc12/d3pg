@@ -62,7 +62,7 @@ class TD3(object):
         curr_Q = self.sf(state_batch, self.policy(state_batch))
         lmbda = 1 / (curr_Q.abs().mean() + 1e-2).detach()
         bc_loss = self.bc_scale / (psi_state_action.norm(dim=1, keepdim=True) + 1e-6)
-        policy_loss = -lmbda * curr_Q.mean() + bc_loss.mean()
+        policy_loss = -lmbda * curr_Q.mean() + bc_loss.mean() # 1
         self.policy_optim.zero_grad()
         policy_loss.backward()
         self.policy_optim.step()
