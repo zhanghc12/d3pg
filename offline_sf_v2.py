@@ -8,7 +8,7 @@ import torch
 import gym
 import argparse
 import os
-from sf_offline import td3
+from sf_offline import td3_v2
 import d4rl.gym_mujoco
 
 
@@ -26,7 +26,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, eval_episodes=10):
+def eval_policy(t, policy, env_name, seed, eval_episodes=10, bc=False):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -34,7 +34,7 @@ def eval_policy(t, policy, env_name, seed, eval_episodes=10):
     for _ in range(eval_episodes):
         state, done = eval_env.reset(), False
         while not done:
-            action = policy.select_action(np.array(state))
+            action = policy.select_action(np.array(state), bc=bc)
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    policy = td3.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale)
+    policy = td3_v2.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
@@ -111,11 +111,24 @@ if __name__ == "__main__":
     evaluations = [eval_policy(0, policy, args.env, args.seed)]
 
     #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
-    for t in range(int(args.max_timesteps / 10)):
-        phi_loss = policy.train_reward(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
+    for t in range(int(args.max_timesteps / 1000)):
+        reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
         if t % 100 == 0:
-            print('iteration', t, phi_loss)
-            writer.add_scalar('loss/phi_loss', phi_loss, t)
+            print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
+            writer.add_scalar('loss/reward_loss', reward_loss, t)
+            writer.add_scalar('loss/psi_loss', psi_loss, t)
+            writer.add_scalar('loss/q_loss', q_loss, t)
+            writer.add_scalar('loss/policy_loss', policy_loss, t)
+        if (t + 1) % args.eval_freq == 0:
+            avg_return = eval_policy(t, policy, args.env, args.seed, bc=True)
+            evaluations.append(avg_return)
+            writer.add_scalar('test/return', avg_return, t)
+
+
+    policy.get_stat(replay_buffer)
+    print(policy.min_psi_norm)
+    print(policy.partion_psi_norm)
+    print(policy.max_psi_norm)
 
 
     for t in range(int(args.max_timesteps)):

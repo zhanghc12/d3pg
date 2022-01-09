@@ -14,6 +14,8 @@ class ReplayBuffer(object):
         self.state = np.zeros((max_size, state_dim))
         self.action = np.zeros((max_size, action_dim))
         self.next_state = np.zeros((max_size, state_dim))
+        self.next_action = np.zeros((max_size, action_dim))
+
         self.reward = np.zeros((max_size, 1))
         self.not_done = np.zeros((max_size, 1))
 
@@ -100,6 +102,15 @@ class ReplayBuffer(object):
         ind = np.random.randint(0, self.size, size=batch_size)
         return torch.FloatTensor(self.non_terminal_state[ind]).to(self.device)
 
+    def sample_by_index(self, ind):
+        # ind = np.random.randint(0, self.size - 1, size=batch_size)
+
+        return (
+            torch.FloatTensor(self.state[ind]).to(self.device),
+            torch.FloatTensor(self.action[ind]).to(self.device),
+        )
+        pass
+
     def sample_include_next_actions(self, batch_size):
         ind = np.random.randint(0, self.size - 1, size=batch_size)
 
@@ -113,8 +124,18 @@ class ReplayBuffer(object):
             torch.FloatTensor(self.not_fake_done[ind]).to(self.device)
         )
 
-    def sample(self, batch_size):
+    def sample(self, batch_size, include_next_action=False):
         ind = np.random.randint(0, self.size, size=batch_size)
+
+        if include_next_action:
+            return (
+                torch.FloatTensor(self.state[ind]).to(self.device),
+                torch.FloatTensor(self.action[ind]).to(self.device),
+                torch.FloatTensor(self.next_state[ind]).to(self.device),
+                torch.FloatTensor(self.reward[ind]).to(self.device),
+                torch.FloatTensor(self.not_done[ind]).to(self.device),
+                torch.FloatTensor(self.next_action[ind]).to(self.device)
+            )
 
         return (
             torch.FloatTensor(self.state[ind]).to(self.device),
@@ -123,6 +144,8 @@ class ReplayBuffer(object):
             torch.FloatTensor(self.reward[ind]).to(self.device),
             torch.FloatTensor(self.not_done[ind]).to(self.device)
         )
+
+
 
     def sample_include_timestep(self, batch_size):
         ind = np.random.randint(0, self.size, size=batch_size)

@@ -26,14 +26,43 @@ class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
 
+        # Q1 architecture
         self.l1 = nn.Linear(state_dim + action_dim, 256)
         self.l2 = nn.Linear(256, 256)
         self.l3 = nn.Linear(256, 1)
 
+        # Q2 architecture
+        self.l4 = nn.Linear(state_dim + action_dim, 256)
+        self.l5 = nn.Linear(256, 256)
+        self.l6 = nn.Linear(256, 1)
+
     def forward(self, state, action):
-        q = F.relu(self.l1(torch.cat([state, action], 1)))
-        q = F.relu(self.l2(q))
-        return self.l3(q)
+        sa = torch.cat([state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q1, q2
+
+    def Q1(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+        return q1
+
+    def Q2(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q2 = F.relu(self.l1(sa))
+        q2 = F.relu(self.l2(q2))
+        q2 = self.l3(q2)
+        return q2
 
 
 class SharedSF(nn.Module):
@@ -161,6 +190,55 @@ class IdpSF(nn.Module):
         w = F.relu(self.weight_l2(w))
         w = self.weight_l3(w)
         return w
+
+
+class MixedSF(nn.Module):
+    def __init__(self, state_dim, action_dim, feat_dim, hidden_dim):
+        super(MixedSF, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.output_dim = 1
+        self.feat_dim = feat_dim
+
+        # first layer feature + hidden layer
+        self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
+        self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
+        self.feature_l3 = nn.Linear(hidden_dim, hidden_dim) # w : 1 * feat_dim
+
+        # psi layer
+        self.psi_l1 = nn.Linear(hidden_dim, self.feat_dim)
+        # self.psi_l2 = nn.Linear(hidden_dim, hidden_dim)
+        # self.psi_l3 = nn.Linear(hidden_dim, self.feat_dim) # psi: 1 * feat_dim
+
+        # reward layer
+        self.phi_l1 = nn.Linear(hidden_dim, self.feat_dim)
+        self.weight_l1 = nn.Linear(self.feat_dim, 1)
+
+    def get_feature(self, state, action):
+        input = torch.cat([state, action], dim=1)
+        feature = F.relu(self.feature_l1(input))
+        feature = F.relu(self.feature_l2(feature))
+        feature = F.relu(self.feature_l3(feature))
+        return feature
+
+    def get_Q(self, state, action, fix_feature=True):
+        feature = self.get_feature(state, action)
+        psi = F.relu(self.psi_l1(feature))
+        Q = self.weight_l1(psi)
+        return Q
+
+    def get_reward(self, state, action):
+        feature = self.get_feature(state, action)
+        phi = F.relu(self.phi_l1(feature))
+        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
+        R = self.weight_l1(phi)
+        return R
+
+    def get_psi(self, state, action):
+        feature = self.get_feature(state, action)
+        psi = F.relu(self.psi_l1(feature))
+        return psi
+
 
 # sf and sac or dqn. for now, it is based on sac, only the q-value or ppo?
 # must be off-policy, then sac or ddpg -> directly actor successor feature?
