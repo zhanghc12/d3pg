@@ -261,7 +261,7 @@ class SepSF(nn.Module):
         #self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
         #self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
         #self.feature_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
-        sn = False
+        sn = True
         if sn:
             # return spectral_norm(F.relu(self.l3(q)), norm_bound=0.95, n_power_iterations=1)  # todo: if relu or not
 
