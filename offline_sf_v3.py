@@ -69,6 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
+    parser.add_argument("--loading", type=int, default=1)
 
 
     args = parser.parse_args()
@@ -116,7 +117,7 @@ if __name__ == "__main__":
     policy_path = experiment_dir + 'modelsv3-0.99/critic'
     print(policy_path)
     loading = True
-    if os.path.exists(policy_path) and loading:
+    if os.path.exists(policy_path) and args.loading:
         policy.bc_critic.load_state_dict(torch.load(policy_path))
     else:
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
@@ -147,7 +148,7 @@ if __name__ == "__main__":
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
-    if not loading:
+    if not args.loading:
         torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
