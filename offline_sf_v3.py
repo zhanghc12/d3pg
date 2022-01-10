@@ -11,11 +11,15 @@ import os
 from sf_offline import td3_v3
 import d4rl.gym_mujoco
 
+def normalize(data):
+    mean = np.mean(data, axis=0, keepdims=True)
+    std = np.std(data, axis=0, keepdims=True)
+    return (data - mean) / (std + 1e-5)
 
 def load_hdf5(dataset, replay_buffer):
-    replay_buffer.state = dataset['observations']
+    replay_buffer.state = normalize(dataset['observations'])
     replay_buffer.action = dataset['actions']
-    replay_buffer.next_state = dataset['next_observations']
+    replay_buffer.next_state = normalize(dataset['next_observations'])
     replay_buffer.reward = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     replay_buffer.not_done = 1 - np.expand_dims(np.squeeze(dataset['terminals']), 1)
     replay_buffer.next_action = np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0)
