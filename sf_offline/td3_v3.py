@@ -66,7 +66,7 @@ class TD3(object):
         curr_q = self.bc_critic(state_batch, action_batch)
         q_loss = F.mse_loss(curr_q, q_next_target)
 
-        total_loss = 1000 * psi_loss + q_loss
+        total_loss = 1000 * psi_loss # + q_loss
         self.bc_critic_optim.zero_grad()
         total_loss.backward()
         self.bc_critic_optim.step()

@@ -115,11 +115,12 @@ if __name__ == "__main__":
 
     policy_path = experiment_dir + 'models0.9/critic'
 
-    if os.path.exists(policy_path):
+    loading = False
+    if os.path.exists(policy_path) and loading:
         policy.bc_critic.load_state_dict(torch.load(policy_path))
     else:
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
-        for t in range(int(args.max_timesteps)):
+        for t in range(int(args.max_timesteps/100)):
             reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
             if t % 100 == 0:
                 print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
@@ -142,8 +143,8 @@ if __name__ == "__main__":
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
-
-    # torch.save(policy.bc_critic.state_dict(), model_path)
+    if not loading:
+        torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
         critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size)
