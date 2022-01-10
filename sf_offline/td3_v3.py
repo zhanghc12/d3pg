@@ -43,11 +43,15 @@ class TD3(object):
         return action.detach().cpu().numpy()[0]
 
     def train_bc(self, memory, batch_size):
-        state_batch, action_batch, next_state_batch, reward_batch, mask_batch, next_action_batch = memory.sample(batch_size, include_next_action=True)
+        state_batch, action_batch, next_state_batch, reward_batch, mask_batch, next_action_batch, forward_label = memory.sample_v3(batch_size, include_next_action=True)
 
         # reward loss
-        predict_reward = self.bc_critic.get_reward(state_batch, action_batch)
-        reward_loss = F.mse_loss(predict_reward, reward_batch)
+        # predict_reward = self.bc_critic.get_reward(state_batch, action_batch)
+        # reward_loss = F.mse_loss(predict_reward, reward_batch)
+
+        # transiton loss
+        pred = self.bc_critic.get_transition(state_batch, action_batch)
+        reward_loss = torch.mean((pred - forward_label)** 2)
 
         # psi loss
         with torch.no_grad():
@@ -62,7 +66,7 @@ class TD3(object):
         curr_q = self.bc_critic(state_batch, action_batch)
         q_loss = F.mse_loss(curr_q, q_next_target)
 
-        total_loss = reward_loss + psi_loss + q_loss
+        total_loss = 0.001 * reward_loss + 1000 * psi_loss + q_loss
         self.bc_critic_optim.zero_grad()
         total_loss.backward()
         self.bc_critic_optim.step()

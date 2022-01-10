@@ -246,6 +246,7 @@ class MixedSF(nn.Module):
         return psi
 
 
+# first, reimplement the bonus
 class SepSF(nn.Module):
     def __init__(self, state_dim, action_dim, feat_dim, hidden_dim):
         super(SepSF, self).__init__()
@@ -268,6 +269,12 @@ class SepSF(nn.Module):
 
         # reward layer
         self.reward_l1 = nn.Linear(self.feat_dim, 1)
+
+        # state layer todo : nomralization
+        self.forward_l1 = nn.Linear(self.feat_dim, hidden_dim)
+        self.forward_l2 = nn.Linear(hidden_dim, hidden_dim)
+        self.forward_l3 = nn.Linear(hidden_dim, hidden_dim)
+        self.forward_l4 = nn.Linear(hidden_dim, state_dim + 1)
 
     def get_phi(self, state, action):
         input = torch.cat([state, action], dim=1)
@@ -293,6 +300,14 @@ class SepSF(nn.Module):
         phi = self.get_phi(state, action)
         R = self.reward_l1(phi)
         return R
+
+    def get_transition(self, state, action):
+        phi = self.get_phi(state, action)
+        pred = F.relu(self.forward_l1(phi))
+        pred = F.relu(self.forward_l2(pred))
+        pred = F.relu(self.forward_l3(pred))
+        pred = self.forward_l4(pred)
+        return pred
 
     def get_psi(self, state, action):
         phi = self.get_unnormalized_phi(state, action)

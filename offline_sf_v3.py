@@ -19,7 +19,7 @@ def load_hdf5(dataset, replay_buffer):
     replay_buffer.reward = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     replay_buffer.not_done = 1 - np.expand_dims(np.squeeze(dataset['terminals']), 1)
     replay_buffer.next_action = np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0)
-
+    replay_buffer.forward_label = np.concatenate([dataset['next_observations'] - dataset['observations'], np.expand_dims(np.squeeze(dataset['rewards']), 1)], axis=1)
 
     replay_buffer.size = dataset['terminals'].shape[0]
     print('Number of terminals on: ', replay_buffer.not_done.sum())
@@ -115,13 +115,13 @@ if __name__ == "__main__":
 
     policy_path = experiment_dir + 'modelsv3-0.99/critic'
     print(policy_path)
-
-    if os.path.exists(policy_path):
+    loading = False
+    if os.path.exists(policy_path) and loading:
         policy.bc_critic.load_state_dict(torch.load(policy_path))
     else:
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
 
-        for t in range(int(args.max_timesteps/10)):
+        for t in range(int(args.max_timesteps/100)):
             reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
             if t % 100 == 0:
                 print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
@@ -144,8 +144,8 @@ if __name__ == "__main__":
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
-
-    # torch.save(policy.bc_critic.state_dict(), model_path)
+    if not loading:
+        torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
         critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size)
