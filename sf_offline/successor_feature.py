@@ -5,6 +5,8 @@ from torch.optim import Adam
 from sf.utils import soft_update, hard_update
 from sf.model import GaussianPolicy
 from sf.utils import *
+from tqc.spectral_normalization import spectral_norm
+
 
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
@@ -256,9 +258,22 @@ class SepSF(nn.Module):
         self.feat_dim = feat_dim
 
         # phi layer
-        self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
-        self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
-        self.feature_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
+        #self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
+        #self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
+        #self.feature_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
+        sn = False
+        if sn:
+            # return spectral_norm(F.relu(self.l3(q)), norm_bound=0.95, n_power_iterations=1)  # todo: if relu or not
+
+            self.feature_l1 = spectral_norm(nn.Linear(self.state_dim + self.action_dim, hidden_dim), norm_bound=0.95, n_power_iterations=1)
+            self.feature_l2 = spectral_norm(nn.Linear(hidden_dim, hidden_dim), norm_bound=0.95, n_power_iterations=1)
+            self.feature_l3 = spectral_norm(nn.Linear(hidden_dim, self.feat_dim), norm_bound=0.95, n_power_iterations=1)   # w : 1 * feat_dim
+
+
+        else:
+            self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
+            self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
+            self.feature_l3 = nn.Linear(hidden_dim, self.feat_dim)  # w : 1 * feat_dim
 
         # psi layer
         self.psi_l1 = nn.Linear(self.feat_dim, hidden_dim)
@@ -281,6 +296,7 @@ class SepSF(nn.Module):
         phi = F.relu(self.feature_l1(input))
         phi = F.relu(self.feature_l2(phi))
         phi = F.relu(self.feature_l3(phi))
+        # phi = spectral_norm(phi, norm_bound=0.95, n_power_iterations=1)
         phi = phi / (phi.norm(dim=-1, keepdim=True, p=1) + 1e-6)
         return phi
 
@@ -289,6 +305,8 @@ class SepSF(nn.Module):
         phi = F.relu(self.feature_l1(input))
         phi = F.relu(self.feature_l2(phi))
         phi = F.relu(self.feature_l3(phi))
+        # phi = spectral_norm(phi, norm_bound=0.95, n_power_iterations=1)
+
         return phi
 
     def forward(self, state, action):
