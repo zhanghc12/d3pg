@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     policy_path = experiment_dir + 'modelsv3-0.99/critic'
     print(policy_path)
-    loading = False
+    loading = True
     if os.path.exists(policy_path) and loading:
         policy.bc_critic.load_state_dict(torch.load(policy_path))
     else:
