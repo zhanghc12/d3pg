@@ -133,12 +133,15 @@ if __name__ == "__main__":
                 writer.add_scalar('test/return', avg_return, t)
 
     policy.get_stat(replay_buffer)
-    print(policy.min_psi_norm)
-    print(policy.partion_psi_norm)
-    print(policy.max_psi_norm)
+    print(policy.min_psi_norm, policy.test_min_psi_norm)
+    print(policy.partion_psi_norm, policy.test_partion_psi_norm)
+    print(policy.max_psi_norm, policy.test_max_psi_norm)
+    print(policy.mean_psi_norm, policy.test_mean_psi_norm)
+
     writer.add_scalar('test/min_psi_norm', policy.min_psi_norm, 0)
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
+
 
     # torch.save(policy.bc_critic.state_dict(), model_path)
 

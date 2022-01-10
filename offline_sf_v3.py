@@ -86,7 +86,7 @@ if __name__ == "__main__":
     print("Policy: {}, Env: {}, Seed: {}".format(args.policy, args.env, args.seed))
     print("---------------------------------------")
 
-    model_path = experiment_dir + 'modelsv3' + str(args.bc_scale)
+    model_path = experiment_dir + 'modelsv3-' + str(args.bc_scale)
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed)]
 
-    policy_path = experiment_dir + 'modelsv30.9/critic'
+    policy_path = experiment_dir + 'modelsv3-0.9/critic'
 
     """
     if os.path.exists(policy_path):
