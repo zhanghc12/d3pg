@@ -93,6 +93,38 @@ class TD3(object):
         self.partion_psi_norm = np.array(self.psi_list)[np.argpartition(self.psi_list, partion_num)][partion_num]
         self.max_psi_norm = np.max(self.psi_list)
 
+    def get_stat_test(self, memory, batch_size=256):
+        i = 0
+        self.psi_list = []
+        self.test_psi_list = []
+        while i + batch_size < memory.size:
+            index = np.arange(i, i+batch_size)
+            state_batch, action_batch = memory.sample_by_index(ind=index)
+            test_action_batch = 1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
+            test_state_batch = 1 * torch.normal(torch.zeros_like(state_batch), torch.ones_like(state_batch))
+
+            test_action_batch = torch.clamp_(test_action_batch, -1, 1)
+            psi = self.bc_critic.get_psi(state_batch, action_batch)
+            psi_norm = psi.norm(dim=1, p=1)
+
+            test_psi = self.bc_critic.get_psi(test_state_batch, test_action_batch)
+            test_psi_norm = test_psi.norm(dim=1, p=1)
+            i += batch_size
+            self.psi_list.extend(psi_norm.detach().cpu().numpy())
+            self.test_psi_list.extend(test_psi_norm.detach().cpu().numpy())
+
+        self.min_psi_norm = np.min(self.psi_list)
+        partion_num = np.int32((memory.size * self.bc_scale))
+        self.partion_psi_norm = np.array(self.psi_list)[np.argpartition(self.psi_list, partion_num)][partion_num]
+        self.max_psi_norm = np.max(self.psi_list)
+        self.mean_psi_norm = np.mean(self.psi_list)
+
+        self.test_min_psi_norm = np.min(self.test_psi_list)
+        self.test_partion_psi_norm = np.array(self.test_psi_list)[np.argpartition(self.test_psi_list, partion_num)][partion_num]
+        self.test_max_psi_norm = np.max(self.test_psi_list)
+        self.test_mean_psi_norm = np.mean(self.test_psi_list)
+
+
     def train_policy(self, memory, batch_size):
         state_batch, action_batch, next_state_batch, reward_batch, mask_batch = memory.sample(batch_size)
         with torch.no_grad():
