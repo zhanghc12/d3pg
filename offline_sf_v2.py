@@ -132,7 +132,7 @@ if __name__ == "__main__":
                 evaluations.append(avg_return)
                 writer.add_scalar('test/return', avg_return, t)
 
-    policy.get_stat(replay_buffer)
+    policy.get_stat_test(replay_buffer)
     print(policy.min_psi_norm, policy.test_min_psi_norm)
     print(policy.partion_psi_norm, policy.test_partion_psi_norm)
     print(policy.max_psi_norm, policy.test_max_psi_norm)
