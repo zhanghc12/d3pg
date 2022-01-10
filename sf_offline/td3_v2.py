@@ -103,7 +103,7 @@ class TD3(object):
             target_Q = reward_batch + mask_batch * self.gamma * target_Q
 
             target_psi = self.bc_critic.get_psi(next_state_batch, next_action)
-            target_psi_norm = target_psi.norm(dim=1, keepdim=True)
+            target_psi_norm = target_psi.norm(dim=1, keepdim=True, p=1)
             target_psi_norm_flag = (target_psi_norm > self.partion_psi_norm).float()
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state_batch, action_batch)
