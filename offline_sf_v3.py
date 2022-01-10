@@ -122,13 +122,16 @@ if __name__ == "__main__":
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
 
         for t in range(int(args.max_timesteps/100)):
-            reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
+            reward_loss, psi_loss, q_loss, policy_loss, iid_psi, ood_psi = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
             if t % 100 == 0:
-                print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
+                print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}, iid_psi: {:4f}, ood_psi: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss, iid_psi, ood_psi))
                 writer.add_scalar('loss/reward_loss', reward_loss, t)
                 writer.add_scalar('loss/psi_loss', psi_loss, t)
                 writer.add_scalar('loss/q_loss', q_loss, t)
                 writer.add_scalar('loss/policy_loss', policy_loss, t)
+                writer.add_scalar('loss/iid_psi', iid_psi, t)
+                writer.add_scalar('loss/ood_psi', ood_psi, t)
+
             if (t + 1) % args.eval_freq == 0:
                 avg_return = eval_policy(t, policy, args.env, args.seed, bc=True)
                 evaluations.append(avg_return)
