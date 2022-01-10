@@ -85,7 +85,7 @@ class TD3(object):
             index = np.arange(i, i+batch_size)
             state_batch, action_batch = memory.sample_by_index(ind=index)
             psi = self.bc_critic.get_psi(state_batch, action_batch)
-            psi_norm = psi.norm(dim=1)
+            psi_norm = psi.norm(dim=1, p=1)
             i += batch_size
             self.psi_list.extend(psi_norm.detach().cpu().numpy())
         self.min_psi_norm = np.min(self.psi_list)

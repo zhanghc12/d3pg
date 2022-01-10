@@ -91,6 +91,7 @@ if __name__ == "__main__":
         os.makedirs(model_path)
 
     model_path = model_path + '/critic'
+
     env = gym.make(args.env)
 
     # Set seeds
@@ -112,20 +113,24 @@ if __name__ == "__main__":
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed)]
 
-    #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
-    for t in range(int(args.max_timesteps)):
-        reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
-        if t % 100 == 0:
-            print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
-            writer.add_scalar('loss/reward_loss', reward_loss, t)
-            writer.add_scalar('loss/psi_loss', psi_loss, t)
-            writer.add_scalar('loss/q_loss', q_loss, t)
-            writer.add_scalar('loss/policy_loss', policy_loss, t)
-        if (t + 1) % args.eval_freq == 0:
-            avg_return = eval_policy(t, policy, args.env, args.seed, bc=True)
-            evaluations.append(avg_return)
-            writer.add_scalar('test/return', avg_return, t)
+    policy_path = experiment_dir + 'models0.9/critic'
 
+    if os.path.exists(policy_path):
+        policy.bc_critic.load_state_dict(torch.load(policy_path))
+    else:
+        #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
+        for t in range(int(args.max_timesteps)):
+            reward_loss, psi_loss, q_loss, policy_loss = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
+            if t % 100 == 0:
+                print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss))
+                writer.add_scalar('loss/reward_loss', reward_loss, t)
+                writer.add_scalar('loss/psi_loss', psi_loss, t)
+                writer.add_scalar('loss/q_loss', q_loss, t)
+                writer.add_scalar('loss/policy_loss', policy_loss, t)
+            if (t + 1) % args.eval_freq == 0:
+                avg_return = eval_policy(t, policy, args.env, args.seed, bc=True)
+                evaluations.append(avg_return)
+                writer.add_scalar('test/return', avg_return, t)
 
     policy.get_stat(replay_buffer)
     print(policy.min_psi_norm)
@@ -135,7 +140,7 @@ if __name__ == "__main__":
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
-    torch.save(policy.bc_critic.state_dict(), model_path)
+    # torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
         psi_loss, policy_loss = policy.train_policy(replay_buffer, args.batch_size)
