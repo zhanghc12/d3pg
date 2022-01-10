@@ -119,7 +119,7 @@ class TD3(object):
         critic_loss.backward()
         self.critic_optim.step()
 
-        actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q1(state_batch,
+        actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q2(state_batch,
                                                                                                     self.policy(
                                                                                                         state_batch)).mean()
         # Delayed policy updates
@@ -140,6 +140,7 @@ class TD3(object):
             for param, target_param in zip(self.policy.parameters(), self.policy_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
+        self.total_it += 1
         return critic_loss.item(), actor_loss.item()
 
 

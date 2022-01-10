@@ -143,12 +143,12 @@ if __name__ == "__main__":
     # torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
-        psi_loss, policy_loss = policy.train_policy(replay_buffer, args.batch_size)
+        critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size)
 
         if t % 100 == 0:
-            writer.add_scalar('loss/psi_loss', psi_loss, t)
-            writer.add_scalar('loss/policy_loss', policy_loss, t)
-            print('iteration: {}, policy loss :{:6f}, psi loss: {:6f}'.format(t, policy_loss, psi_loss))
+            writer.add_scalar('loss/critic_loss', critic_loss, t)
+            writer.add_scalar('loss/actor_loss', actor_loss, t)
+            print('iteration: {}, critic_loss :{:6f}, actor_loss: {:6f}'.format(t, critic_loss, actor_loss))
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
