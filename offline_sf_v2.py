@@ -12,13 +12,18 @@ from sf_offline import td3_v2
 import d4rl.gym_mujoco
 
 
+def normalize(data):
+    mean = np.mean(data, axis=0, keepdims=True)
+    std = np.std(data, axis=0, keepdims=True)
+    return (data - mean) / (std + 1e-5)
+
 def load_hdf5(dataset, replay_buffer):
-    replay_buffer.state = dataset['observations']
-    replay_buffer.action = dataset['actions']
-    replay_buffer.next_state = dataset['next_observations']
-    replay_buffer.reward = np.expand_dims(np.squeeze(dataset['rewards']), 1)
+    replay_buffer.state = normalize(dataset['observations'])
+    replay_buffer.action =  normalize(dataset['actions'])
+    replay_buffer.next_state =  normalize(dataset['next_observations'])
+    replay_buffer.reward =  normalize(np.expand_dims(np.squeeze(dataset['rewards']), 1))
     replay_buffer.not_done = 1 - np.expand_dims(np.squeeze(dataset['terminals']), 1)
-    replay_buffer.next_action = np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0)
+    replay_buffer.next_action =  normalize(np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0))
 
 
     replay_buffer.size = dataset['terminals'].shape[0]
@@ -69,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
+    parser.add_argument("--loading", type=int, default=1)
 
 
     args = parser.parse_args()
@@ -116,7 +122,7 @@ if __name__ == "__main__":
     policy_path = experiment_dir + 'models0.9/critic'
 
     loading = False
-    if os.path.exists(policy_path) and loading:
+    if os.path.exists(policy_path) and args.loading:
         policy.bc_critic.load_state_dict(torch.load(policy_path))
     else:
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
@@ -143,7 +149,7 @@ if __name__ == "__main__":
     writer.add_scalar('test/partion_psi_norm', policy.partion_psi_norm, 0)
     writer.add_scalar('test/max_psi_norm', policy.max_psi_norm, 0)
 
-    if not loading:
+    if not args.loading:
         torch.save(policy.bc_critic.state_dict(), model_path)
 
     for t in range(int(args.max_timesteps)):
