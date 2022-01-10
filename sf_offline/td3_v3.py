@@ -84,7 +84,7 @@ class TD3(object):
         iid_psi = self.bc_critic.get_psi(state_batch, action_batch)
         iid_psi = torch.mean(torch.norm(iid_psi, dim=1, p=1))
 
-        ood_psi = self.bc_critic.get_psi(state_batch, torch.clamp_(action_batch + 10 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))), -1, 1)
+        ood_psi = self.bc_critic.get_psi(state_batch, torch.clamp_(action_batch + 10 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)), -1, 1))
         ood_psi = torch.mean(torch.norm(ood_psi, dim=1, p=1))
 
         return reward_loss, psi_loss, q_loss, policy_loss, iid_psi.item(), ood_psi.item()
