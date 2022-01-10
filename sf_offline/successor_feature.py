@@ -246,6 +246,62 @@ class MixedSF(nn.Module):
         return psi
 
 
+class SepSF(nn.Module):
+    def __init__(self, state_dim, action_dim, feat_dim, hidden_dim):
+        super(SepSF, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.output_dim = 1
+        self.feat_dim = feat_dim
+
+        # phi layer
+        self.feature_l1 = nn.Linear(self.state_dim + self.action_dim, hidden_dim)
+        self.feature_l2 = nn.Linear(hidden_dim, hidden_dim)
+        self.feature_l3 = nn.Linear(hidden_dim, self.feat_dim) # w : 1 * feat_dim
+
+        # psi layer
+        self.psi_l1 = nn.Linear(self.feat_dim, hidden_dim)
+        self.psi_l2 = nn.Linear(hidden_dim, self.feat_dim)
+
+        # weight layer
+        self.weight_l1 = nn.Linear(self.feat_dim, 1)
+
+        # reward layer
+        self.reward_l1 = nn.Linear(self.feat_dim, 1)
+
+    def get_phi(self, state, action):
+        input = torch.cat([state, action], dim=1)
+        phi = F.relu(self.feature_l1(input))
+        phi = F.relu(self.feature_l2(phi))
+        phi = F.relu(self.feature_l3(phi))
+        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
+        return phi
+
+    def get_unnormalized_phi(self, state, action):
+        input = torch.cat([state, action], dim=1)
+        phi = F.relu(self.feature_l1(input))
+        phi = F.relu(self.feature_l2(phi))
+        phi = F.relu(self.feature_l3(phi))
+        return phi
+
+    def forward(self, state, action):
+        phi = self.get_phi(state, action)
+        Q = self.weight_l1(phi)
+        return Q
+
+    def get_reward(self, state, action):
+        phi = self.get_phi(state, action)
+        R = self.reward_l1(phi)
+        return R
+
+    def get_psi(self, state, action):
+        phi = self.get_unnormalized_phi(state, action)
+        phi = phi.detach()
+        psi = F.relu(self.psi_l1(phi))
+        psi = F.relu(self.psi_l2(psi))
+        return psi
+
+
 # sf and sac or dqn. for now, it is based on sac, only the q-value or ppo?
 # must be off-policy, then sac or ddpg -> directly actor successor feature?
 # get psi and w, how to update psi, how to update w

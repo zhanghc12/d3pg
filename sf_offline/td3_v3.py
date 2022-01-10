@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch.optim import Adam
 from sf_offline.utils import hard_update
-from sf_offline.successor_feature import IdpSF, Actor, Critic, MixedSF
+from sf_offline.successor_feature import IdpSF, Actor, Critic, MixedSF, SepSF
 import copy
 import numpy as np
 
@@ -25,9 +25,9 @@ class TD3(object):
         self.bc_scale = bc_scale
         # still td3, but do two other thing, estimate psi(s,a)
 
-        self.bc_critic = MixedSF(state_dim=state_dim, action_dim=action_dim, feat_dim=256, hidden_dim=256).to(self.device)
+        self.bc_critic = SepSF(state_dim=state_dim, action_dim=action_dim, feat_dim=256, hidden_dim=256).to(self.device)
         self.bc_critic_optim = Adam(self.bc_critic.parameters(), lr=3e-4)
-        self.bc_critic_target = MixedSF(state_dim=state_dim, action_dim=action_dim, feat_dim=256, hidden_dim=256).to(self.device)
+        self.bc_critic_target = SepSF(state_dim=state_dim, action_dim=action_dim, feat_dim=256, hidden_dim=256).to(self.device)
         hard_update(self.bc_critic_target, self.bc_critic)
         self.bc_policy = Actor(state_dim, action_dim, 1).to(self.device)
         self.bc_policy_optim = Adam(self.bc_policy.parameters(), lr=3e-4)
