@@ -100,7 +100,7 @@ class TD3(object):
         while i + batch_size < memory.size:
             index = np.arange(i, i+batch_size)
             state_batch, action_batch = memory.sample_by_index(ind=index)
-            test_action_batch = action_batch + torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
+            test_action_batch = action_batch + 10 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
             test_action_batch = torch.clamp_(test_action_batch, -1, 1)
             psi = self.bc_critic.get_psi(state_batch, action_batch)
             psi_norm = psi.norm(dim=1, p=1)
