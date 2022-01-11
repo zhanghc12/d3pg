@@ -19,11 +19,11 @@ def normalize(data):
 
 def load_hdf5(dataset, replay_buffer):
     replay_buffer.state = normalize(dataset['observations'])
-    replay_buffer.action =  normalize(dataset['actions'])
-    replay_buffer.next_state =  normalize(dataset['next_observations'])
+    replay_buffer.action = dataset['actions']
+    replay_buffer.next_state = normalize(dataset['next_observations'])
     replay_buffer.reward =  normalize(np.expand_dims(np.squeeze(dataset['rewards']), 1))
     replay_buffer.not_done = 1 - np.expand_dims(np.squeeze(dataset['terminals']), 1)
-    replay_buffer.next_action =  normalize(np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0))
+    replay_buffer.next_action =  np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0)
 
 
     replay_buffer.size = dataset['terminals'].shape[0]
