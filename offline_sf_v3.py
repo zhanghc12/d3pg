@@ -126,7 +126,7 @@ if __name__ == "__main__":
     else:
         #  first, get a fixed weight, but do we need to add spectral normalization to this layer?
 
-        for t in range(int(args.max_timesteps)):
+        for t in range(int(args.max_timesteps/10)):
             reward_loss, psi_loss, q_loss, policy_loss, iid_psi, ood_psi = policy.train_bc(replay_buffer, args.batch_size)  # todo 1: feature collapse, spectral nomalization
             if t % 100 == 0:
                 print('iteration: {}, reward_loss :{:4f}, psi_loss: {:4f}, q_loss: {:4f}, policy_loss: {:4f}, iid_psi: {:4f}, ood_psi: {:4f}'.format(t, reward_loss, psi_loss, q_loss, policy_loss, iid_psi, ood_psi))
