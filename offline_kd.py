@@ -128,7 +128,7 @@ if __name__ == "__main__":
     if os.path.exists(kdtree_path) and args.loading:
         print('loading tree')
         with open(kdtree_path) as f:
-            tree = pickle.loads(f)
+            tree = pickle.load(f)
     else:
         data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
         if not torch.cuda.is_available():
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         if not os.path.exists(os.path.dirname(kdtree_path)):
             os.makedirs(kdtree_path)
         with open(kdtree_path, 'wb') as f:
-            pickle.dumps(tree, f)
+            pickle.dump(tree, f)
 
     mean_distance = knn_utils.test_tree(replay_buffer, tree, k=3)
     policy.get_stat(mean_distance)
