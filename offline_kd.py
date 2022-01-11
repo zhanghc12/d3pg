@@ -141,7 +141,7 @@ if __name__ == "__main__":
         with open(kdtree_path, 'wb') as f:
             pickle.dump(tree, f)
 
-    mean_distance = knn_utils.test_tree(replay_buffer, tree, k=args.k)
+    mean_distance = knn_utils.test_tree(replay_buffer, tree, bc_scale=args.bc_scale, k=args.k)
     policy.get_stat(mean_distance)
 
     for t in range(int(args.max_timesteps)):
