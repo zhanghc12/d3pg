@@ -106,7 +106,7 @@ def test_tree(memory, kd_tree, bc_scale, k=3, batch_size=2560):
 
         i += batch_size
 
-        print("iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
+        print("i, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
 
     partion_num = np.int32((memory.size * bc_scale))
     return np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
