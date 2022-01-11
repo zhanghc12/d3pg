@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     if os.path.exists(kdtree_path) and args.loading:
         print('loading tree')
-        with open(kdtree_path) as f:
+        with open(kdtree_path, 'rb') as f:
             tree = pickle.load(f)
     else:
         data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
