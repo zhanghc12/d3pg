@@ -34,7 +34,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, bc=False):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_episodes=10, bc=False):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -50,7 +50,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, 
     avg_reward /= eval_episodes
 
     print("---------------------------------------")
-    print("Steps:{}, Evaluation over {} episodes: {:.3f}".format(t, eval_episodes, avg_reward))
+    print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}".format(t, eval_episodes, avg_reward, bc_scale))
     print("---------------------------------------")
     return avg_reward
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            avg_return = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std)
+            avg_return = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)
             evaluations.append(avg_return)
             writer.add_scalar('test/return', avg_return, t)
             # np.save(f"./results/{file_name}", evaluations)
