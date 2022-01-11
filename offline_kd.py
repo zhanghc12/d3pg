@@ -125,7 +125,7 @@ if __name__ == "__main__":
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
 
     kdtree_path = experiment_dir + 'kdtree/critic' + args.env
-    iid_list_path = experiment_dir + 'kdtree/iid_list' + + args.env
+    iid_list_path = experiment_dir + 'kdtree/iid_list' + args.env
 
     print(kdtree_path)
 
