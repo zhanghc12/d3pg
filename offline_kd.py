@@ -147,7 +147,7 @@ if __name__ == "__main__":
         iid_list = knn_utils.test_tree(replay_buffer, tree, k=args.k)
         with open(iid_list_path, 'wb') as f:
             pickle.dump(iid_list, f)
-    partion_num = np.int32((replay_buffer.size * args.bc_scale))
+    partion_num = np.int32((10000 * args.bc_scale))
     quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
     policy.get_stat(quantile_distance)
 
