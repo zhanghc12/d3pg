@@ -232,14 +232,14 @@ class MixedSF(nn.Module):
     def get_reward(self, state, action):
         feature = self.get_feature(state, action)
         phi = F.relu(self.phi_l1(feature))
-        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
+        phi = phi / (phi.norm(dim=-1, keepdim=True, p=1) + 1e-6)
         R = self.weight_l1(phi)
         return R
 
     def get_phi(self, state, action):
         feature = self.get_feature(state, action)
         phi = F.relu(self.phi_l1(feature))
-        phi = phi / (phi.norm(dim=-1, keepdim=True) + 1e-6)
+        phi = phi / (phi.norm(dim=-1, keepdim=True, p=1) + 1e-6)
         return phi
 
     def get_psi(self, state, action):
