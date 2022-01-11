@@ -138,8 +138,8 @@ if __name__ == "__main__":
 
     if not args.loading:
         print('save tree')
-        if os.path.exists(os.path.dirname(kdtree_path)):
-            os.makedev(kdtree_path)
+        if not os.path.exists(os.path.dirname(kdtree_path)):
+            os.makedirs(kdtree_path)
         with open(kdtree_path, 'wb') as f:
             pickle.dumps(tree, f)
 
