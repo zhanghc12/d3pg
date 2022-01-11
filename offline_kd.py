@@ -78,6 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=1)
+    parser.add_argument("--k", type=int, default=3)
 
 
     args = parser.parse_args()
@@ -143,7 +144,7 @@ if __name__ == "__main__":
         with open(kdtree_path, 'wb') as f:
             pickle.dump(tree, f)
 
-    mean_distance = knn_utils.test_tree(replay_buffer, tree, k=10)
+    mean_distance = knn_utils.test_tree(replay_buffer, tree, k=args.k)
     policy.get_stat(mean_distance)
 
     for t in range(int(args.max_timesteps)):
