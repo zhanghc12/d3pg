@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="sf")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
-    parser.add_argument("--env", default="hopper-random-v0")  # OpenAI gym environment name
+    parser.add_argument("--env", default="hopper-medium-replay-v0")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--eval_freq", default=1e3, type=int)  # How often (time steps) we evaluate
     parser.add_argument("--max_timesteps", default=1e6, type=int)  # Max time steps to run environment
@@ -121,12 +121,16 @@ if __name__ == "__main__":
     evaluations = [eval_policy(0, policy, args.env, args.seed)]
 
     kdtree_path = experiment_dir + 'kdtree/critic'
+    iid_list_path = experiment_dir + 'kdtree/iid_list'
+
     print(kdtree_path)
 
     if os.path.exists(kdtree_path) and args.loading:
         print('loading tree')
         with open(kdtree_path, 'rb') as f:
             tree = pickle.load(f)
+        with open(iid_list_path, 'rb') as f:
+            iid_list = pickle.load(iid_list_path)
     else:
         data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
         if not torch.cuda.is_available():
@@ -140,9 +144,12 @@ if __name__ == "__main__":
             os.makedirs(kdtree_path)
         with open(kdtree_path, 'wb') as f:
             pickle.dump(tree, f)
-
-    mean_distance = knn_utils.test_tree(replay_buffer, tree, bc_scale=args.bc_scale, k=args.k)
-    policy.get_stat(mean_distance)
+        iid_list = knn_utils.test_tree(replay_buffer, tree, k=args.k)
+        with open(iid_list_path, 'wb') as f:
+            pickle.dump(iid_list, f)
+    partion_num = np.int32((replay_buffer.size * args.bc_scale))
+    quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
+    policy.get_stat(quantile_distance)
 
     for t in range(int(args.max_timesteps)):
         critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size, tree)

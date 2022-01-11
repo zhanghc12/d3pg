@@ -68,7 +68,7 @@ class PBE(object):
         return reward
 
 
-def test_tree(memory, kd_tree, bc_scale, k=3, batch_size=2560):
+def test_tree(memory, kd_tree, k=3, batch_size=2560):
     i = 0
     iid_list = []
     ood_list1 = []
@@ -106,10 +106,8 @@ def test_tree(memory, kd_tree, bc_scale, k=3, batch_size=2560):
 
         i += batch_size
 
-        print("i, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
-
-    partion_num = np.int32((memory.size * bc_scale))
-    return np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
+        print("step:{}, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
+    return iid_list
 
 
 
