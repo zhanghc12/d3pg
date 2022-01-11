@@ -228,7 +228,7 @@ class TD3(object):
         bc_loss = torch.mean((self.policy(state_batch) - action_batch) ** 2)
         actor_flag = self.critic.Q1(state_batch, self.policy(state_batch)) < self.critic.Q1(state_batch, action_batch)
 
-        actor_loss = (1 + self.bc_scale * actor_flag) * bc_loss
+        actor_loss = bc_loss + torch.mean(self.bc_scale * actor_flag * (self.policy(state_batch) - action_batch) ** 2)
         # = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q2(state_batch,
         #                                                                                            self.policy(
         #                                                                                                state_batch)).mean()
@@ -242,7 +242,7 @@ class TD3(object):
         if self.total_it % 2 == 0:
 
             # Compute actor losse
-            actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() -self.critic.Q2(state_batch, self.policy(state_batch)).mean()
+            # actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() -self.critic.Q2(state_batch, self.policy(state_batch)).mean()
 
             # Optimize the actor
             self.policy_optim.zero_grad()
