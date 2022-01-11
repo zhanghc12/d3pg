@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     kdtree_path = experiment_dir + 'kdtree/critic'
     print(kdtree_path)
-    loading = False
+
     if os.path.exists(kdtree_path) and args.loading:
         print('loading tree')
         with open(kdtree_path) as f:
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         with open(kdtree_path, 'wb') as f:
             pickle.dump(tree, f)
 
-    mean_distance = knn_utils.test_tree(replay_buffer, tree, k=3)
+    mean_distance = knn_utils.test_tree(replay_buffer, tree, k=10)
     policy.get_stat(mean_distance)
 
     for t in range(int(args.max_timesteps)):
