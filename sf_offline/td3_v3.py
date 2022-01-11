@@ -66,7 +66,13 @@ class TD3(object):
         curr_q = self.bc_critic(state_batch, action_batch)
         q_loss = F.mse_loss(curr_q, q_next_target)
 
-        total_loss = 0.001 * reward_loss + 1000 * psi_loss # + q_loss
+        ood_action1 = action_batch + 1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
+        ood_action2 = action_batch + 0.1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
+        ood_action = torch.cat([ood_action1, ood_action2], dim=0)
+        ood_state = torch.cat([state_batch, state_batch], dim=0)
+        ood_loss = self.bc_critic(ood_state, ood_action)
+
+        total_loss = 0.001 * reward_loss + 1000 * psi_loss + ood_loss
         self.bc_critic_optim.zero_grad()
         total_loss.backward()
         self.bc_critic_optim.step()
@@ -84,12 +90,13 @@ class TD3(object):
         iid_psi = self.bc_critic.get_psi(state_batch, action_batch)
         iid_psi = torch.mean(torch.norm(iid_psi, dim=1, p=1))
 
-        ood_psi = self.bc_critic.get_psi(torch.normal(torch.zeros_like(state_batch), torch.ones_like(state_batch)),  torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)))
+        # ood_psi = self.bc_critic.get_psi(torch.normal(torch.zeros_like(state_batch), torch.ones_like(state_batch)),  torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)))
+        ood_psi = self.bc_critic.get_psi(state_batch,  torch.clamp_(action_batch + 0.1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)), -1, 1))
 
         # ood_psi = self.bc_critic.get_psi( torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)), torch.clamp_(action_batch + 10 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch)), -1, 1))
         ood_psi = torch.mean(torch.norm(ood_psi, dim=1, p=1))
 
-        return reward_loss, psi_loss, q_loss, policy_loss, iid_psi.item(), ood_psi.item()
+        return reward_loss, psi_loss, q_loss, ood_loss, iid_psi.item(), ood_psi.item()
 
     def get_stat(self, memory, batch_size=256):
         i = 0
