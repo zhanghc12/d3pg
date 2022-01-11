@@ -147,7 +147,7 @@ if __name__ == "__main__":
         iid_list = knn_utils.test_tree(replay_buffer, tree, k=args.k)
         with open(iid_list_path, 'wb') as f:
             np.save(f, np.array(iid_list))
-    partion_num = np.int32((50000 * args.bc_scale))
+    partion_num = np.int32((50000 * 0.5))
     quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
     print(quantile_distance)
     policy.get_stat(quantile_distance)

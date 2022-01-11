@@ -132,7 +132,9 @@ class TD3(object):
             query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
             target_distance = kd_tree.query(query_data, k=3)[0]
             target_distance = np.mean(target_distance, axis=1, keepdims=True)
-            target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+            target_reward = torch.log(1 + torch.FloatTensor(target_distance).to(self.device))
+            target_Q = target_Q - self.bc_scale * target_reward
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
             #target_psi = self.bc_critic.get_psi(next_state_batch, next_action)
             #target_psi_norm = target_psi.norm(dim=1, keepdim=True, p=1)
         # Get current Q estimates
@@ -142,11 +144,12 @@ class TD3(object):
 
         # Compute critic loss
         #if self.total_it % 5000 == 0:
-        #    critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
 
         #else:
         #    critic_loss = 0 * F.mse_loss(current_Q1, target_Q) + 0 * F.mse_loss(current_Q2, target_Q)
-        critic_loss = torch.mean(target_flag * (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
+        # critic_loss = torch.mean(target_flag * (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
+        # critic_loss = torch.mean( (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
 
         # Optimize the critic
         self.critic_optim.zero_grad()
