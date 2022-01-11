@@ -186,7 +186,7 @@ class TD3(object):
         self.total_it += 1
         return critic_loss.item(), actor_loss.item()
 
-    def train_policy(self, memory, batch_size, kd_tree):
+    def train_policy_v3(self, memory, batch_size, kd_tree):
         state_batch, action_batch, next_state_batch, reward_batch, mask_batch = memory.sample(batch_size)
         with torch.no_grad():
             next_action = self.policy_target(next_state_batch)
@@ -229,6 +229,82 @@ class TD3(object):
         actor_flag = self.critic.Q1(state_batch, self.policy(state_batch)) < self.critic.Q1(state_batch, action_batch)
 
         actor_loss = bc_loss + torch.mean(self.bc_scale * actor_flag * (self.policy(state_batch) - action_batch) ** 2)
+        # = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q2(state_batch,
+        #                                                                                            self.policy(
+        #                                                                                                state_batch)).mean()
+
+
+        # pi = self.policy(state_batch)
+        # closest_state, closest_action = memory.get_sa_by_index(kd_tree.query(query_data, k=1)[0])
+
+        # bc_loss = torch.mean((self.policy(closest_state) - closest_action) ** 2)
+        # Delayed policy updates
+        if self.total_it % 2 == 0:
+
+            # Compute actor losse
+            # actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() -self.critic.Q2(state_batch, self.policy(state_batch)).mean()
+
+            # Optimize the actor
+            self.policy_optim.zero_grad()
+            actor_loss.backward()
+            self.policy_optim.step()
+
+            # Update the frozen target models
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.policy.parameters(), self.policy_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        self.total_it += 1
+        return critic_loss.item(), actor_loss.item()
+
+    def train_policy(self, memory, batch_size, kd_tree):
+        state_batch, action_batch, next_state_batch, reward_batch, mask_batch = memory.sample(batch_size)
+        with torch.no_grad():
+            next_action = self.policy_target(next_state_batch)
+            # Compute the target Q value
+            target_Q1, target_Q2 = self.critic_target(next_state_batch, next_action)
+            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q = reward_batch + mask_batch * self.gamma * target_Q
+
+            #next_state_batch_np = state_batch.cpu().numpy()
+            #next_action_batch_np = next_action.detach().cpu().numpy()
+            #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
+            #target_distance = kd_tree.query(query_data, k=3)[0]
+            #target_distance = np.mean(target_distance, axis=1, keepdims=True)
+            #target_reward = torch.log(1 + torch.FloatTensor(target_distance).to(self.device))
+            #target_Q = target_Q - self.bc_scale * target_reward
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+            #target_psi = self.bc_critic.get_psi(next_state_batch, next_action)
+            #target_psi_norm = target_psi.norm(dim=1, keepdim=True, p=1)
+        # Get current Q estimates
+        current_Q1, current_Q2 = self.critic(state_batch, action_batch)
+
+        # todo: penalize the target by the psi norm
+
+        # Compute critic loss
+        #if self.total_it % 5000 == 0:
+        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+
+        #else:
+        #    critic_loss = 0 * F.mse_loss(current_Q1, target_Q) + 0 * F.mse_loss(current_Q2, target_Q)
+        # critic_loss = torch.mean(target_flag * (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
+        # critic_loss = torch.mean( (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
+
+        # Optimize the critic
+        self.critic_optim.zero_grad()
+        critic_loss.backward()
+        self.critic_optim.step()
+
+
+        bc_loss = torch.mean((self.policy(state_batch) - action_batch) ** 2)
+        actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch)) -self.critic.Q2(state_batch, self.policy(state_batch))
+        actor_loss = 2.5 * (actor_loss / (actor_loss.abs().mean() + 1e-5)).mean() + bc_loss
+
+        #actor_flag = self.critic.Q1(state_batch, self.policy(state_batch)) < self.critic.Q1(state_batch, action_batch)
+
+        #actor_loss = bc_loss + torch.mean(self.bc_scale * actor_flag * (self.policy(state_batch) - action_batch) ** 2)
         # = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q2(state_batch,
         #                                                                                            self.policy(
         #                                                                                                state_batch)).mean()
