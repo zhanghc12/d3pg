@@ -77,7 +77,7 @@ def test_tree(memory, kd_tree, k=3, batch_size=2560):
     size = 0
     if torch.cuda.is_available():
         size = memory.size
-        size = 100000
+        size = 50000
     else:
         size = 1000
     while i + batch_size < size:
