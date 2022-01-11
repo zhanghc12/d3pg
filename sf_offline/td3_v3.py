@@ -73,7 +73,7 @@ class TD3(object):
         ood_loss = self.bc_critic.get_psi(ood_state, ood_action)
         ood_loss = torch.mean(ood_loss.norm(dim=-1, p=1))
 
-        total_loss = 0.001 * reward_loss + 1000 * psi_loss + 0.001 * ood_loss
+        total_loss = 0.001 * reward_loss + 1000 * psi_loss + 0.1 * ood_loss
         self.bc_critic_optim.zero_grad()
         total_loss.backward()
         self.bc_critic_optim.step()
