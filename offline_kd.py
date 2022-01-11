@@ -126,6 +126,7 @@ if __name__ == "__main__":
     print(kdtree_path)
     loading = False
     if os.path.exists(kdtree_path) and args.loading:
+        print('loading tree')
         with open(kdtree_path) as f:
             tree = pickle.loads(f)
     else:
@@ -136,7 +137,9 @@ if __name__ == "__main__":
         tree = KDTree(data, leaf_size=2)
 
     if not args.loading:
-        print('loading tree')
+        print('save tree')
+        if os.path.exists(os.path.dirname(kdtree_path)):
+            os.makedev(kdtree_path)
         with open(kdtree_path, 'wb') as f:
             pickle.dumps(tree, f)
 
