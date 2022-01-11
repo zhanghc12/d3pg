@@ -130,7 +130,7 @@ if __name__ == "__main__":
         with open(kdtree_path, 'rb') as f:
             tree = pickle.load(f)
         with open(iid_list_path, 'rb') as f:
-            iid_list = pickle.load(iid_list_path)
+            iid_list = np.load(iid_list_path)
     else:
         data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
         if not torch.cuda.is_available():
@@ -149,6 +149,7 @@ if __name__ == "__main__":
             pickle.dump(iid_list, f)
     partion_num = np.int32((10000 * args.bc_scale))
     quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
+    print(quantile_distance)
     policy.get_stat(quantile_distance)
 
     for t in range(int(args.max_timesteps)):
