@@ -68,7 +68,7 @@ class PBE(object):
         return reward
 
 
-def test_tree(memory, kd_tree, k=3, batch_size=256):
+def test_tree(memory, kd_tree, k=3, batch_size=2560):
     i = 0
     iid_list = []
     ood_list1 = []

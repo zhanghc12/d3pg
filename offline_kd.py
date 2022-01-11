@@ -1,10 +1,7 @@
 import duelingpg.utils as utils
-import d4rl
 import datetime
 from torch.utils.tensorboard import SummaryWriter
 import pickle
-
-import numpy as np
 import torch
 import gym
 import argparse
