@@ -136,7 +136,7 @@ if __name__ == "__main__":
         if not torch.cuda.is_available():
             data = data[:10000]
         print('start build tree')
-        tree = KDTree(data, leaf_size=2)
+        tree = KDTree(data, leaf_size=40)
 
     if not args.loading:
         print('save tree')
