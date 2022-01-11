@@ -70,7 +70,8 @@ class TD3(object):
         ood_action2 = action_batch + 0.1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
         ood_action = torch.cat([ood_action1, ood_action2], dim=0)
         ood_state = torch.cat([state_batch, state_batch], dim=0)
-        ood_loss = self.bc_critic(ood_state, ood_action)
+        ood_loss = self.bc_critic.get_psi(ood_state, ood_action)
+        ood_loss = torch.mean(ood_loss.norm(dim=-1, p=1))
 
         total_loss = 0.001 * reward_loss + 1000 * psi_loss + ood_loss
         self.bc_critic_optim.zero_grad()
