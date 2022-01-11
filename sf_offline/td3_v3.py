@@ -115,7 +115,7 @@ class TD3(object):
             state_batch, action_batch = memory.sample_by_index(ind=index)
             test_action_batch = 1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
             test_state_batch = 1 * torch.normal(torch.zeros_like(state_batch), torch.ones_like(state_batch))
-            test_action_batch2 = action_batch + 1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
+            test_action_batch2 = action_batch + 0.1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
 
             test_action_batch = torch.clamp_(test_action_batch, -1, 1)
             psi = self.bc_critic.get_psi(state_batch, action_batch)
