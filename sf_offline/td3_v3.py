@@ -118,6 +118,8 @@ class TD3(object):
             test_action_batch2 = action_batch + 0.1 * torch.normal(torch.zeros_like(action_batch), torch.ones_like(action_batch))
 
             test_action_batch = torch.clamp_(test_action_batch, -1, 1)
+            test_action_batch2 = torch.clamp_(test_action_batch2, -1, 1)
+
             psi = self.bc_critic.get_psi(state_batch, action_batch)
             psi_norm = psi.norm(dim=1, p=1)
 
