@@ -226,7 +226,7 @@ class TD3(object):
 
 
         bc_loss = torch.mean((self.policy(state_batch) - action_batch) ** 2)
-        actor_flag = torch.float32(self.critic.Q1(state_batch, self.policy(state_batch)) < self.critic.Q1(state_batch, action_batch))
+        actor_flag = self.critic.Q1(state_batch, self.policy(state_batch)) < self.critic.Q1(state_batch, action_batch)
 
         actor_loss = (1 + self.bc_scale * actor_flag) * bc_loss
         # = -self.critic.Q1(state_batch, self.policy(state_batch)).mean() - self.critic.Q2(state_batch,
