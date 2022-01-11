@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
-    model_path = model_path + '/critic'
+    model_path = model_path + '/critic' + args.env
 
     env = gym.make(args.env)
 
@@ -124,8 +124,8 @@ if __name__ == "__main__":
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
 
-    kdtree_path = experiment_dir + 'kdtree/critic'
-    iid_list_path = experiment_dir + 'kdtree/iid_list'
+    kdtree_path = experiment_dir + 'kdtree/critic' + args.env
+    iid_list_path = experiment_dir + 'kdtree/iid_list' + + args.env
 
     print(kdtree_path)
 

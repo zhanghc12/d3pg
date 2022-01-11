@@ -307,7 +307,7 @@ class TD3(object):
         action_batch_np = self.policy(state_batch).detach().cpu().numpy()
         query_data = np.concatenate([state_batch_np, action_batch_np], axis=1)
         target_distance = kd_tree.query(query_data, k=1)[0]
-        actor_scale = (target_distance < 0.2).float() #  ((target_distance > 0.2).float() - 1) * 2
+        actor_scale = torch.FloatTensor((target_distance < 0.2).astype(float)).to(self.device) #  ((target_distance > 0.2).float() - 1) * 2
 
         actor_loss = actor_scale * source_loss + (1 - actor_scale) * actor_loss
         # actor_scale = 1 if target_distance > 0.2 else 0.5
