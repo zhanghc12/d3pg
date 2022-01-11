@@ -106,7 +106,7 @@ def test_tree(memory, kd_tree, k=3, batch_size=256):
 
         i += batch_size
 
-        print("iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance1)))
+        print("iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
     return np.mean(iid_list)
 
 
