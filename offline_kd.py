@@ -18,6 +18,8 @@ def normalize(data):
     return (data - mean) / (std + 1e-5)
 
 def load_hdf5(dataset, replay_buffer):
+    mean = np.mean(dataset['observations'], axis=0, keepdims=True)
+    std = np.std(dataset['observations'], axis=0, keepdims=True)
     replay_buffer.state = normalize(dataset['observations'])
     replay_buffer.action = dataset['actions']
     replay_buffer.next_state = normalize(dataset['next_observations'])
@@ -28,10 +30,11 @@ def load_hdf5(dataset, replay_buffer):
 
     replay_buffer.size = dataset['terminals'].shape[0]
     print('Number of terminals on: ', replay_buffer.not_done.sum())
+    return mean, std
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, eval_episodes=10, bc=False):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, bc=False):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -39,6 +42,7 @@ def eval_policy(t, policy, env_name, seed, eval_episodes=10, bc=False):
     for _ in range(eval_episodes):
         state, done = eval_env.reset(), False
         while not done:
+            state = (state - obs_mean) / (obs_std + 1e-5)
             action = policy.select_action(np.array(state), bc=bc)
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
@@ -115,10 +119,10 @@ if __name__ == "__main__":
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
-    load_hdf5(offline_dataset, replay_buffer)
+    obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
 
     # Evaluate untrained policy
-    evaluations = [eval_policy(0, policy, args.env, args.seed)]
+    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std)]
 
     kdtree_path = experiment_dir + 'kdtree/critic'
     iid_list_path = experiment_dir + 'kdtree/iid_list'
@@ -162,7 +166,7 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            avg_return = eval_policy(t, policy, args.env, args.seed)
+            avg_return = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std)
             evaluations.append(avg_return)
             writer.add_scalar('test/return', avg_return, t)
             # np.save(f"./results/{file_name}", evaluations)

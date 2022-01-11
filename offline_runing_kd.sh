@@ -1,5 +1,5 @@
 # CUDA_VISIBLE_DEVICES=0 python offline_sf.py --env hopper-expert-v2 --seed 0 &\
-CUDA_VISIBLE_DEVICES=1 python offline_kd.py --env hopper-expert-v2  --bc_scale 0.1 --seed 1 --loading 1 --k 10 &\
+CUDA_VISIBLE_DEVICES=1 python offline_kd.py --env hopper-expert-v2  --bc_scale 0 --seed 1 --loading 1 --k 10 &\
 CUDA_VISIBLE_DEVICES=2 python offline_kd.py --env hopper-expert-v2  --bc_scale 10 --seed 0 --loading 1 --k 10 &\
 CUDA_VISIBLE_DEVICES=3 python offline_kd.py --env hopper-expert-v2  --bc_scale 100 --seed 1 --loading 1 --k 10
 
