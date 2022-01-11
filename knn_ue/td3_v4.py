@@ -141,7 +141,11 @@ class TD3(object):
         # todo: penalize the target by the psi norm
 
         # Compute critic loss
-        critic_loss = 0 * F.mse_loss(current_Q1, target_Q) + 0 * F.mse_loss(current_Q2, target_Q)
+        if self.total_it % 5000 == 0:
+            critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+
+        else:
+            critic_loss = 0 * F.mse_loss(current_Q1, target_Q) + 0 * F.mse_loss(current_Q2, target_Q)
         # critic_loss = torch.mean(target_flag * (current_Q1 - target_Q) ** 2) + torch.mean(target_flag * (current_Q2 - target_Q) ** 2)
 
         # Optimize the critic
