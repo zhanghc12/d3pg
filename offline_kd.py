@@ -18,8 +18,8 @@ def normalize(data):
     return (data - mean) / (std + 1e-5)
 
 def load_hdf5(dataset, replay_buffer):
-    mean = np.mean(dataset['observations'], axis=0, keepdims=True)
-    std = np.std(dataset['observations'], axis=0, keepdims=True)
+    obs_mean = np.mean(dataset['observations'], axis=0, keepdims=True)
+    obs_std = np.std(dataset['observations'], axis=0, keepdims=True)
     replay_buffer.state = normalize(dataset['observations'])
     replay_buffer.action = dataset['actions']
     replay_buffer.next_state = normalize(dataset['next_observations'])
@@ -30,7 +30,7 @@ def load_hdf5(dataset, replay_buffer):
 
     replay_buffer.size = dataset['terminals'].shape[0]
     print('Number of terminals on: ', replay_buffer.not_done.sum())
-    return mean, std
+    return obs_mean, obs_std
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
