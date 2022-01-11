@@ -298,10 +298,10 @@ class TD3(object):
         self.critic_optim.step()
 
 
-        bc_loss = torch.mean((self.policy(state_batch) - action_batch) ** 2)
+        bc_loss = (self.policy(state_batch) - action_batch) ** 2
         actor_loss = -self.critic.Q1(state_batch, self.policy(state_batch))
-        source_loss = 2.5 * (actor_loss / (actor_loss.abs().mean().detach() + 1e-5)).mean()
-        actor_loss = 2.5 * (actor_loss / (actor_loss.abs().mean().detach() + 1e-5)).mean() + bc_loss
+        source_loss = 2.5 * (actor_loss / (actor_loss.abs().mean().detach() + 1e-5))
+        combined_loss = source_loss + bc_loss
 
         state_batch_np = state_batch.cpu().numpy()
         action_batch_np = self.policy(state_batch).detach().cpu().numpy()
@@ -309,7 +309,7 @@ class TD3(object):
         target_distance = kd_tree.query(query_data, k=1)[0]
         actor_scale = torch.FloatTensor((target_distance < 0.2).astype(float)).to(self.device) #  ((target_distance > 0.2).float() - 1) * 2
 
-        actor_loss = actor_scale * source_loss + (1 - actor_scale) * actor_loss
+        actor_loss = (actor_scale * source_loss).mean() + ((1 - actor_scale) * combined_loss).mean()
         # actor_scale = 1 if target_distance > 0.2 else 0.5
         # target_distance = np.mean(target_distance, axis=1, keepdims=True)
         # target_reward = torch.log(1 + torch.FloatTensor(target_distance).to(self.device))
