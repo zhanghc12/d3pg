@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import torch.nn as nn
 from torch.distributions import Distribution, Normal
-
+from sf_offline.successor_feature import Actor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOG_STD_MIN_MAX = (-20, 2)
@@ -64,50 +64,6 @@ class Critic(nn.Module):
         return quantiles
 
 
-class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim):
-        super().__init__()
-        self.action_dim = action_dim
-        self.net = Mlp(state_dim, [256, 256], 2 * action_dim)
-
-    def forward(self, obs):
-        mean, log_std = self.net(obs).split([self.action_dim, self.action_dim], dim=1)
-        log_std = log_std.clamp(*LOG_STD_MIN_MAX)
-
-        if self.training:
-            std = torch.exp(log_std)
-            tanh_normal = TanhNormal(mean, std)
-            action, pre_tanh = tanh_normal.rsample()
-            log_prob = tanh_normal.log_prob(pre_tanh)
-            log_prob = log_prob.sum(dim=1, keepdim=True)
-        else:  # deterministic eval without log_prob computation
-            action = torch.tanh(mean)
-            log_prob = None
-        return action, log_prob
-
-    def select_action(self, obs):
-        obs = torch.FloatTensor(obs).to(device)
-        action, _ = self.forward(obs)
-        action = action[0].cpu().detach().numpy()
-        return action
-
-    def log_prob(self, obs, action):
-        mean, log_std = self.net(obs).split([self.action_dim, self.action_dim], dim=1)
-        log_std = log_std.clamp(*LOG_STD_MIN_MAX)
-        std = log_std.exp()
-
-        normal = Normal(mean, std)
-        y_t = action
-        x_t = atanh(y_t)
-        log_prob = normal.log_prob(x_t)
-        # Enforcing Action Bound
-        log_prob -= torch.log((1 - y_t.pow(2)) + epsilon)
-        log_prob = log_prob.sum(1, keepdim=True)
-
-        return log_prob
-
-
-
 class TanhNormal(Distribution):
     def __init__(self, normal_mean, normal_std):
         super().__init__(validate_args=False)
@@ -141,15 +97,14 @@ class TD3(object):
 
         self.top_quantiles_to_drop = top_quantiles_to_drop
         self.actor = Actor(state_dim, action_dim).to(device)
+        self.actor_target = copy.deepcopy(self.actor)
+
         self.critic = Critic(state_dim, action_dim, n_quantiles, n_nets).to(device)
         self.critic_target = copy.deepcopy(self.critic)
 
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
         self.target_entropy = - action_dim
-
-        self.log_alpha = torch.zeros((1,), requires_grad=True, device=device)
-        self.alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=3e-4)
 
         self.quantiles_total = n_quantiles * n_nets
         self.base_tensor = torch.ones([256, 1]).to(device)
@@ -162,17 +117,16 @@ class TD3(object):
         self.mean_distance = mean_distance
 
     def train_policy(self, memory, batch_size, kd_trees):
-        alpha = torch.exp(self.log_alpha)
         state, action, next_state, reward, not_done = memory.sample(batch_size)
 
         with torch.no_grad():
             # get policy action
-            new_next_action, next_log_pi = self.actor(next_state)
+            new_next_action = self.actor_target(next_state)
 
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            target = reward + not_done * self.discount * (sorted_z - alpha * next_log_pi)
+            target = reward + not_done * self.discount * (sorted_z)
 
             next_state_batch_np = next_state.cpu().numpy()
             next_action_batch_np = new_next_action.detach().cpu().numpy()
@@ -187,8 +141,8 @@ class TD3(object):
         # Get current Q estimates
 
         # mask calculation
-        cond = torch.where(target_distance - 0.15 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0. * self.quantiles_total * self.base_tensor)  # batch * 1
-        cond = torch.where(target_distance - 0.05 < 0, 1.0 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+        cond = torch.where(target_distance - 0.25 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        cond = torch.where(target_distance - 0.15 < 0, 0.8 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
 
         mask = (self.mask < cond).float()  # batch * total_quantile
 
@@ -200,21 +154,22 @@ class TD3(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-            target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
 
         # --- Policy and alpha loss ---
-        new_action, log_pi = self.actor(state)
-        alpha_loss = -self.log_alpha * (log_pi + self.target_entropy).detach().mean()
-        actor_loss = (alpha * log_pi - self.critic(state, new_action).mean(2).mean(1, keepdim=True)).mean()
+        actor_loss = (- self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)).mean()
+        if self.total_it % 2 == 0:
 
-        self.actor_optimizer.zero_grad()
-        actor_loss.backward()
-        self.actor_optimizer.step()
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
 
-        self.alpha_optimizer.zero_grad()
-        alpha_loss.backward()
-        self.alpha_optimizer.step()
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
 
         self.total_it += 1
 
