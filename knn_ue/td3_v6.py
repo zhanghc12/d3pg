@@ -86,7 +86,7 @@ class Actor(nn.Module):
         return action, log_prob
 
     def select_action(self, obs):
-        obs = torch.FloatTensor(obs).to(device)[None, :]
+        obs = torch.FloatTensor(obs).to(device)
         action, _ = self.forward(obs)
         action = action[0].cpu().detach().numpy()
         return action

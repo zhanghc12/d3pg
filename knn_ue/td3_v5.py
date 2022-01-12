@@ -71,6 +71,7 @@ class Actor(nn.Module):
         self.net = Mlp(state_dim, [256, 256], 2 * action_dim)
 
     def forward(self, obs):
+        # ac = self.net(obs)
         mean, log_std = self.net(obs).split([self.action_dim, self.action_dim], dim=1)
         log_std = log_std.clamp(*LOG_STD_MIN_MAX)
 
@@ -86,7 +87,7 @@ class Actor(nn.Module):
         return action, log_prob
 
     def select_action(self, obs):
-        obs = torch.FloatTensor(obs).to(device)[None, :]
+        obs = torch.FloatTensor(obs).to(device)
         action, _ = self.forward(obs)
         action = action[0].cpu().detach().numpy()
         return action
