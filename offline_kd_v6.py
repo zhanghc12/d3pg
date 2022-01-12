@@ -132,7 +132,8 @@ if __name__ == "__main__":
     trees = []
     # split the tree via smaples
     data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
-    data = np.random.shuffle(data)
+    np.random.shuffle(data)
+    print('len data:{}'.format(len(data)))
     for i in range(len(data) // 200000):
         if (i+2)*200000 > len(data):
             tree = KDTree(data[i*200000: len(data)], leaf_size=40)
