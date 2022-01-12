@@ -156,7 +156,7 @@ class TD3(object):
         self.base_tensor = torch.ones([256, 1]).to(device)
         self.mask = torch.arange(self.quantiles_total).repeat(256, 1).to(device) # batch * totoal_quantile
 
-    def select_action(self, state):
+    def select_action(self, state, bc=False):
         return self.actor.select_action(state)
 
     def get_stat(self, mean_distance):
