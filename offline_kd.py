@@ -157,7 +157,12 @@ if __name__ == "__main__":
     policy.get_stat(quantile_distance)
 
     for t in range(int(args.max_timesteps)):
-        critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size, tree)
+        if args.version == 3:
+            critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size, tree)
+        elif args.version == 0:
+            critic_loss, actor_loss = policy.train_policy_baseline(replay_buffer, args.batch_size, tree)
+        else:
+            raise NotImplementedError
 
         if t % 100 == 0:
             writer.add_scalar('loss/critic_loss', critic_loss, t)
