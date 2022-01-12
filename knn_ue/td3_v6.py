@@ -183,13 +183,13 @@ class TD3(object):
             target_distance = kd_tree.query(query_data, k=1)[0]
             target_distance = torch.FloatTensor(target_distance).to(self.device)
 
-            target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
 
         # Get current Q estimates
 
         # mask calculation
-        cond = torch.where(target_flag - 0.3 > 0, 0.04 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
-        cond = torch.where(target_flag - 0.15 < 0, 0.6 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+        cond = torch.where(target_distance - 0.3 > 0, 0.04 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        cond = torch.where(target_distance - 0.15 < 0, 0.6 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
 
         mask = (self.mask < cond).float()  # batch * total_quantile
 

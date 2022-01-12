@@ -144,6 +144,7 @@ if __name__ == "__main__":
             trees.append(tree)
     print('len data:{}, size of tree: {}'.format(len(data), len(trees)))
 
+    '''
 
     if os.path.exists(kdtree_path) and args.loading:
         print('loading tree')
@@ -171,6 +172,7 @@ if __name__ == "__main__":
     quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
     print(quantile_distance)
     policy.get_stat(quantile_distance)
+    '''
 
     for t in range(int(args.max_timesteps)):
         if args.version == 3:
