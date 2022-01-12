@@ -96,7 +96,7 @@ class TD3(object):
         n_quantiles = n_quantiles
 
         self.top_quantiles_to_drop = top_quantiles_to_drop
-        self.actor = Actor(state_dim, action_dim).to(device)
+        self.actor = Actor(state_dim, action_dim, 1).to(device)
         self.actor_target = copy.deepcopy(self.actor)
 
         self.critic = Critic(state_dim, action_dim, n_quantiles, n_nets).to(device)
