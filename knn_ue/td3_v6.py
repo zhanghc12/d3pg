@@ -110,7 +110,7 @@ class Actor(nn.Module):
 
 class TanhNormal(Distribution):
     def __init__(self, normal_mean, normal_std):
-        super().__init__()
+        super().__init__(validate_args=False)
         self.normal_mean = normal_mean
         self.normal_std = normal_std
         self.standard_normal = Normal(torch.zeros_like(self.normal_mean, device=device),
