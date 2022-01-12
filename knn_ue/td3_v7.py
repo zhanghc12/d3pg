@@ -110,9 +110,11 @@ class TD3(object):
         self.base_tensor = torch.ones([256, 1]).to(device)
         self.mask = torch.arange(self.quantiles_total).repeat(256, 1).to(device) # batch * totoal_quantile
 
-    def select_action(self, state, bc=False):
-        return self.actor.select_action(state)
 
+    def select_action(self, state, evaluate=False, bc=False):
+        state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
+        action = self.actor(state)
+        return action.detach().cpu().numpy()[0]
     def get_stat(self, mean_distance):
         self.mean_distance = mean_distance
 
