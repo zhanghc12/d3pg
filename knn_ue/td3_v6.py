@@ -188,8 +188,8 @@ class TD3(object):
         # Get current Q estimates
 
         # mask calculation
-        cond = torch.where(target_distance - 0.15 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
-        cond = torch.where(target_distance - 0.05 < 0, 0.6 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+        cond = torch.where(target_distance - 0.15 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0. * self.quantiles_total * self.base_tensor)  # batch * 1
+        cond = torch.where(target_distance - 0.05 < 0, 1.0 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
 
         mask = (self.mask < cond).float()  # batch * total_quantile
 
