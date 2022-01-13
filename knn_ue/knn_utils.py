@@ -157,11 +157,11 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         ood_action_batch2 = np.clip(ood_action_batch2, -1, 1)
         ood_data2 = np.concatenate([state_batch, ood_action_batch2], axis=1)
 
-        ood_action_batch3 = action_batch + 0.1 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch3 = action_batch + 0.02 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch3 = np.clip(ood_action_batch3, -1, 1)
         ood_data3 = np.concatenate([state_batch, ood_action_batch3], axis=1)
 
-        ood_action_batch4 = action_batch + 0.2 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch4 = action_batch + 0.05 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
         ood_data4 = np.concatenate([state_batch, ood_action_batch4], axis=1)
 
