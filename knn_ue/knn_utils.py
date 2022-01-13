@@ -124,6 +124,7 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         size = 1000
     size = memory.size
 
+    '''
     while i + batch_size < size:
         index = np.arange(i, i+batch_size)
         state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
@@ -149,7 +150,7 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         ood_action_batch1 = np.clip(ood_action_batch1, -1, 1)
         ood_data1 = np.concatenate([state_batch, ood_action_batch1], axis=1)
 
-        ood_action_batch2 = action_batch + 1 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch2 = action_batch + 0.2 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch2 = np.clip(ood_action_batch2, -1, 1)
         ood_data2 = np.concatenate([state_batch, ood_action_batch2], axis=1)
 
@@ -167,17 +168,17 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         i += batch_size
 
         print("step:{}, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
-    '''
+
 
     iid_list = np.sort(iid_list)
     print("0%: ", iid_list[0])
-    print("0.1%: ", iid_list[np.int32(len(iid_list)*0.001)])
-    print("1%: ", iid_list[np.int32(len(iid_list)*0.01)])
-    print("10%: ", iid_list[np.int32(len(iid_list)*0.1)])
-    print("20%: ", iid_list[np.int32(len(iid_list)*0.2)])
-    print("50%: ", iid_list[np.int32(len(iid_list)*0.5)])
-    print("99%: ", iid_list[np.int32(len(iid_list)*0.99)])
-    print("100%: ", iid_list[-1])
+    print("0.1%: ", iid_list[np.int32(len(iid_list)*0.001)], ood_list1[np.int32(len(iid_list)*0.001)], ood_list2[np.int32(len(iid_list)*0.001)])
+    print("1%: ", iid_list[np.int32(len(iid_list)*0.01)], ood_list1[np.int32(len(iid_list)*0.01)], ood_list2[np.int32(len(iid_list)*0.01)])
+    print("10%: ", iid_list[np.int32(len(iid_list)*0.1)], ood_list1[np.int32(len(iid_list)*0.1)], ood_list2[np.int32(len(iid_list)*0.1)])
+    print("20%: ", iid_list[np.int32(len(iid_list)*0.2)], ood_list1[np.int32(len(iid_list)*0.2)], ood_list2[np.int32(len(iid_list)*0.2)])
+    print("50%: ", iid_list[np.int32(len(iid_list)*0.5)], ood_list1[np.int32(len(iid_list)*0.5)], ood_list2[np.int32(len(iid_list)*0.5)])
+    print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(iid_list)*0.99)], ood_list2[np.int32(len(iid_list)*0.99)])
+    print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1])
 
     return iid_list
 
