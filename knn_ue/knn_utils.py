@@ -123,7 +123,7 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
     else:
         size = 1000
     size = memory.size
-    size = 5000
+    # size = 5000
     '''
     while i + batch_size < size:
         index = np.arange(i, i+batch_size)
