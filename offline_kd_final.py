@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     parser.add_argument("--n_quantiles", default=25, type=int)
-    parser.add_argument("--top_quantiles_to_drop_per_net", default=200, type=int)
+    parser.add_argument("--top_quantiles_to_drop", default=200, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/kd/'
     experiment_dir = experiment_dir + '0113/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}_bs{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets, args.bc_scale))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}_bs{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop, args.n_nets, args.bc_scale))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles)
+    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
