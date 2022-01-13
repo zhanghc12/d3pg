@@ -71,11 +71,11 @@ if __name__ == "__main__":
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
     parser.add_argument("--load_model", default="")  # Model load file name, "" doesn't load, "default" uses file_name
-    parser.add_argument("--version", default=3, type=int)
+    parser.add_argument("--version", default=0, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     parser.add_argument("--n_quantiles", default=25, type=int)
-    parser.add_argument("--top_quantiles_to_drop_per_net", default=248, type=int)
+    parser.add_argument("--top_quantiles_to_drop_per_net", default=200, type=int)
     parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
@@ -185,8 +185,8 @@ if __name__ == "__main__":
             critic_loss, actor_loss = policy.train_policy_quantile_without_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 4:
             critic_loss, actor_loss = policy.train_policy_both(replay_buffer, args.batch_size, trees)
-        else:
-            raise NotImplementedError
+        #else:
+        #    raise NotImplementedError
 
         if t % 100 == 0:
             writer.add_scalar('loss/critic_loss', critic_loss, t)
