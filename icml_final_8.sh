@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES=2 python offline_kd_final.py --policy TQC  --version $1  --
 CUDA_VISIBLE_DEVICES=3 python offline_kd_final.py --policy TQC  --version $1  --bc_scale $2  --env walker2d-medium-v2  --seed $3 --top_quantiles_to_drop $4  &\
 CUDA_VISIBLE_DEVICES=4 python offline_kd_final.py --policy TQC  --version $1  --bc_scale $2  --env walker2d-medium-expert-v2  --seed $3 --top_quantiles_to_drop $4  &\
 CUDA_VISIBLE_DEVICES=5 python offline_kd_final.py --policy TQC  --version $1  --bc_scale $2  --env walker2d-medium-replay-v2 --seed $3 --top_quantiles_to_drop $4  &\
-CUDA_VISIBLE_DEVICES=6 python offline_kd_final.py --policy TQC  --version $1  --bc_scale $2  --env walker2d-expert-v2 --seed --top_quantiles_to_drop $4  $3
+CUDA_VISIBLE_DEVICES=6 python offline_kd_final.py --policy TQC  --version $1  --bc_scale $2  --env walker2d-expert-v2 --seed $3 --top_quantiles_to_drop $4
 
 
 # sh offline_rl_large_scale_single_seed_new.sh 31  1.0 -1 0.2  0.05
