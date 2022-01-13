@@ -116,6 +116,9 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
     iid_list = []
     ood_list1 = []
     ood_list2 = []
+    ood_list3 = []
+    ood_list4 = []
+
 
     size = 0
     if torch.cuda.is_available():
@@ -154,39 +157,57 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         ood_action_batch2 = np.clip(ood_action_batch2, -1, 1)
         ood_data2 = np.concatenate([state_batch, ood_action_batch2], axis=1)
 
+        ood_action_batch3 = action_batch + 0.4 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch3 = np.clip(ood_action_batch3, -1, 1)
+        ood_data3 = np.concatenate([state_batch, ood_action_batch3], axis=1)
+
+        ood_action_batch4 = action_batch + 0.8 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
+        ood_data4 = np.concatenate([state_batch, ood_action_batch4], axis=1)
+
         ood_distance1 = kd_tree.query(ood_data1, k=k)[0][:1]
         ood_distance2 = kd_tree.query(ood_data2, k=k)[0][:1]
+        ood_distance3 = kd_tree.query(ood_data3, k=k)[0][:1]
+        ood_distance4 = kd_tree.query(ood_data4, k=k)[0][:1]
 
         iid_distance = np.mean(iid_distance, axis=1, keepdims=False)
         ood_distance1 = np.mean(ood_distance1, axis=1, keepdims=False)
         ood_distance2 = np.mean(ood_distance2, axis=1, keepdims=False)
+        ood_distance3 = np.mean(ood_distance3, axis=1, keepdims=False)
+        ood_distance4 = np.mean(ood_distance4, axis=1, keepdims=False)
+
 
         iid_list.extend(iid_distance)
         ood_list1.extend(ood_distance1)
         ood_list2.extend(ood_distance2)
-
+        ood_list3.extend(ood_distance3)
+        ood_list4.extend(ood_distance4)
         i += batch_size
 
-        print("step:{}, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
+        print("step:{}, iid: {:4f}, ood1: {:4f}, ood2: {:4f}, ood3: {:4f}, ood4: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2), np.mean(ood_distance3), np.mean(ood_distance4)))
 
 
     iid_list = np.sort(iid_list)
     ood_list1 = np.sort(ood_list1)
     ood_list2 = np.sort(ood_list2)
+    ood_list3 = np.sort(ood_list3)
+    ood_list4 = np.sort(ood_list4)
 
     iid_list = iid_list / (memory.state_dim + memory.action_dim)
     ood_list1 = ood_list1 / (memory.state_dim + memory.action_dim)
     ood_list2 = ood_list2 / (memory.state_dim + memory.action_dim)
+    ood_list3 = ood_list3 / (memory.state_dim + memory.action_dim)
+    ood_list4 = ood_list4 / (memory.state_dim + memory.action_dim)
 
 
     print("0%: ", iid_list[0])
-    print("0.1%: ", iid_list[np.int32(len(iid_list)*0.001)], ood_list1[np.int32(len(ood_list1)*0.001)], ood_list2[np.int32(len(ood_list2)*0.001)])
-    print("1%: ", iid_list[np.int32(len(iid_list)*0.01)], ood_list1[np.int32(len(ood_list1)*0.01)], ood_list2[np.int32(len(ood_list2)*0.01)])
-    print("10%: ", iid_list[np.int32(len(iid_list)*0.1)], ood_list1[np.int32(len(ood_list1)*0.1)], ood_list2[np.int32(len(ood_list2)*0.1)])
-    print("20%: ", iid_list[np.int32(len(iid_list)*0.2)], ood_list1[np.int32(len(ood_list1)*0.2)], ood_list2[np.int32(len(ood_list2)*0.2)])
-    print("50%: ", iid_list[np.int32(len(iid_list)*0.5)], ood_list1[np.int32(len(ood_list1)*0.5)], ood_list2[np.int32(len(ood_list2)*0.5)])
-    print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(ood_list1)*0.99)], ood_list2[np.int32(len(ood_list2)*0.99)])
-    print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1])
+    print("0.1%: ", iid_list[np.int32(len(iid_list)*0.001)], ood_list1[np.int32(len(ood_list1)*0.001)], ood_list2[np.int32(len(ood_list2)*0.001)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("1%: ", iid_list[np.int32(len(iid_list)*0.01)], ood_list1[np.int32(len(ood_list1)*0.01)], ood_list2[np.int32(len(ood_list2)*0.01)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("10%: ", iid_list[np.int32(len(iid_list)*0.1)], ood_list1[np.int32(len(ood_list1)*0.1)], ood_list2[np.int32(len(ood_list2)*0.1)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("20%: ", iid_list[np.int32(len(iid_list)*0.2)], ood_list1[np.int32(len(ood_list1)*0.2)], ood_list2[np.int32(len(ood_list2)*0.2)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("50%: ", iid_list[np.int32(len(iid_list)*0.5)], ood_list1[np.int32(len(ood_list1)*0.5)], ood_list2[np.int32(len(ood_list2)*0.5)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(ood_list1)*0.99)], ood_list2[np.int32(len(ood_list2)*0.99)], ood_list3[np.int32(len(ood_list3)*0.001)], ood_list4[np.int32(len(ood_list4)*0.001)])
+    print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1], ood_list3[-1], ood_list4[-1])
 
     return iid_list
 
