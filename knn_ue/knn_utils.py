@@ -124,7 +124,7 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
     if torch.cuda.is_available():
         size = 50000
     else:
-        size = 1000
+        size = 50000
     # size = 5000
     '''
     while i + batch_size < size:
@@ -149,19 +149,19 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         iid_data = np.concatenate([state_batch, action_batch], axis=1)
         iid_distance = kd_tree.query(iid_data, k=k)[0][1:]
 
-        ood_action_batch1 = action_batch + 0.1 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch1 = action_batch + 0.001 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch1 = np.clip(ood_action_batch1, -1, 1)
         ood_data1 = np.concatenate([state_batch, ood_action_batch1], axis=1)
 
-        ood_action_batch2 = action_batch + 0.2 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch2 = action_batch + 0.01 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch2 = np.clip(ood_action_batch2, -1, 1)
         ood_data2 = np.concatenate([state_batch, ood_action_batch2], axis=1)
 
-        ood_action_batch3 = action_batch + 0.4 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch3 = action_batch + 0.1 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch3 = np.clip(ood_action_batch3, -1, 1)
         ood_data3 = np.concatenate([state_batch, ood_action_batch3], axis=1)
 
-        ood_action_batch4 = action_batch + 0.8 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch4 = action_batch + 0.2 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
         ood_data4 = np.concatenate([state_batch, ood_action_batch4], axis=1)
 
