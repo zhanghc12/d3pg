@@ -165,10 +165,10 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
         ood_data4 = np.concatenate([state_batch, ood_action_batch4], axis=1)
 
-        ood_distance1 = kd_tree.query(ood_data1, k=k)[0][:1]
-        ood_distance2 = kd_tree.query(ood_data2, k=k)[0][:1]
-        ood_distance3 = kd_tree.query(ood_data3, k=k)[0][:1]
-        ood_distance4 = kd_tree.query(ood_data4, k=k)[0][:1]
+        ood_distance1 = kd_tree.query(ood_data1, k=k)[0]#[:1]
+        ood_distance2 = kd_tree.query(ood_data2, k=k)[0]#[:1]
+        ood_distance3 = kd_tree.query(ood_data3, k=k)[0]#[:1]
+        ood_distance4 = kd_tree.query(ood_data4, k=k)[0]#[:1]
 
         iid_distance = np.mean(iid_distance, axis=1, keepdims=False)
         ood_distance1 = np.mean(ood_distance1, axis=1, keepdims=False)
