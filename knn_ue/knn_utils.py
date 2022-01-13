@@ -111,4 +111,73 @@ def test_tree(memory, kd_tree, k=3, batch_size=2560):
     return iid_list
 
 
+def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
+    i = 0
+    iid_list = []
+    ood_list1 = []
+    ood_list2 = []
+
+    size = 0
+    if torch.cuda.is_available():
+        size = 50000
+    else:
+        size = 1000
+    size = memory.size
+
+    while i + batch_size < size:
+        index = np.arange(i, i+batch_size)
+        state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
+        iid_data = np.concatenate([state_batch, action_batch], axis=1)
+        iid_distance = kd_tree.query(iid_data, k=k)[0][1:]
+
+        iid_distance = np.mean(iid_distance, axis=1, keepdims=False)
+
+        iid_list.extend(iid_distance)
+
+
+        i += batch_size
+
+        print("step:{}, iid: {:4f}".format(i, np.mean(iid_distance)))
+    '''
+    while i + batch_size < size:
+        index = np.arange(i, i+batch_size)
+        state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
+        iid_data = np.concatenate([state_batch, action_batch], axis=1)
+        iid_distance = kd_tree.query(iid_data, k=k)[0][1:]
+
+        ood_action_batch1 = action_batch + 0.1 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch1 = np.clip(ood_action_batch1, -1, 1)
+        ood_data1 = np.concatenate([state_batch, ood_action_batch1], axis=1)
+
+        ood_action_batch2 = action_batch + 1 * np.random.normal(0., 1., size=action_batch.shape)
+        ood_action_batch2 = np.clip(ood_action_batch2, -1, 1)
+        ood_data2 = np.concatenate([state_batch, ood_action_batch2], axis=1)
+
+        ood_distance1 = kd_tree.query(ood_data1, k=k)[0][:1]
+        ood_distance2 = kd_tree.query(ood_data2, k=k)[0][:1]
+
+        iid_distance = np.mean(iid_distance, axis=1, keepdims=False)
+        ood_distance1 = np.mean(ood_distance1, axis=1, keepdims=False)
+        ood_distance2 = np.mean(ood_distance2, axis=1, keepdims=False)
+
+        iid_list.extend(iid_distance)
+        ood_list1.extend(ood_distance1)
+        ood_list2.extend(ood_distance2)
+
+        i += batch_size
+
+        print("step:{}, iid: {:4f}, ood1: {:4f}, ood2: {:4f}".format(i, np.mean(iid_distance), np.mean(ood_distance1), np.mean(ood_distance2)))
+    '''
+
+    iid_list = np.sort(iid_list)
+    print("0%: ", iid_list[0])
+    print("0.1%: ", iid_list[np.int32(len(iid_list)*0.001)])
+    print("1%: ", iid_list[np.int32(len(iid_list)*0.01)])
+    print("10%: ", iid_list[np.int32(len(iid_list)*0.1)])
+    print("20%: ", iid_list[np.int32(len(iid_list)*0.2)])
+    print("50%: ", iid_list[np.int32(len(iid_list)*0.5)])
+    print("99%: ", iid_list[np.int32(len(iid_list)*0.99)])
+    print("100%: ", iid_list[-1])
+
+    return iid_list
 
