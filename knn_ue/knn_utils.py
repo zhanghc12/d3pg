@@ -139,7 +139,7 @@ def test_tree_true(memory, kd_tree, k=3, batch_size=2560):
 
         print("step:{}, iid: {:4f}".format(i, np.mean(iid_distance)))
     '''
-    state_dim = memory.state
+    print(memory.state_dim + memory.action_dim)
     while i + batch_size < size:
         index = np.arange(i, i+batch_size)
         state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
