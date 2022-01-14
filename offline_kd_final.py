@@ -11,6 +11,7 @@ import d4rl.gym_mujoco
 import numpy as np
 from sklearn.neighbors import KDTree
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def normalize(data):
     mean = np.mean(data, axis=0, keepdims=True)
@@ -74,9 +75,9 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=0, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
-    parser.add_argument("--n_quantiles", default=250, type=int)
+    parser.add_argument("--n_quantiles", default=25, type=int)
     parser.add_argument("--top_quantiles_to_drop", default=200, type=int)
-    parser.add_argument("--n_nets", default=1, type=int)
+    parser.add_argument("--n_nets", default=5, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
@@ -132,8 +133,9 @@ if __name__ == "__main__":
 
     trees = []
     # split the tree via smaples
-    data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
-    np.random.shuffle(data)
+    #data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
+    #np.random.shuffle(data)
+    '''
     for i in range(len(data) // 200000):
         if (i+2)*200000 > len(data):
             tree = KDTree(data[i*200000: len(data)], leaf_size=40)
@@ -144,22 +146,32 @@ if __name__ == "__main__":
             tree = KDTree(data[i*200000: (i+1)*200000], leaf_size=40)
             trees.append(tree)
     print('len data:{}, size of tree: {}'.format(len(data), len(trees)))
-
     '''
 
-    if os.path.exists(kdtree_path) and args.loading:
-        print('loading tree')
-        with open(kdtree_path, 'rb') as f:
-            tree = pickle.load(f)
-        with open(iid_list_path, 'rb') as f:
-            iid_list = np.load(iid_list_path)
-    else:
-        data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
-        if not torch.cuda.is_available():
-            data = data[:10000]
-        print('start build tree')
-        tree = KDTree(data, leaf_size=40)
 
+    data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
+    if not torch.cuda.is_available():
+        data = data[:10000]
+    print('start build tree')
+    i = 0
+    batch_size = 2560
+    phi_list = []
+    i = 0
+    while i + batch_size < replay_buffer.size:
+        print(i)
+        index = np.arange(i, i + batch_size)
+        state_batch, action_batch = replay_buffer.sample_by_index(ind=index)
+        phi = policy.feature_nn(state_batch, action_batch)
+        phi_list.extend(phi.detach().cpu().numpy())
+        i += batch_size
+    index = np.arange(i, replay_buffer.size)
+    state_batch, action_batch = replay_buffer.sample_by_index(ind=index)
+    phi = policy.feature_nn(state_batch, action_batch)
+    phi_list.extend(phi.detach().cpu().numpy())
+
+    trees = KDTree(np.array(phi_list), leaf_size=40)
+
+    '''
     if not args.loading:
         print('save tree')
         if not os.path.exists(os.path.dirname(kdtree_path)):

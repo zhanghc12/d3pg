@@ -6,6 +6,8 @@ import numpy as np
 import torch.nn as nn
 from torch.distributions import Distribution, Normal
 from sf_offline.successor_feature import Actor
+from tqc.spectral_normalization import spectral_norm
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOG_STD_MIN_MAX = (-20, 2)
@@ -64,6 +66,32 @@ class Critic(nn.Module):
         return quantiles
 
 
+class FeatureExtractor(nn.Module):
+    def __init__(self, state_dim, action_dim, hidden_dim=256, feat_dim=3):
+        super(FeatureExtractor, self).__init__()
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.output_dim = 1
+        self.feat_dim = feat_dim
+
+        # first layer feature
+        self.feature_l1 = spectral_norm(nn.Linear(self.state_dim + self.action_dim, hidden_dim), norm_bound=0.95,
+                                        n_power_iterations=1)
+        self.feature_l2 = spectral_norm(nn.Linear(hidden_dim, hidden_dim), norm_bound=0.95, n_power_iterations=1)
+        self.feature_l3 = spectral_norm(nn.Linear(hidden_dim, self.feat_dim), norm_bound=0.95,
+                                        n_power_iterations=1)  # w : 1 * feat_dim
+
+    def forward(self, state, action):
+        # get successor feature of (state, action) pair: w(s,a): reward
+        input = torch.cat([state, action], dim=1)
+        w = F.relu(self.weight_l1(input))
+        w = F.relu(self.weight_l2(w))
+        w = self.weight_l3(w)
+
+
+        return w
+
+
 class TanhNormal(Distribution):
     def __init__(self, normal_mean, normal_std):
         super().__init__(validate_args=False)
@@ -81,50 +109,6 @@ class TanhNormal(Distribution):
     def rsample(self):
         pretanh = self.normal_mean + self.normal_std * self.standard_normal.sample()
         return torch.tanh(pretanh), pretanh
-
-
-class ResBlock(nn.Module):
-
-    def __init__(self, in_size, out_size):
-        super(ResBlock, self).__init__()
-        self.fc = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(in_size, out_size),
-            nn.ReLU(),
-            nn.Linear(out_size, out_size),
-        )
-
-    def forward(self, x):
-        h = self.fc(x)
-        return x + h
-
-class FeatureExtractorV4(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim=512, feat_dim=3):
-        super(FeatureExtractorV4, self).__init__()
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-        self.output_dim = 1
-        self.feat_dim = feat_dim
-        norm_bound = 10
-        n_power_iterations = 1
-
-        # first layer feature
-
-        self.feature_l1 = nn.Sequential(
-
-            nn.Linear(self.state_dim + self.action_dim, 256),
-            ResBlock(256, 256),
-            ResBlock(256, 256),
-        )
-
-        self.feature_l2 = nn.Linear(hidden_dim, self.feat_dim)
-
-    def forward(self, state, action):
-        input = torch.cat([state, action], dim=1)
-        w = F.relu(self.feature_l1(input))
-        w = self.feature_l2(w)
-        return w
-
 
 
 class TD3(object):
@@ -155,12 +139,16 @@ class TD3(object):
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, 10).to(device)
+        self.feature_nn = FeatureExtractor(state_dim, action_dim, 256, 3).to(device)
+        self.feature_optimizer = torch.optim.Adam(self.feature_nn.parameters(), lr=3e-4)
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         action = self.actor(state)
         return action.detach().cpu().numpy()[0]
+
+    def train_feature(self, memory, batchi_size):
+
 
     def get_stat(self, mean_distance):
         self.mean_distance = mean_distance
@@ -217,19 +205,15 @@ class TD3(object):
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
             target = reward + not_done * self.discount * (sorted_z)
 
-            #next_state_batch_np = next_state.cpu().numpy()
-            #next_action_batch_np = new_next_action.detach().cpu().numpy()
-            #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
-
-            query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
-
-            #tree_index = np.random.choice(len(kd_trees))
-            # kd_tree = kd_trees[tree_index]
-
+            next_state_batch_np = next_state.cpu().numpy()
+            next_action_batch_np = new_next_action.detach().cpu().numpy()
+            query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
+            tree_index = np.random.choice(len(kd_trees))
+            kd_tree = kd_trees[tree_index]
             # target_distance = kd_tree.query(query_data, k=1)[0]
             # target_distance = torch.FloatTensor(target_distance).to(self.device)
 
-            target_distance = kd_trees.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
+            target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
             cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 200
 
             # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)

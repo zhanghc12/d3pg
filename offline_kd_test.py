@@ -136,6 +136,6 @@ if __name__ == "__main__":
         print('start build tree')
         tree = KDTree(data, leaf_size=40)
 
-        iid_list = knn_utils.test_tree_true(replay_buffer, tree, k=5)
+        iid_list = knn_utils.test_tree_true(replay_buffer, tree, k=2)
 
 
