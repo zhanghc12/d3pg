@@ -74,9 +74,9 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=0, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
-    parser.add_argument("--n_quantiles", default=25, type=int)
+    parser.add_argument("--n_quantiles", default=250, type=int)
     parser.add_argument("--top_quantiles_to_drop", default=200, type=int)
-    parser.add_argument("--n_nets", default=10, type=int)
+    parser.add_argument("--n_nets", default=1, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
