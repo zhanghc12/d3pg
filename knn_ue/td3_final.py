@@ -120,7 +120,7 @@ class TD3(object):
         self.mean_distance = mean_distance
 
 
-    def train_policy_quantile_without_uncertainty_v0(self, memory, batch_size, kd_trees):
+    def train_policy_quantile_without_uncertainty(self, memory, batch_size, kd_trees):
         state, action, next_state, reward, not_done = memory.sample(batch_size)
 
         with torch.no_grad():
