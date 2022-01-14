@@ -220,8 +220,8 @@ class TD3(object):
             #next_state_batch_np = next_state.cpu().numpy()
             #next_action_batch_np = new_next_action.detach().cpu().numpy()
             #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
-
-            query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
+            query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
 
             #tree_index = np.random.choice(len(kd_trees))
             # kd_tree = kd_trees[tree_index]
