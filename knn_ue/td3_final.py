@@ -354,9 +354,12 @@ class TD3(object):
         state_batch_np = state.cpu().numpy()
         action_batch_np = self.actor(state).detach().cpu().numpy()
         query_data = np.concatenate([state_batch_np, action_batch_np], axis=1)
-        tree_index = np.random.choice(len(kd_trees))
-        kd_tree = kd_trees[tree_index]
-        target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
+        #tree_index = np.random.choice(len(kd_trees))
+        #kd_tree = kd_trees[tree_index]
+
+        query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+
+        target_distance = kd_trees.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
 
         actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
 
