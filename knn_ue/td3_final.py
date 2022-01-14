@@ -155,7 +155,7 @@ class TD3(object):
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, 10).to(device)
+        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, 9).to(device)
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
