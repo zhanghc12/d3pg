@@ -439,8 +439,8 @@ if __name__ == "__main__":
         'hopper-medium-expert-v0',
         'hopper-expert-v0',
         'walker2d-random-v0',
-        'walker2d-medium-v0',
-        'walker2d-medium-replay-v0',
+        'walker2d-medium-v0',        # 0.0033 0.03
+        'walker2d-medium-replay-v0', # 0.0033, 0.03
         'walker2d-medium-expert-v0',
         'walker2d-expert-v0',
         'halfcheetah-random-v0',
@@ -451,7 +451,7 @@ if __name__ == "__main__":
     ]
 
     envs_list = [
-        'walker2d-medium-replay-v0', #.
+        'halfcheetah-medium-v0', #.
     ]
 
     for env_name in envs_list:
@@ -472,7 +472,7 @@ if __name__ == "__main__":
         phi_list = []
         size = 1
         for _ in range(size):
-            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, 10).to(device))
+            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, 9).to(device))
             phi_list.append([])
         replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
         offline_dataset = d4rl.qlearning_dataset(env)

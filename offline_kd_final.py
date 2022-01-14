@@ -50,9 +50,10 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_epi
             avg_reward += reward
 
     avg_reward /= eval_episodes
+    d4rl_score = eval_env.get_normalized_score(avg_reward) * 100
 
     print("---------------------------------------")
-    print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}".format(t, eval_episodes, avg_reward, bc_scale))
+    print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}, normalized scoare:{}".format(t, eval_episodes, avg_reward, bc_scale, d4rl_score))
     print("---------------------------------------")
     return avg_reward
 
