@@ -10,6 +10,7 @@ from knn_ue import td3_final, knn_utils
 import d4rl.gym_mujoco
 import numpy as np
 from sklearn.neighbors import KDTree
+import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -186,6 +187,7 @@ if __name__ == "__main__":
     print(quantile_distance)
     policy.get_stat(quantile_distance)
     '''
+    start_time = time.time()
 
     for t in range(int(args.max_timesteps)):
         if args.version == 0:
@@ -204,7 +206,8 @@ if __name__ == "__main__":
         if t % 100 == 0:
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('loss/actor_loss', actor_loss, t)
-            print('iteration: {}, critic_loss :{:6f}, actor_loss: {:6f}'.format(t, critic_loss, actor_loss))
+            print('iteration: {}, critic_loss :{:6f}, actor_loss: {:6f}, left_time:{:6f}'.format(t, critic_loss, actor_loss, (time.time() - start_time) / 100 * (1e6 - t) / 3600 ))
+            start_time = time.time()
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
