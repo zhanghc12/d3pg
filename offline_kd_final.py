@@ -97,12 +97,13 @@ if __name__ == "__main__":
     print("Policy: {}, Env: {}, Seed: {}".format(args.policy, args.env, args.seed))
     print("---------------------------------------")
 
+    '''
     model_path = experiment_dir + 'modelsv3-' + str(args.bc_scale)
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
     model_path = model_path + '/critic' + args.env
-
+    '''
     env = gym.make(args.env)
 
     # Set seeds
