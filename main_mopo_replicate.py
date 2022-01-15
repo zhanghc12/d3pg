@@ -138,8 +138,8 @@ def train_predict_model(env_pool, predict_env):
     predict_env.model.train(inputs, labels, batch_size=256, holdout_ratio=0.2)
 
 
-def test_uncertainty(memory, predict_env, dirname, batch_size=2560):
-    predict_env.model.load(dirname + '0')
+def test_uncertainty(memory, predict_env, dirname, version, batch_size=2560):
+    predict_env.model.load(dirname + str(version))
 
     i = 0
     iid_list = []
@@ -260,9 +260,9 @@ def main(args=None):
     # Initial pool for env
     env_pool = replay_buffer
     if args.test == 0:
-        train(args, predict_env, env_pool, writer, dirname + args.env_name + '_')
+        train(args, predict_env, env_pool, writer, dirname + args.env_name + '_', version)
     else:
-        test_uncertainty(env_pool, predict_env, dirname + args.env_name + '_')
+        test_uncertainty(env_pool, predict_env, dirname + args.env_name + '_', version)
 
 
 
