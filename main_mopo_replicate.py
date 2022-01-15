@@ -253,7 +253,7 @@ def main(args=None):
 
     # Initial pool for env
     env_pool = replay_buffer
-    train(args, predict_env, env_pool, writer, dirname)
+    train(args, predict_env, env_pool, writer, dirname + args.env_name)
 
 
 if __name__ == '__main__':
