@@ -128,8 +128,8 @@ def train(args,  predict_env, env_pool, writer, dirname):
         # test_uncertainty(env_pool, predict_env)
         # writer.add_scalar('Episode reward', sum_reward, total_samples)
 
-def train_predict_model(env_pool, predict_env, dirname):
-    predict_env.model.load(dirname + '0')
+def train_predict_model(env_pool, predict_env):
+    # predict_env.model.load(dirname + '0')
     # Get all samples from environment
     state, action, next_state, reward, done = env_pool.sample_all_np()
     delta_state = next_state - state
