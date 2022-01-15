@@ -113,6 +113,8 @@ def readParser():
     parser.add_argument('--version', type=int, default=0, metavar='A',
                         help='hyper or model_type')
 
+    parser.add_argument('--test', type=int, default=0, metavar='A',
+                        help='hyper or model_type')
 
     return parser.parse_args()
 
@@ -257,10 +259,10 @@ def main(args=None):
 
     # Initial pool for env
     env_pool = replay_buffer
-    if args.version == 0:
-        train(args, predict_env, env_pool, writer, dirname + args.env_name)
+    if args.test == 0:
+        train(args, predict_env, env_pool, writer, dirname + args.env_name + '_')
     else:
-        test_uncertainty(env_pool, predict_env, dirname + args.env_name)
+        test_uncertainty(env_pool, predict_env, dirname + args.env_name + '_')
 
 
 
