@@ -57,7 +57,7 @@ def predict_uncertainty(qf1, qf2, vae, state_batch, action_batch):
     q_var = q_val1_var + q_val2_var
 
     weight = torch.clamp(torch.exp(-0.5 * q_var / 1), 0, 1).detach().cpu().numpy()
-
+    print(weight.shape)
     return weight
 
 def test_uncertainty(memory, qf1, qf2, vae_policy, batch_size=2560):
