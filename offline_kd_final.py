@@ -6,7 +6,7 @@ import torch
 import gym
 import argparse
 import os
-from knn_ue import td3_final, knn_utils
+from knn_ue import td3_final, knn_utils, td3_final_bc
 import d4rl.gym_mujoco
 import numpy as np
 from sklearn.neighbors import KDTree
