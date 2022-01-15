@@ -47,6 +47,9 @@ def readParser():
     return parser.parse_args()
 
 def predict_uncertainty(qf1, qf2, vae, state_batch, action_batch):
+    state_batch = torch.FloatTensor(state_batch)
+    action_batch = torch.FloatTensor(action_batch)
+
     q_val1, q_val1_var = qf1.multiple(state_batch, action_batch, with_var=True)
     q_val2, q_val2_var = qf2.multiple(state_batch, action_batch, with_var=True)
 
