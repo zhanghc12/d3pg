@@ -116,11 +116,13 @@ def readParser():
     return parser.parse_args()
 
 
-def train(args,  predict_env, env_pool, writer):
+def train(args,  predict_env, env_pool, writer, dirname):
     for epoch_step in range(args.num_epoch):
+        predict_env.model.save(dirname + str(epoch_step))
+
         train_predict_model(env_pool, predict_env)
-        if epoch_step % 10 == 0: # every
-            test_uncertainty(env_pool, predict_env)
+        #if epoch_step % 10 == 0: # every
+        # test_uncertainty(env_pool, predict_env)
         # writer.add_scalar('Episode reward', sum_reward, total_samples)
 
 def train_predict_model(env_pool, predict_env):
@@ -226,9 +228,12 @@ def main(args=None):
 
     # Evaluate untrained policy
     if torch.cuda.is_available():
-        log_dir = '/data/zhanghc/d3pg/mbpo/'
+        log_dir = '/data/zhanghc/uncertainty/mbpo_offline/'
+        dirname = log_dir
     else:
-        log_dir = '/tmp/data/zhanghc/d3pg/mbpo/'
+        log_dir = '/tmp/data/zhanghc/uncertainty/mbpo_offline/'
+        dirname = log_dir
+
 
     log_dir = log_dir + '11_01/'
     summary_log_dir = log_dir + '{}_{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.model_type, args.env_name, args.seed, args.version)
@@ -248,7 +253,7 @@ def main(args=None):
 
     # Initial pool for env
     env_pool = replay_buffer
-    train(args, predict_env, env_pool, writer)
+    train(args, predict_env, env_pool, writer, dirname)
 
 
 if __name__ == '__main__':

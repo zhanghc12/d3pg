@@ -297,6 +297,12 @@ class EnsembleDynamicsModel():
             var = torch.mean(ensemble_var, dim=0) + torch.mean(torch.square(ensemble_mean - mean[None, :, :]), dim=0)
             return mean, var
 
+    def save_model(self, filename):
+        torch.save(self.ensemble_model.state_dict(), filename + "_mbpo_model")
+
+    def load(self, filename):
+        self.ensemble_model.load_state_dict(torch.load(filename + "_mbpo_model"))
+
 
     def _save_state(self, idx):
         self.ensemble_model_target.nn1.weight.data[idx, :, :].copy_(self.ensemble_model.nn1.weight[idx, :, :])
