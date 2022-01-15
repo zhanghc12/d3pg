@@ -42,7 +42,8 @@ def readParser():
                         help='hyper or model_type')
     parser.add_argument('--version', type=int, default=0, metavar='A',
                         help='hyper or model_type')
-
+    parser.add_argument('--seed', type=int, default=0, metavar='A',
+                        help='hyper or model_type')
     return parser.parse_args()
 
 def predict_uncertainty(qf1, qf2, vae, state_batch, action_batch):
