@@ -118,7 +118,7 @@ def readParser():
 
 def train(args,  predict_env, env_pool, writer):
     for epoch_step in range(args.num_epoch):
-        train_predict_model(args, env_pool, predict_env)
+        train_predict_model(env_pool, predict_env)
         if epoch_step % 10 == 0: # every
             test_uncertainty(env_pool, predict_env)
         # writer.add_scalar('Episode reward', sum_reward, total_samples)
