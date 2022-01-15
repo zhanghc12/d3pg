@@ -3,7 +3,7 @@ from torch import nn as nn
 from torch.nn import functional as F
 
 import numpy as np
-from rlkit.policies.base import Policy
+#from rlkit.policies.base import Policy
 from rlkit.torch import pytorch_util as ptu
 
 def identity(x):
@@ -151,10 +151,10 @@ class VAEPolicy(Mlp, ExplorationPolicy):
         a = F.relu(self.d2(a))
         return torch.tanh(self.d3(a))
 
-    def decode_multiple(self, state, z=None, num_decode=10):
+    def decode_multiple(self, state, z=None, num_decode=10, device='cpu'):
         if z is None:
             z = ptu.from_numpy(np.random.normal(0, 1, size=(state.size(0), num_decode, self.latent_dim))).clamp(-0.5,
-                                                                                                                0.5)
+                                                                                                                0.5).to(device)
 
         a = F.relu(self.d1(torch.cat([state.unsqueeze(0).repeat(num_decode, 1, 1).permute(1, 0, 2), z], 2)))
         a = F.relu(self.d2(a))
