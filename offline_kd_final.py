@@ -200,13 +200,18 @@ if __name__ == "__main__":
         if args.version == 0:
             critic_loss, actor_loss = policy.train_policy_bc_without_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 1:
-            critic_loss, actor_loss = policy.train_policy_bc_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
+            critic_loss, actor_loss = policy.train_policy_bc_with_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 2:
             critic_loss, actor_loss = policy.train_policy_quantile_without_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 3:
-            critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
+            critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 4:
             critic_loss, actor_loss = policy.train_policy_both(replay_buffer, args.batch_size, trees)
+        if args.version == 5:
+            critic_loss, actor_loss = policy.train_policy_bc_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
+        if args.version == 6:
+            critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
+
         #else:
         #    raise NotImplementedError
 
