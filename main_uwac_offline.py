@@ -10,6 +10,7 @@ import d4rl
 import d4rl.gym_mujoco
 from mc_dropout.drop import FlattenDropout_Mlp, VAEPolicy
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def normalize(data):
     mean = np.mean(data, axis=0, keepdims=True)
@@ -47,8 +48,8 @@ def readParser():
     return parser.parse_args()
 
 def predict_uncertainty(qf1, qf2, vae, state_batch, action_batch):
-    state_batch = torch.FloatTensor(state_batch)
-    action_batch = torch.FloatTensor(action_batch)
+    state_batch = torch.FloatTensor(state_batch).to(device=device)
+    action_batch = torch.FloatTensor(action_batch).to(device=device)
 
     q_val1, q_val1_var = qf1.multiple(state_batch, action_batch, with_var=True)
     q_val2, q_val2_var = qf2.multiple(state_batch, action_batch, with_var=True)
