@@ -110,8 +110,9 @@ def readParser():
     parser.add_argument('--cuda', default=True, action="store_true",
                         help='run on CUDA (default: True)')
 
-    parser.add_argument('--version', type=int, default=4, metavar='A',
+    parser.add_argument('--version', type=int, default=0, metavar='A',
                         help='hyper or model_type')
+
 
     return parser.parse_args()
 
@@ -125,7 +126,8 @@ def train(args,  predict_env, env_pool, writer, dirname):
         # test_uncertainty(env_pool, predict_env)
         # writer.add_scalar('Episode reward', sum_reward, total_samples)
 
-def train_predict_model(env_pool, predict_env):
+def train_predict_model(env_pool, predict_env, dirname):
+    predict_env.model.load(dirname + '0')
     # Get all samples from environment
     state, action, next_state, reward, done = env_pool.sample_all_np()
     delta_state = next_state - state
@@ -134,7 +136,9 @@ def train_predict_model(env_pool, predict_env):
     predict_env.model.train(inputs, labels, batch_size=256, holdout_ratio=0.2)
 
 
-def test_uncertainty(memory, predict_env, batch_size=2560):
+def test_uncertainty(memory, predict_env, dirname, batch_size=2560):
+    predict_env.model.load(dirname + '0')
+
     i = 0
     iid_list = []
     ood_list1 = []
@@ -253,7 +257,12 @@ def main(args=None):
 
     # Initial pool for env
     env_pool = replay_buffer
-    train(args, predict_env, env_pool, writer, dirname + args.env_name)
+    if args.version == 0:
+        train(args, predict_env, env_pool, writer, dirname + args.env_name)
+    else:
+        test_uncertainty(env_pool, predict_env, dirname + args.env_name)
+
+
 
 
 if __name__ == '__main__':
