@@ -125,4 +125,4 @@ class PredictEnv:
             ensemble_model_means, ensemble_model_vars = self.model.predict(inputs)
         else:
             ensemble_model_means, ensemble_model_vars = self.model.predict(inputs, factored=True)
-        return np.mean(np.max(ensemble_model_vars, axis=0), axis=-1, keepdims=True) # net * batch_size * (state_dim + 1)
+        return np.mean(np.max(ensemble_model_vars, axis=0), axis=-1, keepdims=False) # net * batch_size * (state_dim + 1)
