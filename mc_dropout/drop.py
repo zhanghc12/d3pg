@@ -248,11 +248,3 @@ class FlattenDropout_Mlp(Dropout_Mlp):
     def forward(self, *inputs, **kwargs):
         return self.multiple(*inputs, **kwargs)
 
-
-vae_policy = VAEPolicy(
-    obs_dim=obs_dim,
-    action_dim=action_dim,
-    hidden_sizes=[750, 750],
-    latent_dim=action_dim * 2,
-)
-
