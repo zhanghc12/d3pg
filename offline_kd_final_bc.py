@@ -105,5 +105,5 @@ if __name__ == "__main__":
         if t % 100 == 0:
             writer.add_scalar('loss/vae_loss', vae_loss, t)
             writer.add_scalar('loss/recon_loss', recon_loss, t)
-        if t % 10000 == 0:
-            torch.save(policy.vae.state_dict(), vae_filename + '_' + str(t // 10000))
+        if t % 10 == 0:
+            torch.save(policy.vae.state_dict(), vae_filename + '_' + str(t // 10))

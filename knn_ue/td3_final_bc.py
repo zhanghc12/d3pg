@@ -87,6 +87,5 @@ class TD3(object):
 
         return vae_loss.item(), recon_loss.item()
 
-    def save_vae(self):
 
 
