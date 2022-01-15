@@ -151,10 +151,10 @@ def main(args=None):
 
     # Evaluate untrained policy
     if torch.cuda.is_available():
-        log_dir = '/data/zhanghc/uncertainty/mbpo_offline/'
+        log_dir = '/data/zhanghc/uncertainty/uwac/'
         dirname = log_dir
     else:
-        log_dir = '/tmp/data/zhanghc/uncertainty/mbpo_offline/'
+        log_dir = '/tmp/data/zhanghc/uncertainty/uwac/'
         dirname = log_dir
 
     M = 256
