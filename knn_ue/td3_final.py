@@ -128,7 +128,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, n_nets, n_quantiles, top_quantiles_to_drop=200):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -156,6 +156,12 @@ class TD3(object):
         self.action_dim = action_dim
 
         self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, 9).to(device)
+
+        self.drop_quantile_bc = drop_quantile_bc
+        upper_bound = 0.01
+        lower_bound = 0.003
+        self.scale = 1 / (upper_bound - lower_bound)
+        self.bias = - lower_bound * self.scale
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -230,7 +236,7 @@ class TD3(object):
             # target_distance = torch.FloatTensor(target_distance).to(self.device)
 
             target_distance = kd_trees.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
-            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 200
+            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
 
             # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
 
@@ -294,7 +300,7 @@ class TD3(object):
             # target_distance = torch.FloatTensor(target_distance).to(self.device)
 
             target_distance = kd_trees.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
-            actor_scale = torch.clamp_(50 * torch.FloatTensor(target_distance).to(self.device) - 0.5, 0, 1)
+            actor_scale = torch.clamp_(self.scale * torch.FloatTensor(target_distance).to(self.device) + self.bias, 0, 1)
 
             cond = -actor_scale * 250 + 250
 
@@ -403,7 +409,7 @@ class TD3(object):
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            sorted_z = sorted_z[:, :self.quantiles_total - self.drop_quantile_bc]
             target = reward + not_done * self.discount * (sorted_z)
 
         cur_z = self.critic(state, action)
@@ -461,7 +467,7 @@ class TD3(object):
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            sorted_z = sorted_z[:, :self.quantiles_total - self.drop_quantile_bc]
             target = reward + not_done * self.discount * (sorted_z)
 
         cur_z = self.critic(state, action)
@@ -489,7 +495,7 @@ class TD3(object):
 
         # actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
 
-        actor_scale = torch.clamp_(50 * torch.FloatTensor(target_distance).to(self.device) - 0.5, 0, 1)
+        actor_scale = torch.clamp_(self.scale * torch.FloatTensor(target_distance).to(self.device) + self.bias, 0, 1)
 
         actor_loss = ((1-actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
 
@@ -521,7 +527,8 @@ class TD3(object):
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            sorted_z = sorted_z[:, :self.quantiles_total - self.drop_quantile_bc]
+
             target = reward + not_done * self.discount * (sorted_z)
 
         cur_z = self.critic(state, action)
@@ -574,7 +581,7 @@ class TD3(object):
             # compute and cut quantiles at the next state
             next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
-            # sorted_z = sorted_z[:, :self.quantiles_total - self.top_quantiles_to_drop]
+            sorted_z = sorted_z[:, :self.quantiles_total - self.drop_quantile_bc]
             target = reward + not_done * self.discount * (sorted_z)
 
         cur_z = self.critic(state, action)

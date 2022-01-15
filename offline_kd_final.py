@@ -55,7 +55,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_epi
     print("---------------------------------------")
     print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}, normalized scoare:{}".format(t, eval_episodes, avg_reward, bc_scale, d4rl_score))
     print("---------------------------------------")
-    return avg_reward
+    return avg_reward, d4rl_score
 
 
 if __name__ == "__main__":
@@ -119,14 +119,20 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop)
+    drop_quantile_bc = 0
+    if args.env.startswith('walker2d'):
+        drop_quantile_bc = 2 * args.n_nets
+    elif args.env.startswith('hopper'):
+        drop_quantile_bc = 5 * args.n_nets
+
+    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
     obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
 
     # Evaluate untrained policy
-    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
+    evaluations, _ = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
 
     kdtree_path = experiment_dir + 'kdtree/critic' + args.env
     iid_list_path = experiment_dir + 'kdtree/iid_list' + args.env
@@ -194,11 +200,11 @@ if __name__ == "__main__":
         if args.version == 0:
             critic_loss, actor_loss = policy.train_policy_bc_without_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 1:
-            critic_loss, actor_loss = policy.train_policy_bc_with_uncertainty(replay_buffer, args.batch_size, trees)
+            critic_loss, actor_loss = policy.train_policy_bc_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
         if args.version == 2:
             critic_loss, actor_loss = policy.train_policy_quantile_without_uncertainty(replay_buffer, args.batch_size, trees)
         if args.version == 3:
-            critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty(replay_buffer, args.batch_size, trees)
+            critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty_v1(replay_buffer, args.batch_size, trees)
         if args.version == 4:
             critic_loss, actor_loss = policy.train_policy_both(replay_buffer, args.batch_size, trees)
         #else:
@@ -212,8 +218,10 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            avg_return = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)
+            avg_return, d4rl_score = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)
             evaluations.append(avg_return)
             writer.add_scalar('test/return', avg_return, t)
+            writer.add_scalar('test/d4rl_score', d4rl_score, t)
+
             # np.save(f"./results/{file_name}", evaluations)
             # if args.save_model: policy.save(f"./models/{file_name}")
