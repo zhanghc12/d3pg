@@ -173,14 +173,14 @@ def main(args=None):
         hidden_sizes=[M, M, ],
         drop_rate=variant['drop_rate'],
         spectral_norm=variant['spectral_norm'],
-    )
+    ).to(device)
     qf2 = FlattenDropout_Mlp(
         input_size=obs_dim + action_dim,
         output_size=1,
         hidden_sizes=[M, M, ],
         drop_rate=variant['drop_rate'],
         spectral_norm=variant['spectral_norm'],
-    )
+    ).to(device)
 
     target_qf1 = FlattenDropout_Mlp(
         input_size=obs_dim + action_dim,
@@ -188,21 +188,21 @@ def main(args=None):
         hidden_sizes=[M, M, ],
         drop_rate=variant['drop_rate'],
         spectral_norm=variant['spectral_norm'],
-    )
+    ).to(device)
     target_qf2 = FlattenDropout_Mlp(
         input_size=obs_dim + action_dim,
         output_size=1,
         hidden_sizes=[M, M, ],
         drop_rate=variant['drop_rate'],
         spectral_norm=variant['spectral_norm'],
-    )
+    ).to(device)
 
     vae_policy = VAEPolicy(
         obs_dim=obs_dim,
         action_dim=action_dim,
         hidden_sizes=[750, 750],
         latent_dim=action_dim * 2,
-    )
+    ).to(device)
 
     qf1_dirname = dirname + args.env_name + '_qf1_' + str(args.version)
     qf2_dirname = dirname + args.env_name + '_qf2_' + str(args.version)
