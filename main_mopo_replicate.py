@@ -260,7 +260,7 @@ def main(args=None):
     # Initial pool for env
     env_pool = replay_buffer
     if args.test == 0:
-        train(args, predict_env, env_pool, writer, dirname + args.env_name + '_', args.version)
+        train(args, predict_env, env_pool, writer, dirname + args.env_name + '_')
     else:
         test_uncertainty(env_pool, predict_env, dirname + args.env_name + '_', args.version)
 

@@ -40,6 +40,8 @@ def readParser():
                         help='Mujoco Gym environment (default: Hopper-v2)')
     parser.add_argument('--test', type=int, default=0, metavar='A',
                         help='hyper or model_type')
+    parser.add_argument('--version', type=int, default=0, metavar='A',
+                        help='hyper or model_type')
 
     return parser.parse_args()
 
@@ -203,9 +205,9 @@ def main(args=None):
         latent_dim=action_dim * 2,
     )
 
-    qf1_dirname = dirname + args.env_name + '_' + 'qf1'
-    qf2_dirname = dirname + args.env_name + '_' + 'qf2'
-    vae_dirname = dirname + args.env_name + '_' + 'vae'
+    qf1_dirname = dirname + args.env_name + '_qf1_' + str(args.version)
+    qf2_dirname = dirname + args.env_name + '_qf2_' + str(args.version)
+    vae_dirname = dirname + args.env_name + '_vae_' + str(args.version)
 
     qf1.load_state_dict(torch.load(qf1_dirname))
     qf2.load_state_dict(torch.load(qf2_dirname))
