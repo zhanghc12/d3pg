@@ -64,12 +64,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if torch.cuda.is_available():
-        experiment_dir = '/data/zhanghc/uncertainty/vae/'
-        vae_filename = experiment_dir + args.env
+        experiment_dir = '/data/zhanghc/uncertainty/vae/' + args.env + '/'
+        vae_filename = experiment_dir + 'model'
 
     else:
-        experiment_dir = '/tmp/data/zhanghc/uncertainty/vae/'
-        vae_filename = experiment_dir + args.env
+        experiment_dir = '/tmp/zhanghc/uncertainty/vae/' + args.env + '/'
+        vae_filename = experiment_dir + 'model'
     experiment_dir = experiment_dir + '0113/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}_bs{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop, args.n_nets, args.bc_scale))
