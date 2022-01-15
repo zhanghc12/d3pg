@@ -1,11 +1,5 @@
 import torch
-
-if torch.cuda.is_available():
-    torch.set_default_tensor_type(torch.cuda.FloatTensor)
-    device = torch.device('cuda')
-else:
-    device = torch.device('cpu')
-
+torch.set_default_tensor_type(torch.cuda.FloatTensor)
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,6 +9,7 @@ import math
 import gzip
 import itertools
 
+device = torch.device('cuda')
 
 num_train = 60000  # 60k train examples
 num_test = 10000  # 10k test examples

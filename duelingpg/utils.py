@@ -164,6 +164,15 @@ class ReplayBuffer(object):
         )
 
 
+    def sample_all_np(self):
+        ind = np.arange(0, self.size)
+        return (self.state[ind], self.action[ind], self.next_state[ind], self.reward[ind], self.not_done[ind])
+
+    def sample_np(self, batch_size):
+        ind = np.random.randint(0, self.size, size=batch_size)
+        return (self.state[ind], self.action[ind], self.next_state[ind], self.reward[ind], self.not_done[ind])
+
+
 
     def sample_include_timestep(self, batch_size):
         ind = np.random.randint(0, self.size, size=batch_size)

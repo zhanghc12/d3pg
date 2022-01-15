@@ -220,9 +220,9 @@ class EnsembleDynamicsModel():
         train_inputs, train_labels = inputs[num_holdout:], labels[num_holdout:]
         holdout_inputs, holdout_labels = inputs[:num_holdout], labels[:num_holdout]
 
-        self.scaler.fit(train_inputs)
-        train_inputs = self.scaler.transform(train_inputs)
-        holdout_inputs = self.scaler.transform(holdout_inputs)
+        #self.scaler.fit(train_inputs)
+        #train_inputs = self.scaler.transform(train_inputs)
+        #holdout_inputs = self.scaler.transform(holdout_inputs)
 
         holdout_inputs = torch.from_numpy(holdout_inputs).float().to(device)
         holdout_labels = torch.from_numpy(holdout_labels).float().to(device)
@@ -279,7 +279,7 @@ class EnsembleDynamicsModel():
             return False
 
     def predict(self, inputs, batch_size=1024, factored=True):
-        inputs = self.scaler.transform(inputs)
+        # inputs = self.scaler.transform(inputs)
         ensemble_mean, ensemble_var = [], []
         for i in range(0, inputs.shape[0], batch_size):
             input = torch.from_numpy(inputs[i:min(i + batch_size, inputs.shape[0])]).float().to(device)

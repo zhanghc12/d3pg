@@ -118,3 +118,11 @@ class PredictEnv:
 
         info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
+
+    def predict_uncertainty(self, obs, act):
+        inputs = np.concatenate((obs, act), axis=-1)
+        if self.model_type == 'pytorch':
+            ensemble_model_means, ensemble_model_vars = self.model.predict(inputs)
+        else:
+            ensemble_model_means, ensemble_model_vars = self.model.predict(inputs, factored=True)
+        return np.mean(np.max(ensemble_model_vars, axis=0), axis=-1, keepdims=True) # net * batch_size * (state_dim + 1)
