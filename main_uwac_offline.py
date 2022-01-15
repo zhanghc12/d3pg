@@ -157,12 +157,6 @@ def main(args=None):
         log_dir = '/tmp/data/zhanghc/uncertainty/mbpo_offline/'
         dirname = log_dir
 
-
-    log_dir = log_dir + '11_01/'
-    summary_log_dir = log_dir + '{}_{}_{}_s{}_ver{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.model_type, args.env_name, args.seed, args.version)
-
-    writer = SummaryWriter(log_dir=summary_log_dir)
-
     M = 256
     variant = {
         'drop_rate': 0.1,
