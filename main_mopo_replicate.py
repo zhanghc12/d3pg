@@ -118,7 +118,7 @@ def readParser():
 
 def train(args,  predict_env, env_pool, writer, dirname):
     for epoch_step in range(args.num_epoch):
-        predict_env.model.save(dirname + str(epoch_step))
+        predict_env.save(dirname + str(epoch_step))
 
         train_predict_model(env_pool, predict_env)
         #if epoch_step % 10 == 0: # every
