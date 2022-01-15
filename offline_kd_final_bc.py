@@ -103,6 +103,7 @@ if __name__ == "__main__":
     for t in range(int(args.max_timesteps)):
         vae_loss, recon_loss = policy.train_vae(replay_buffer, args.batch_size)
         if t % 100 == 0:
+            print(t, vae_loss, recon_loss)
             writer.add_scalar('loss/vae_loss', vae_loss, t)
             writer.add_scalar('loss/recon_loss', recon_loss, t)
         if t % 10 == 0:

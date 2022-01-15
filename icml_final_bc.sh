@@ -17,5 +17,7 @@ CUDA_VISIBLE_DEVICES=2 python offline_kd_final_bc.py --policy TQC  --version $1 
 
 # sh offline_rl_large_scale_single_seed_new.sh 31  1.0 -1 0.2  0.05
 
+# CUDA_VISIBLE_DEVICES=0 python offline_kd_final_bc.py --policy TQC  --version 0  --bc_scale 0 --env hopper-random-v2 --seed 0 &\
+
 
 
