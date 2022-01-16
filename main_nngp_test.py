@@ -208,6 +208,10 @@ if __name__ == "__main__":
     inducing_points = feature_extractor(inducing_points).to(device)  # initialize the inducing points
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)  # y_shape * ibatch * 128
     model = NeuralGP(feature_extractor, inducing_points, num_tasks=train_y.shape[1], enable_ngd=args.enable_ngd).to(device)
+
+    model.load_state_dict(torch.load(f'{file_name}/gp_{args.kernel_type}_990.pt'))
+
+
     likelihood = gpytorch.likelihoods.MultitaskGaussianLikelihood(num_tasks=train_y.shape[1]).to(device)
 
     model.train()
@@ -233,7 +237,6 @@ if __name__ == "__main__":
 
     mll = gpytorch.mlls.VariationalELBO(likelihood, model.gp_layer, num_data=train_y.size(0)).to(device)
 
-    model.load_state_dict(torch.load(f'{file_name}/gp_{args.kernel_type}_990.pt'))
 
     epochs = 1000
 
