@@ -260,7 +260,7 @@ if __name__ == "__main__":
 
     mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0)).to(device)
 
-    model.load_state_dict(torch.load(f'{file_name}/gp_{args.kernel_type}_0.pt'))
+    model.load_state_dict(torch.load(f'{file_name}/gp_{args.kernel_type}_{args.version}.pt'))
     likelihood.load_state_dict(torch.load(f'{file_name}/lk_{args.kernel_type}_{args.version}.pt'))
 
 
