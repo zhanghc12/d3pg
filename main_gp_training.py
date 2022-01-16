@@ -82,6 +82,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_test_episodes', help='Number of test episodes', type=int, default=10)
     parser.add_argument('--num_points', help='evaluation period', type=int, default=10)
     parser.add_argument('--evaluation_interval', help='evaluation period', type=int, default=10)
+    parser.add_argument('--version', help='evaluation period', type=int, default=10)
 
     args = parser.parse_args()
 
