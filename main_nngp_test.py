@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_test_episodes', help='Number of test episodes', type=int, default=10)
     parser.add_argument('--enable_ngd', help='use ngd or not', type=int, default=1)
     parser.add_argument('--evaluation_interval', help='evaluation period', type=int, default=10)
-    parser.add_argument('--num_points', help='evaluation period', type=int, default=1000)
+    parser.add_argument('--num_points', help='evaluation period', type=int, default=500)
 
     args = parser.parse_args()
 
@@ -159,9 +159,6 @@ if __name__ == "__main__":
             datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed))
 
     file_name = experiment_dir + args.env + '/'
-    if os.path.exists(file_name):
-        shutil.rmtree(file_name)
-    os.makedirs(file_name)
 
     env = gym.make(args.env)
 
