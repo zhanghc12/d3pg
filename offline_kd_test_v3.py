@@ -35,6 +35,8 @@ def load_hdf5(dataset, replay_buffer):
 
     print(np.std(dataset['actions'], axis=0, keepdims=True))
 
+    replay_buffer.action = normalize(dataset['actions'])
+
     replay_buffer.next_state = normalize(dataset['next_observations'])
     replay_buffer.reward = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     replay_buffer.not_done = 1 - np.expand_dims(np.squeeze(dataset['terminals']), 1)
