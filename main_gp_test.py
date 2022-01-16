@@ -205,9 +205,6 @@ if __name__ == "__main__":
             datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.num_points))
 
     file_name = experiment_dir + args.env + '/' + str(args.num_points)
-    if os.path.exists(file_name):
-        shutil.rmtree(file_name)
-    os.makedirs(file_name)
 
     env = gym.make(args.env)
 
