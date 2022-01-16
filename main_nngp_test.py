@@ -62,6 +62,7 @@ def predict_uncertainty(model, likelihood, state_batch, action_batch):
     mean = predictions.mean
     lower, upper = predictions.confidence_region()
     weight = (upper - lower).squeeze().detach().cpu().numpy()
+    print(weight.shape)
     return weight
 
 def test_uncertainty(memory, model, likelihood, batch_size=2560):
