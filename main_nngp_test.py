@@ -64,7 +64,7 @@ def predict_uncertainty(model, likelihood, state_batch, action_batch):
     weight = (upper - lower).squeeze().detach().cpu().numpy()
     return weight
 
-def test_uncertainty(memory, vae_policy, batch_size=2560):
+def test_uncertainty(memory, model, likelihood, batch_size=2560):
     i = 0
     iid_list = []
     ood_list1 = []
