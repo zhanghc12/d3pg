@@ -333,7 +333,7 @@ def test_tree_true_sns(memory, kd_trees, feature_nns, k=3, batch_size=2560):
     else:
         size = 50000
     size = memory.size
-    size = 20000
+    #size = 20000
     '''
     while i + batch_size < size:
         index = np.arange(i, i+batch_size)
