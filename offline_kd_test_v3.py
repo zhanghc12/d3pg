@@ -451,7 +451,7 @@ if __name__ == "__main__":
     ]
 
     envs_list = [
-        'halfcheetah-medium-replay-v2', #.
+        args.env, #'halfcheetah-medium-replay-v2', #.
     ]
 
     for env_name in envs_list:
