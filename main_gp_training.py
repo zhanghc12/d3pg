@@ -86,15 +86,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if torch.cuda.is_available():
-        experiment_dir = '/data/zhanghc/gp/' + str(args.num_points) + '/'
+        experiment_dir = '/data/zhanghc/gp/'
     else:
-        experiment_dir = '/tmp/data/zhanghc/gp/' + str(args.num_points) + '/'
+        experiment_dir = '/tmp/data/zhanghc/gp/'
     experiment_dir = experiment_dir + '0116/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_n{}'.format(
             datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.num_points))
 
-    file_name = experiment_dir + args.env + '/'
+    file_name = experiment_dir + args.env + '/' + str(args.num_points)
     if os.path.exists(file_name):
         shutil.rmtree(file_name)
     os.makedirs(file_name)
