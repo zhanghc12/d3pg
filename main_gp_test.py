@@ -61,7 +61,7 @@ def predict_uncertainty(model, likelihood, state_batch, action_batch):
     mean = predictions.mean
     lower, upper = predictions.confidence_region()
     weight = np.mean((upper - lower).squeeze().detach().cpu().numpy(), axis=1)
-    print(weight.shape)
+    # print(weight.shape)
     return weight
 
 def test_uncertainty(memory, model, likelihood, batch_size=2560):
@@ -192,6 +192,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_test_episodes', help='Number of test episodes', type=int, default=10)
     parser.add_argument('--num_points', help='evaluation period', type=int, default=10)
     parser.add_argument('--evaluation_interval', help='evaluation period', type=int, default=10)
+    parser.add_argument('--version', help='evaluation period', type=int, default=10)
 
     args = parser.parse_args()
 
@@ -260,7 +261,7 @@ if __name__ == "__main__":
     mll = gpytorch.mlls.VariationalELBO(likelihood, model, num_data=train_y.size(0)).to(device)
 
     model.load_state_dict(torch.load(f'{file_name}/gp_{args.kernel_type}_0.pt'))
-    likelihood.load_state_dict(torch.load(f'{file_name}/lk_{args.kernel_type}_0.pt'))
+    likelihood.load_state_dict(torch.load(f'{file_name}/lk_{args.kernel_type}_{args.version}.pt'))
 
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
