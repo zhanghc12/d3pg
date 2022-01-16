@@ -226,15 +226,18 @@ if __name__ == "__main__":
     parser.add_argument('--gp_rank', help='Rank of the task covar module', type=int, default=1)
     parser.add_argument('--kernel_type', help='Kernel for the GP', type=str, default='rbf')
     parser.add_argument('--n_test_episodes', help='Number of test episodes', type=int, default=10)
+    parser.add_argument('--num_points', help='evaluation period', type=int, default=10)
+
     args = parser.parse_args()
 
     if torch.cuda.is_available():
-        experiment_dir = '/data/zhanghc/gp/'
+        experiment_dir = '/data/zhanghc/gp/' + str(args.num_points) + '/'
     else:
-        experiment_dir = '/tmp/data/zhanghc/gp/'
-    experiment_dir = experiment_dir + '1202/'
+        experiment_dir = '/tmp/data/zhanghc/gp/' + str(args.num_points) + '/'
+    experiment_dir = experiment_dir + '0116/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_d{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.top_quantiles_to_drop_per_net, args.n_nets))
+        experiment_dir + '{}_{}_{}_s{}'.format(
+            datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed))
 
     file_name = experiment_dir + args.env + '/'
     if os.path.exists(file_name):
@@ -281,7 +284,7 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
 
 
-    inducing_points = train_x[:5000, :] # todo
+    inducing_points = train_x[:args.num_points, :] # todo
 
     inducing_points = inducing_points.unsqueeze(0).repeat(train_y.shape[1], 1, 1)
     model = IndependentMultitaskGPModel(inducing_points=inducing_points, num_tasks=train_y.shape[1])
