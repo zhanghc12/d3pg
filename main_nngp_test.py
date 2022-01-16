@@ -61,7 +61,7 @@ def predict_uncertainty(model, likelihood, state_batch, action_batch):
     predictions = likelihood(preds)
     mean = predictions.mean
     lower, upper = predictions.confidence_region()
-    weight = (upper - lower).squeeze().detach().cpu().numpy()
+    weight = torch.mean((upper - lower).squeeze().detach().cpu().numpy(), axis=1)
     print(weight.shape)
     return weight
 
