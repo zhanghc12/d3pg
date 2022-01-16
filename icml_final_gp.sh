@@ -22,9 +22,6 @@ CUDA_VISIBLE_DEVICES=0 python main_gp_training.py --policy TQC  --version $1  --
 #CUDA_VISIBLE_DEVICES=2 python main_gp_training.py --policy TQC  --version $1  --num_points $2  --env walker2d-expert-v2 --seed $3
 
 
-# sh offline_rl_large_scale_single_seed_new.sh 31  1.0 -1 0.2  0.05
-
-# CUDA_VISIBLE_DEVICES=0 python offline_kd_final_bc.py --policy TQC  --version 0  --num_points 0 --env hopper-random-v2 --seed 0 &\
-
+# CUDA_VISIBLE_DEVICES=0 python main_gp_training.py --policy TQC  --version 0  --num_points 500  --env hopper-medium-v2  --seed 0
 
 
