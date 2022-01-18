@@ -821,7 +821,7 @@ class TD3(object):
 
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
 
-            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            target_distance = kd_trees.query(query_data, k=1)[0] #  / (self.state_dim + self.action_dim)
             # actor_scale = torch.clamp_(self.scale * torch.FloatTensor(target_distance).to(self.device) + self.bias, 0, 1)
 
             cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
@@ -843,7 +843,7 @@ class TD3(object):
 
         query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
 
-        target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+        target_distance = kd_trees.query(query_data, k=1)[0] / 20
 
         actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
 
