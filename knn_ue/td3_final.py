@@ -837,8 +837,8 @@ class TD3(object):
         self.critic_optimizer.step()
 
         bc_loss = (self.actor(state) - action) ** 2
-        original_actor_loss = - self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)
-        actor_loss = original_actor_loss
+        original_actor_loss = - self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True).mean()
+        actor_loss = - self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)
         source_loss = 2.5 * (actor_loss / (actor_loss.abs().mean().detach() + 1e-5))
 
         query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
