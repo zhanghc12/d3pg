@@ -215,7 +215,10 @@ if __name__ == "__main__":
             critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty_v2(replay_buffer, args.batch_size, trees)
         if args.version == 8:
             critic_loss, actor_loss = policy.train_policy_quantile_with_uncertainty_v3(replay_buffer, args.batch_size, trees)
-
+        if args.version == 9:
+            critic_loss, actor_loss = policy.train_both(replay_buffer, args.batch_size, trees)
+        if args.version == 10:
+            critic_loss, actor_loss = policy.train_both_v1(replay_buffer, args.batch_size, trees)
         #else:
         #    raise NotImplementedError
 
