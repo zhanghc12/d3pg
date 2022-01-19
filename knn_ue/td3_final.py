@@ -869,6 +869,197 @@ class TD3(object):
 
 
 
+    def train_policy_quantile_with_uncertainty_v4(self, memory, batch_size, kd_trees):
+        state, action, next_state, reward, not_done = memory.sample(batch_size)
+
+        with torch.no_grad():
+            # get policy action
+            new_next_action = self.actor_target(next_state)
+
+            # compute and cut quantiles at the next state
+            next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
+            sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
+            target = reward + not_done * self.discount * (sorted_z)
+
+            #next_state_batch_np = next_state.cpu().numpy()
+            #next_action_batch_np = new_next_action.detach().cpu().numpy()
+            #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
+            query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
+
+            #tree_index = np.random.choice(len(kd_trees))
+            # kd_tree = kd_trees[tree_index]
+
+            # target_distance = kd_tree.query(query_data, k=1)[0]
+            # target_distance = torch.FloatTensor(target_distance).to(self.device)
+
+            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 125 + 150
+
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+
+        # Get current Q estimates
+
+        # mask calculation
+        # cond = torch.where(target_distance - 0.25 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        # cond = torch.where(target_distance - 0.15 < 0, 0.8 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+
+        mask = (self.mask < cond).float()  # batch * total_quantile
+
+        cur_z = self.critic(state, action)
+        critic_loss = quantile_huber_loss_f(cur_z, target, mask)
+
+        # --- Update ---
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # --- Policy and alpha loss ---
+        actor_loss = (- self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)).mean()
+        if self.total_it % 2 == 0:
+
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        self.total_it += 1
+
+        return critic_loss.item(), actor_loss.item()
+
+
+    def train_policy_quantile_with_uncertainty_v5(self, memory, batch_size, kd_trees):
+        state, action, next_state, reward, not_done = memory.sample(batch_size)
+
+        with torch.no_grad():
+            # get policy action
+            new_next_action = self.actor_target(next_state)
+
+            # compute and cut quantiles at the next state
+            next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
+            sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
+            target = reward + not_done * self.discount * (sorted_z)
+
+            #next_state_batch_np = next_state.cpu().numpy()
+            #next_action_batch_np = new_next_action.detach().cpu().numpy()
+            #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
+            query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
+
+            #tree_index = np.random.choice(len(kd_trees))
+            # kd_tree = kd_trees[tree_index]
+
+            # target_distance = kd_tree.query(query_data, k=1)[0]
+            # target_distance = torch.FloatTensor(target_distance).to(self.device)
+
+            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 150 + 200
+
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+
+        # Get current Q estimates
+
+        # mask calculation
+        # cond = torch.where(target_distance - 0.25 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        # cond = torch.where(target_distance - 0.15 < 0, 0.8 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+
+        mask = (self.mask < cond).float()  # batch * total_quantile
+
+        cur_z = self.critic(state, action)
+        critic_loss = quantile_huber_loss_f(cur_z, target, mask)
+
+        # --- Update ---
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # --- Policy and alpha loss ---
+        actor_loss = (- self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)).mean()
+        if self.total_it % 2 == 0:
+
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        self.total_it += 1
+
+        return critic_loss.item(), actor_loss.item()
+
+
+    def train_policy_quantile_with_uncertainty_v6(self, memory, batch_size, kd_trees):
+        state, action, next_state, reward, not_done = memory.sample(batch_size)
+
+        with torch.no_grad():
+            # get policy action
+            new_next_action = self.actor_target(next_state)
+
+            # compute and cut quantiles at the next state
+            next_z = self.critic_target(next_state, new_next_action)  # batch x nets x quantiles
+            sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
+            target = reward + not_done * self.discount * (sorted_z)
+
+            #next_state_batch_np = next_state.cpu().numpy()
+            #next_action_batch_np = new_next_action.detach().cpu().numpy()
+            #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
+            #query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
+
+            #tree_index = np.random.choice(len(kd_trees))
+            # kd_tree = kd_trees[tree_index]
+
+            # target_distance = kd_tree.query(query_data, k=1)[0]
+            # target_distance = torch.FloatTensor(target_distance).to(self.device)
+
+            #target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            #cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 150 + 200
+            cond = 125
+            # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
+
+        # Get current Q estimates
+
+        # mask calculation
+        # cond = torch.where(target_distance - 0.25 > 0, 0.0 * self.quantiles_total * self.base_tensor, 0.2 * self.quantiles_total * self.base_tensor)  # batch * 1
+        # cond = torch.where(target_distance - 0.15 < 0, 0.8 * self.quantiles_total * self.base_tensor, cond)  # batch * 1
+
+        mask = (self.mask < cond).float()  # batch * total_quantile
+
+        cur_z = self.critic(state, action)
+        critic_loss = quantile_huber_loss_f(cur_z, target, mask)
+
+        # --- Update ---
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # --- Policy and alpha loss ---
+        actor_loss = (- self.critic(state, self.actor(state)).mean(2).mean(1, keepdim=True)).mean()
+        if self.total_it % 2 == 0:
+
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            self.actor_optimizer.step()
+
+            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
+
+        self.total_it += 1
+
+        return critic_loss.item(), actor_loss.item()
+
 
 def quantile_huber_loss_f(quantiles, samples, mask=None):
     pairwise_delta = samples[:, None, None, :] - quantiles[:, :, :, None]  # batch x nets x quantiles x samples

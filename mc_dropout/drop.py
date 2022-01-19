@@ -4,7 +4,7 @@ from torch.nn import functional as F
 
 import numpy as np
 #from rlkit.policies.base import Policy
-from rlkit.torch import pytorch_util as ptu
+from uncertainty_demo import pytorch_util as ptu
 
 def identity(x):
     return x

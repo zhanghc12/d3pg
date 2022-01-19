@@ -303,8 +303,11 @@ class EnsembleDynamicsModel():
             os.makedirs(os.path.dirname(filename))
         torch.save(self.ensemble_model.state_dict(), filename + "_mbpo_model")
 
-    def load(self, filename):
-        self.ensemble_model.load_state_dict(torch.load(filename + "_mbpo_model"))
+    def load(self, filename, load_cpu=False):
+        if load_cpu:
+            self.ensemble_model.load_state_dict(torch.load(filename + "_mbpo_model", map_location=torch.device('cpu')))
+        else:
+            self.ensemble_model.load_state_dict(torch.load(filename + "_mbpo_model"))
 
 
     def _save_state(self, idx):

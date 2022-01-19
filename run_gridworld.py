@@ -5,8 +5,11 @@ from duelingpg.utils import ReplayBuffer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
-from uncertainty_demo.darl import build_tree, get_uncertainty
+from uncertainty_demo import darl
 import os
+from uncertainty_demo import mc_dropout
+from uncertainty_demo import mopo
+
 
 seed = 4
 torch.manual_seed(seed)
@@ -64,7 +67,7 @@ next_observations = replay_buffer.next_state[:replay_buffer.ptr, :]
 not_done = replay_buffer.not_done[:replay_buffer.ptr, :]
 reward = replay_buffer.reward[:replay_buffer.ptr, :]
 
-save = True
+save = False
 load = not save
 dirname = ''
 
@@ -75,7 +78,10 @@ else:
     dirname = './tmp/data/zhanghc/maze/maze.npy'
 """
 
-dirname = '/tmp/data/zhanghc/maze/maze.npy'
+# dirname = '/tmp/data/zhanghc/maze/maze.npy'
+
+dirname = '/Users/peixiaoqi/icml2022/maze.npy'
+
 if save:
     if not os.path.exists(os.path.dirname(dirname)):
         os.makedirs(os.path.dirname(dirname))
@@ -102,25 +108,86 @@ xx, yy = np.meshgrid(x_lin, y_lin)
 X_grid = np.column_stack([xx.flatten(), yy.flatten()])
 
 alg = 'darl'
+alg = 'mc_dropout'
+alg = 'vae'
+alg = 'mopo'
 
 if alg == 'darl':
-    feature_nn, tree = build_tree(post_observations, actions)
+    feature_nn, tree = darl.build_tree(post_observations, actions)
     with torch.no_grad():
-        confidence = get_uncertainty(X_grid[:,:1], X_grid[:,1:], feature_nn, tree)
+        confidence = darl.get_uncertainty(X_grid[:,:1], X_grid[:,1:], feature_nn, tree)
 
     z = confidence.reshape(xx.shape)
     z = 1 - z.clip(0,0.2)
 
+    plt.figure()
+    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+
+    data = np.concatenate([post_observations, actions], axis=1)
+    np.random.shuffle(data)
+    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
+
+    plt.show()
+
 if alg == 'mc_dropout':
     # now we start to train the mc dropout or mopo
     z = 1
+    qf1, qf2, vae_policy = mc_dropout.build_network(1, 1, '/Users/peixiaoqi/icml2022/gridworld')
+    with torch.no_grad():
+        confidence = mc_dropout.get_uncertainty(X_grid[:,:1], X_grid[:,1:], qf1, qf2, vae_policy)
+    z = confidence.reshape(xx.shape)
 
-plt.figure()
-plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+    #z = 1 - z
+    #z = np.zeros_like(z)
 
-data = np.concatenate([post_observations, actions], axis=1)
-np.random.shuffle(data)
-plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+    plt.figure()#facecolor='#F1D511')
+    #fig = plt.gcf()
+    # fig.set_facecolor('#F1D511')
+    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
 
-plt.show()
+    data = np.concatenate([post_observations, actions], axis=1)
+    np.random.shuffle(data)
+    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
+
+    plt.show()
+
+if alg == 'vae':
+    # now we start to train the mc dropout or mopo
+    z = 1
+    qf1, qf2, vae_policy = mc_dropout.build_network(1, 1, '/Users/peixiaoqi/icml2022/gridworld')
+    with torch.no_grad():
+        confidence = mc_dropout.get_uncertainty(X_grid[:,:1], X_grid[:,1:], qf1, qf2, vae_policy, use_vae=True)
+    z = confidence.reshape(xx.shape)
+    z = - z
+    #z = z
+
+
+    plt.figure()
+    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+
+    data = np.concatenate([post_observations, actions], axis=1)
+    np.random.shuffle(data)
+    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+
+    plt.show()
+
+if alg == 'mopo':
+    # now we start to train the mc dropout or mopo
+    z = 1
+    ensemble_model = mopo.build_model('/Users/peixiaoqi/icml2022/gridworld_')
+    with torch.no_grad():
+        confidence = mopo.get_uncertainty(ensemble_model, X_grid[:,:1], X_grid[:,1:])
+    z = confidence.reshape(xx.shape)
+    z = - z
+    #z = z
+
+
+    plt.figure()
+    plt.contourf(x_lin, y_lin, z, 10, cmap='cividis')
+
+    data = np.concatenate([post_observations, actions], axis=1)
+    np.random.shuffle(data)
+    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+
+    plt.show()
 
