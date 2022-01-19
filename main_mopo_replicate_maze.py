@@ -238,6 +238,7 @@ def main(args=None):
     # observations = dataset.item()['observations']
     # actions = dataset.item()['actions']
 
+    print('loaded')
     obs_mean, obs_std = load(dataset, replay_buffer)
 
     # Evaluate untrained policy
