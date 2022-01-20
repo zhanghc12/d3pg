@@ -884,7 +884,7 @@ class TD3(object):
             #next_state_batch_np = next_state.cpu().numpy()
             #next_action_batch_np = new_next_action.detach().cpu().numpy()
             #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
-            query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            #query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
             # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
 
             #tree_index = np.random.choice(len(kd_trees))
@@ -893,9 +893,9 @@ class TD3(object):
             # target_distance = kd_tree.query(query_data, k=1)[0]
             # target_distance = torch.FloatTensor(target_distance).to(self.device)
 
-            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
-            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 125 + 150
-
+            #target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            #cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 125 + 150
+            cond = 100
             # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
 
         # Get current Q estimates
@@ -948,7 +948,7 @@ class TD3(object):
             #next_state_batch_np = next_state.cpu().numpy()
             #next_action_batch_np = new_next_action.detach().cpu().numpy()
             #query_data = np.concatenate([next_state_batch_np, next_action_batch_np], axis=1)
-            query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
+            #query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
             # query_data = torch.cat([next_state, new_next_action], dim=1).detach().cpu().numpy()
 
             #tree_index = np.random.choice(len(kd_trees))
@@ -957,9 +957,9 @@ class TD3(object):
             # target_distance = kd_tree.query(query_data, k=1)[0]
             # target_distance = torch.FloatTensor(target_distance).to(self.device)
 
-            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
-            cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 150 + 200
-
+            #target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            #cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 150 + 200
+            cond = 50
             # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
 
         # Get current Q estimates
@@ -1024,7 +1024,7 @@ class TD3(object):
             #target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
             #cond = -torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 150 + 200
             # cond = 125
-            cond = 225
+            cond = 25
 
             # target_flag = torch.FloatTensor(target_distance < self.mean_distance).to(self.device)
 
