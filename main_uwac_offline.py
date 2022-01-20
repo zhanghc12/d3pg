@@ -61,9 +61,9 @@ def predict_uncertainty(qf1, qf2, vae, state_batch, action_batch):
     # now put vae forward
     # print(weight.shape)
 
-    sampled_actions, raw_sampled_actions = vae.decode_multiple(state_batch, num_decode=100, device=device)
-    distance = (raw_sampled_actions - action_batch.unsqueeze(1).repeat(1, 100, 1)) ** 2
-    weight = torch.mean(torch.mean(distance, dim=1), dim=1).detach().cpu().numpy()
+    #sampled_actions, raw_sampled_actions = vae.decode_multiple(state_batch, num_decode=100, device=device)
+    #distance = (raw_sampled_actions - action_batch.unsqueeze(1).repeat(1, 100, 1)) ** 2
+    #weight = torch.mean(torch.mean(distance, dim=1), dim=1).detach().cpu().numpy()
     # print(weight.shape)
 
     return weight
