@@ -477,7 +477,7 @@ if __name__ == "__main__":
         phi_list = []
         size = 1
         for _ in range(size):
-            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, dim).to(device))
+            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, args.dim).to(device))
             phi_list.append([])
         replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
         offline_dataset = d4rl.qlearning_dataset(env)
