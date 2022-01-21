@@ -427,6 +427,7 @@ if __name__ == "__main__":
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
+    parser.add_argument("--dim", type=int, default=9)
 
 
     args = parser.parse_args()
@@ -476,7 +477,7 @@ if __name__ == "__main__":
         phi_list = []
         size = 1
         for _ in range(size):
-            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, 9).to(device))
+            feature_nns.append(FeatureExtractorV4(state_dim, action_dim, 256, dim).to(device))
             phi_list.append([])
         replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
         offline_dataset = d4rl.qlearning_dataset(env)
