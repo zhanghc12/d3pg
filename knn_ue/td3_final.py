@@ -128,7 +128,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -155,7 +155,7 @@ class TD3(object):
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, 9).to(device)
+        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, output_dim).to(device)
 
         self.drop_quantile_bc = drop_quantile_bc
         #upper_bound = 0.01
