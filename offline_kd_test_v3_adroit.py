@@ -405,7 +405,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="sf")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
     #parser.add_argument("--env", default="hopper-medium-replay-v2")  # OpenAI gym environment name
-    parser.add_argument("--env", default="pen-human-v0")  # OpenAI gym environment name
+    parser.add_argument("--env", default="pen-cloned-v0")  # OpenAI gym environment name
 
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--eval_freq", default=1e3, type=int)  # How often (time steps) we evaluate
@@ -427,7 +427,7 @@ if __name__ == "__main__":
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
-    parser.add_argument("--dim", type=int, default=20)
+    parser.add_argument("--dim", type=int, default=6)
 
 
     args = parser.parse_args()
