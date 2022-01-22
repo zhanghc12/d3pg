@@ -83,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
-    parser.add_argument("--output_dim", type=int, default=6)
+    parser.add_argument("--output_dim", type=int, default=20)
 
 
     args = parser.parse_args()
@@ -120,11 +120,7 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    drop_quantile_bc = 0
-    if args.env.startswith('walker2d'):
-        drop_quantile_bc = 2 * args.n_nets
-    elif args.env.startswith('hopper'):
-        drop_quantile_bc = 5 * args.n_nets
+    drop_quantile_bc = 20
 
     policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim)
 
