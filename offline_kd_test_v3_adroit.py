@@ -427,7 +427,7 @@ if __name__ == "__main__":
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
-    parser.add_argument("--dim", type=int, default=9)
+    parser.add_argument("--dim", type=int, default=20)
 
 
     args = parser.parse_args()
