@@ -23,9 +23,9 @@ plt.subplot(1,2,1)
 labels = ['HC-r', 'HC-m', 'HC-mr', 'HC-me', 'HC-e',
           'Hop-r', 'Hop-m', 'Hop-mr', 'Hop-me', 'Hop-e',
           'W-r', 'W-m', 'W-mr', 'W-me', 'W-e',]
-data = [17.2, 17.4, 18.4, -10.7, -0.2,
-18.6, -3.7, 31.4, -3.4, -2.4,
-        21.8, 1.0, 69.8, 0.2, 0.1, ]
+data = [17.3, 17.4, 18.4, -3.2, -5.6,
+18.7, -3.7, 31.4, -3.4, -2.4,
+        21.8, 1.0, 69.8, 0.3, 0.1, ]
 
 
 plt.bar(labels, data)
@@ -33,7 +33,7 @@ plt.ylim(-30, 30)
 plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)
-plt.title('TD3BC w/ adaptive-actor', fontsize=fontsize)
+plt.title('TD3BC w/ adaptive critics', fontsize=fontsize)
 
 plt.subplot(1,2,2)
 labels = ['HC-r', 'HC-m', 'HC-mr', 'HC-me', 'HC-e',
@@ -41,15 +41,15 @@ labels = ['HC-r', 'HC-m', 'HC-mr', 'HC-me', 'HC-e',
           'W-r', 'W-m', 'W-mr', 'W-me', 'W-e',]
 
 
-data = [-1.0, 9.9, 4.0, -1.6, -0.8,
-18, 21.9, 8.14, 0.1, 0.1,
-        4.8, -0.8, 29.1, 5.0, 4.0 ]
+data = [16.1, 17.6, 6.1, -0.8, -0.8,
+18.1, 32.0, 16.8, 0.0, 0.7,
+        4.8, 1.2, 29.1, 5.7, 6.2 ]
 plt.bar(labels, data)
 plt.ylim(-30, 30)
 # plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)
-plt.title('TD3BC w/ adaptive-critics', fontsize=fontsize)
+plt.title('TD3BC w/ adaptive actor', fontsize=fontsize)
 
 plt.show()
 
