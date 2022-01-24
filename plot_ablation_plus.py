@@ -29,7 +29,7 @@ data = [17.3, 17.4, 18.4, -3.2, -5.6,
 
 
 plt.bar(labels, data)
-plt.ylim(-30, 30)
+plt.ylim(-10, 40)
 plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)
@@ -45,7 +45,7 @@ data = [16.1, 17.6, 6.1, -0.8, -0.8,
 18.1, 32.0, 16.8, 0.0, 0.7,
         4.8, 1.2, 29.1, 5.7, 6.2 ]
 plt.bar(labels, data)
-plt.ylim(-30, 30)
+plt.ylim(-10, 40)
 # plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)

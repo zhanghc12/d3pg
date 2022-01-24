@@ -110,9 +110,15 @@ X_grid = np.column_stack([xx.flatten(), yy.flatten()])
 alg = 'darl'
 alg = 'mc_dropout'
 alg = 'vae'
-alg = 'mopo'
+#alg = 'mopo'
 
-if alg == 'darl':
+fig, axes = plt.subplots(2, 2, figsize=(20, 20))
+axes = axes.reshape(-1)
+fontsize = 44
+
+if True:
+    #plt.subplot(2, 2, 4)
+
     feature_nn, tree = darl.build_tree(post_observations, actions)
     with torch.no_grad():
         confidence = darl.get_uncertainty(X_grid[:,:1], X_grid[:,1:], feature_nn, tree)
@@ -120,17 +126,21 @@ if alg == 'darl':
     z = confidence.reshape(xx.shape)
     z = 1 - z.clip(0,0.2)
 
-    plt.figure()
-    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+    # plt.figure()
+    axes[3].contourf(x_lin, y_lin, z, 4, cmap='cividis')
 
     data = np.concatenate([post_observations, actions], axis=1)
     np.random.shuffle(data)
-    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
+    axes[3].scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
 
-    plt.show()
+    axes[3].set_title('Our method', fontsize=fontsize)
 
-if alg == 'mc_dropout':
+    # plt.show()
+
+if True:
     # now we start to train the mc dropout or mopo
+    #plt.subplot(2, 2, 3)
+
     z = 1
     qf1, qf2, vae_policy = mc_dropout.build_network(1, 1, '/Users/peixiaoqi/icml2022/gridworld', version=33)
     with torch.no_grad():
@@ -140,19 +150,22 @@ if alg == 'mc_dropout':
     z = 1 - z
     #z = np.zeros_like(z)
 
-    plt.figure()#facecolor='#F1D511')
+    #plt.figure()#facecolor='#F1D511')
     #fig = plt.gcf()
     # fig.set_facecolor('#F1D511')
-    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+    axes[0].contourf(x_lin, y_lin, z, 4, cmap='cividis')
 
     data = np.concatenate([post_observations, actions], axis=1)
     np.random.shuffle(data)
-    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
+    axes[0].scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')  # marker='x')# , s=12)
+    axes[0].set_title('MC Dropout', fontsize=fontsize)
 
-    plt.show()
+    # plt.show()
 
-if alg == 'vae':
+if True:
     # now we start to train the mc dropout or mopo
+    #plt.subplot(2, 2, 2)
+
     z = 1
     qf1, qf2, vae_policy = mc_dropout.build_network(1, 1, '/Users/peixiaoqi/icml2022/gridworld', version=9)
     with torch.no_grad():
@@ -162,16 +175,19 @@ if alg == 'vae':
     #z = z
 
 
-    plt.figure()
-    plt.contourf(x_lin, y_lin, z, 4, cmap='cividis')
+    #plt.figure()
+    axes[2].contourf(x_lin, y_lin, z, 4, cmap='cividis')
 
     data = np.concatenate([post_observations, actions], axis=1)
     np.random.shuffle(data)
-    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+    axes[2].scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+    axes[2].set_title('VAE', fontsize=fontsize)
 
-    plt.show()
+    #plt.show()
 
-if alg == 'mopo':
+if True:
+    #plt.subplot(2, 2, 1)
+
     # now we start to train the mc dropout or mopo
     z = 1
     ensemble_model = mopo.build_model('/Users/peixiaoqi/icml2022/gridworld_', version=500)
@@ -182,12 +198,13 @@ if alg == 'mopo':
     #z = z
 
 
-    plt.figure()
-    plt.contourf(x_lin, y_lin, z, 10, cmap='cividis')
+    # plt.figure()
+    axes[1].contourf(x_lin, y_lin, z, 10, cmap='cividis')
 
     data = np.concatenate([post_observations, actions], axis=1)
     np.random.shuffle(data)
-    plt.scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+    axes[1].scatter(data[:5000, 0], data[:5000, 1], marker='.', s=20, c='#EA7F45')#marker='x')# , s=12)
+    axes[1].set_title('Model Ensemble', fontsize=fontsize)
 
-    plt.show()
+plt.show()
 
