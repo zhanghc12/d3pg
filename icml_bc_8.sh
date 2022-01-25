@@ -20,20 +20,3 @@ CUDA_VISIBLE_DEVICES=6 python offline_kd_td3bc.py --policy TQC  --version 1  --b
 
 
 
-halfcheetah-random 3
-halfcheetah-medium
-halfcheetah-medium-replay
-halfcheetah-medium-expert
-halfcheetahr-expert
-
-hopper-random
-hopper-medium
-hopper-medium-replay
-hopper-medium-expert
-hopper-expert
-
-walker2d-random
-walker2d-medium
-walker2d-medium-replay
-walker2d-medium-expert
-walker2d-expert
