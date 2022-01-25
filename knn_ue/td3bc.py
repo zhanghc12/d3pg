@@ -153,6 +153,6 @@ class TD3(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return critic_loss.item(), actor_loss.item()
+        return critic_loss.item(), 0
 
 
