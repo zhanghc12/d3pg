@@ -138,7 +138,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     for t in range(int(args.max_timesteps)):
-        critic_loss, actor_loss = policy.train(replay_buffer, args.batch_size, ')
+        critic_loss, actor_loss = policy.train(replay_buffer, args.batch_size, '')
         #    raise NotImplementedError
 
         if t % 100 == 0:
