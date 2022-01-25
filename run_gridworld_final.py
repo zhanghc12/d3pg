@@ -112,7 +112,7 @@ alg = 'mc_dropout'
 alg = 'vae'
 #alg = 'mopo'
 
-fig, axes = plt.subplots(2, 2, figsize=(20, 20))
+fig, axes = plt.subplots(2, 2, figsize=(20, 15))
 axes = axes.reshape(-1)
 fontsize = 44
 
