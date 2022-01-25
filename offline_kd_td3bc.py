@@ -126,7 +126,7 @@ if __name__ == "__main__":
     elif args.env.startswith('hopper'):
         drop_quantile_bc = 5 * args.n_nets
 
-    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim)
+    policy = td3bc.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
@@ -135,70 +135,10 @@ if __name__ == "__main__":
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
 
-    kdtree_path = experiment_dir + 'kdtree/critic' + args.env
-    iid_list_path = experiment_dir + 'kdtree/iid_list' + args.env
-
-    print(kdtree_path)
-
-    trees = []
-    # split the tree via smaples
-    #data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
-    #np.random.shuffle(data)
-    '''
-    for i in range(len(data) // 200000):
-        if (i+2)*200000 > len(data):
-            tree = KDTree(data[i*200000: len(data)], leaf_size=40)
-            trees.append(tree)
-        elif (i+1)*200000 > len(data):
-            pass
-        else:
-            tree = KDTree(data[i*200000: (i+1)*200000], leaf_size=40)
-            trees.append(tree)
-    print('len data:{}, size of tree: {}'.format(len(data), len(trees)))
-    '''
-
-
-    data = np.concatenate([replay_buffer.state, replay_buffer.action], axis=1)
-    if not torch.cuda.is_available():
-        data = data[:10000]
-    print('start build tree')
-    i = 0
-    batch_size = 2560
-    phi_list = []
-    i = 0
-    while i + batch_size < replay_buffer.size:
-        print(i)
-        index = np.arange(i, i + batch_size)
-        state_batch, action_batch = replay_buffer.sample_by_index(ind=index)
-        phi = policy.feature_nn(state_batch, action_batch)
-        phi_list.extend(phi.detach().cpu().numpy())
-        i += batch_size
-    index = np.arange(i, replay_buffer.size)
-    state_batch, action_batch = replay_buffer.sample_by_index(ind=index)
-    phi = policy.feature_nn(state_batch, action_batch)
-    phi_list.extend(phi.detach().cpu().numpy())
-
-    trees = KDTree(np.array(phi_list), leaf_size=40)
-
-    '''
-    if not args.loading:
-        print('save tree')
-        if not os.path.exists(os.path.dirname(kdtree_path)):
-            os.makedirs(kdtree_path)
-        with open(kdtree_path, 'wb') as f:
-            pickle.dump(tree, f)
-        iid_list = knn_utils.test_tree(replay_buffer, tree, k=args.k)
-        with open(iid_list_path, 'wb') as f:
-            np.save(f, np.array(iid_list))
-    partion_num = np.int32((50000 * 0.5))
-    quantile_distance = np.array(iid_list)[np.argpartition(iid_list, partion_num)][partion_num]
-    print(quantile_distance)
-    policy.get_stat(quantile_distance)
-    '''
     start_time = time.time()
 
     for t in range(int(args.max_timesteps)):
-        critic_loss, actor_loss = policy.train(replay_buffer, args.batch_size, trees)
+        critic_loss, actor_loss = policy.train(replay_buffer, args.batch_size, ')
         #    raise NotImplementedError
 
         if t % 100 == 0:
