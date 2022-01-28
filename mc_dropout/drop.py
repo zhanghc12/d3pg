@@ -224,6 +224,17 @@ class Dropout_Mlp(nn.Module):
         else:
             return output
 
+    def get_feature(self, input, return_preactivations=False):
+        h = input
+        for i, fc in enumerate(self.fcs):
+            h = fc(h)
+            if self.layer_norm and i < len(self.fcs) - 1:
+                h = self.layer_norms[i](h)
+            h = self.hidden_activation(h)
+            # h = F.dropout(h, p=self.drop_rate)
+
+        return h
+
 
 class FlattenDropout_Mlp(Dropout_Mlp):
     """

@@ -17,7 +17,7 @@ def to_percent(temp, position):
 
 fig, axes = plt.subplots(1, 2, figsize=(20, 6.5))
 
-fontsize = 30
+fontsize = 40
 
 plt.subplot(1,2,1)
 labels = ['HC-r', 'HC-m', 'HC-mr', 'HC-me', 'HC-e',
@@ -33,7 +33,7 @@ plt.ylim(-10, 40)
 plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)
-plt.title('TD3BC w/ adaptive critics', fontsize=fontsize)
+plt.title('N-DARL w/ adaptive critics', fontsize=fontsize)
 
 plt.subplot(1,2,2)
 labels = ['HC-r', 'HC-m', 'HC-mr', 'HC-me', 'HC-e',
@@ -49,7 +49,7 @@ plt.ylim(-10, 40)
 # plt.ylabel('Percentage Difference', fontsize=fontsize)
 plt.xticks(rotation=90, fontsize=25)
 plt.yticks(fontsize=25)
-plt.title('TD3BC w/ adaptive actor', fontsize=fontsize)
+plt.title('N-DARL w/ adaptive actor', fontsize=fontsize)
 
 plt.show()
 

@@ -95,7 +95,7 @@ for k, all_names_per_version in enumerate(all_names):
 
 axes[0].set_xlabel('Iterations', fontsize=fontsize)
 axes[0].set_ylabel('Return', fontsize=fontsize)
-axes[0].set_title(env_name, fontsize=fontsize)
+axes[0].set_title(env_name, fontsize=30)
 
 
 
@@ -157,7 +157,7 @@ for k, all_names_per_version in enumerate(all_names):
     # base_data[i] = seg_data
 axes[1].set_xlabel('Iterations', fontsize=fontsize)
 axes[1].set_ylabel('Return', fontsize=fontsize)
-axes[1].set_title(env_name2, fontsize=fontsize)
+axes[1].set_title(env_name2, fontsize=30)
 
 
 fig.legend(le, line_labels, fontsize=22, loc="upper center", ncol=5)
