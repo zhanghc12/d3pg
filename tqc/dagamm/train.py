@@ -1,31 +1,7 @@
-import numpy as np
-import torch
-
-import matplotlib.pyplot as plt
-import pandas as pd
-
-from tqc.dagamm.preprocess import get_KDDCup99
-import env_gridworld
-import gym
-import numpy as np
-from duelingpg.utils import ReplayBuffer
-import matplotlib.pyplot as plt
-import seaborn as sns
-import torch
 from uncertainty_demo import darl2
-import os
-from uncertainty_demo import mc_dropout
-from uncertainty_demo import mopo
-from offline_kd_test_v3 import FeatureExtractorV6
 import torch
-from sklearn.neighbors import KDTree
 import numpy as np
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-#from test import eval
-
-#labels, scores = eval(dagmm.model, data, device, args.n_gmm)
 
 data_dir='./kdd_cup.npz'
 data = np.load(data_dir, allow_pickle=True)
@@ -52,7 +28,6 @@ anomalous_data = features[labels == 1][0:1000]
 test_data = np.concatenate((anomalous_data, normal_data_test), axis=0)
 # test_label = np.concatenate((anomalous_labels, normal_labels_test), axis=0)
 
-
 print(data)
 ''
 # now get the in distribution
@@ -62,8 +37,10 @@ print('tree built')
 with torch.no_grad():
     confidence = darl2.get_uncertainty(test_data, feature_nn, tree)
 print(confidence)
+
+np.save('./tqc/dagmm/confidence.npy',confidence)
 # get confidence, then predict confidence
 # then find the best f1 or other thing
 # z = confidence.reshape(xx.shape)
-z = 1 - confidence.clip(0, 0.2)
+# z = 1 - confidence.clip(0, 0.2)
 
