@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 pred = np.load('confidence.npy')
 pred = (pred > args.thre).astype(int)
-labels_test = np.concatenate([np.ones((198372, 1)), 0 * np.ones((97278, 1))], axis=0)
+labels_test = np.concatenate([np.ones((97278, 1)), 0 * np.ones((198372, 1))], axis=0)
 gt = labels_test.astype(int)
 precision, recall, f_score, _ = prf(gt, pred, average='binary')
 print("Precision : {:0.4f}, Recall : {:0.4f}, F-score : {:0.4f}".format(precision, recall, f_score))
