@@ -5,13 +5,13 @@ import numpy as np
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def build_tree(state, dim=9): # note, state and action is numpy
+def build_tree(state, dim=10): # note, state and action is numpy
     state_dim = state.shape[1]
-    feature_nn = FeatureExtractorV6(state_dim, 256, 10).to(device)
+    feature_nn = FeatureExtractorV6(state_dim, 256, dim).to(device)
 
     size = state.shape[0]
     i = 0
-    batch_size = 2560
+    batch_size = 256
     phi_list = []
 
     while i + batch_size < size:
