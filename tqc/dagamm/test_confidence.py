@@ -1,9 +1,15 @@
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import precision_recall_fscore_support as prf, accuracy_score
+import argparse
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--thre", default=1e-5, type=float)  # Policy name (TD3, DDPG or OurDDPG, Dueling)
+args = parser.parse_args()
 
 pred = np.load('confidence.npy')
-pred = (pred > 1e-5).astype(int)
+pred = (pred > args.thre).astype(int)
 labels_test = np.concatenate([np.ones((1000, 1)), 0 * np.ones((1000, 1))], axis=0)
 gt = labels_test.astype(int)
 precision, recall, f_score, _ = prf(gt, pred, average='binary')
