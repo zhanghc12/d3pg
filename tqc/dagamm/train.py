@@ -25,9 +25,9 @@ train_label = normal_labels[ixs[:n_train]]
 anomalous_data = features[labels == 1]
 
 print(len(normal_data_test), len(anomalous_data))
-
-normal_data_test = normal_data_test[0:1000]
-anomalous_data = anomalous_data[0:1000]
+# 198372 97278
+normal_data_test = normal_data_test[0:50000]
+anomalous_data = anomalous_data[0:50000]
 
 # anomalous_labels = labels[labels == 1][0:1000]
 test_data = np.concatenate((anomalous_data, normal_data_test), axis=0)
