@@ -27,7 +27,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #labels, scores = eval(dagmm.model, data, device, args.n_gmm)
 
-data_dir='/Users/peixiaoqi/Downloads/kdd_cup.npz'
+data_dir='./kdd_cup.npz'
 data = np.load(data_dir, allow_pickle=True)
 
 labels = data["kdd"][:, -1]
