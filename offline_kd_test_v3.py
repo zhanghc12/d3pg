@@ -1,6 +1,6 @@
 import duelingpg.utils as utils
 import datetime
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 import pickle
 import torch
 import gym
@@ -117,6 +117,48 @@ class FeatureExtractor(nn.Module):
         w = F.relu(self.feature_l2(w))
 
         w = self.feature_l3(w)
+
+        return w
+
+    def init_layers(self):
+        for module in self.modules():
+            if isinstance(module, (nn.Conv1d, nn.Conv2d, nn.Linear)):
+                fan_in, fan_out = torch.nn.init._calculate_fan_in_and_fan_out(module.weight)
+                bound = 1. / (2. * math.sqrt(fan_in))
+                torch.nn.init.uniform_(module.weight, -0.03, 0.03)
+
+
+
+class FeatureExtractorV6(nn.Module):
+    def __init__(self, state_dim, hidden_dim=512, feat_dim=3):
+        super(FeatureExtractorV6, self).__init__()
+        self.state_dim = state_dim
+        # self.action_dim = action_dim
+        self.output_dim = 1
+        self.feat_dim = feat_dim
+        norm_bound = 10
+        n_power_iterations = 1
+
+        # first layer feature
+
+        self.feature_l1 = nn.Sequential(
+
+            nn.Linear(self.state_dim, 256),
+            ResBlock(256, 256),
+            ResBlock(256, 256),
+        )
+
+        self.feature_l2 = nn.Linear(hidden_dim, self.feat_dim)
+
+        # self.init_layers()
+    def forward(self, state):
+        # get successor feature of (state, action) pair: w(s,a): reward
+        # input = torch.cos(input)
+        w = F.relu(self.feature_l1(state))
+        # w = F.relu(self.feature_l2(w))
+        # w = F.relu(self.feature_l2(w))
+
+        w = self.feature_l2(w)
 
         return w
 
