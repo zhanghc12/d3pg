@@ -38,7 +38,7 @@ with torch.no_grad():
     confidence = darl2.get_uncertainty(test_data, feature_nn, tree)
 print(confidence)
 
-np.save('./tqc/dagmm/confidence.npy',confidence)
+np.save('./tqc/dagamm/confidence.npy',confidence)
 # get confidence, then predict confidence
 # then find the best f1 or other thing
 # z = confidence.reshape(xx.shape)
