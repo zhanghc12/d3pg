@@ -31,10 +31,6 @@ from duelingpg.utils import ReplayBuffer
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
-from uncertainty_demo import darl
-import os
-from uncertainty_demo import mc_dropout
-from uncertainty_demo import mopo
 
 def normalize(data):
     mean = np.mean(data, axis=0, keepdims=True)
