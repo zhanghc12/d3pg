@@ -15,9 +15,13 @@ def build_model(dirname, version=269):
 
 
 
-def get_uncertainty(model, obs, act):
+def get_uncertainty(model, obs, act, version=0):
     inputs = np.concatenate((obs, act), axis=-1)
     ensemble_model_means, ensemble_model_vars = model.predict(inputs)
+    if version == 0:
+        return np.mean(np.max(ensemble_model_vars, axis=0), axis=-1, keepdims=False) # net * batch_size * (state_dim + 1)
+    else:
+        return np.mean(np.mean((ensemble_model_means - np.mean(ensemble_model_means, axis=0, keepdims=True)) ** 2, axis=-1,
+                           keepdims=False), axis=0, keepdims=False)
 
-    return np.mean(np.max(ensemble_model_vars, axis=0), axis=-1, keepdims=False) # net * batch_size * (state_dim + 1)
 
