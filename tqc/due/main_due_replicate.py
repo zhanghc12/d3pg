@@ -137,7 +137,7 @@ def readParser():
 
     return parser.parse_args()
 
-def test_uncertainty(memory, model, likelihood, dirname, version, batch_size=2560):
+def test_uncertainty(memory, model, likelihood, batch_size=2560):
     i = 0
     iid_list = []
     ood_list1 = []
@@ -358,6 +358,8 @@ def main(args=None):
         model.eval()
         likelihood.eval()
 
+    test_uncertainty(replay_buffer, model, likelihood)
+
 def predict_uncertainty(model, likelihood, state, action):
     with torch.no_grad():  # , gpytorch.settings.num_likelihood_samples(64):
         # xx = torch.tensor(x_lin[..., None]).float()
@@ -369,8 +371,10 @@ def predict_uncertainty(model, likelihood, state, action):
         pred = model(xx)
 
         ol = likelihood(pred)
-        output = ol.mean.cpu()
-        output_std = ol.stddev.cpu()
+        output = ol.mean.cpu().numpy()
+        output = np.squeeze(output)
+        output_std = ol.stddev.cpu().numpy()
+        output_std = np.squeeze(output_std)
 
         return np.abs((action[:, 0] - output) / (output_std + 1e-3))
 
