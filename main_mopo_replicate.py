@@ -151,6 +151,7 @@ def test_uncertainty(memory, predict_env, dirname, version, batch_size=2560):
     size = memory.size
     # size = 20000
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    abnormal = [0, 0, 0, 0]
 
     print(memory.state_dim + memory.action_dim)
     while i + batch_size < size:
@@ -164,6 +165,19 @@ def test_uncertainty(memory, predict_env, dirname, version, batch_size=2560):
         ood_action_batch3 = np.clip(ood_action_batch3, -1, 1)
         ood_action_batch4 = action_batch + 1.0 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
+
+        d1 = np.mean(np.sqrt((ood_action_batch1 - action_batch) * (ood_action_batch1 - action_batch)), axis=-1)
+        abnormal[0] = abnormal[0] + np.sum((d1 > 0.1).astype(float))
+
+        d2 = np.mean(np.sqrt((ood_action_batch2 - action_batch) * (ood_action_batch2 - action_batch)), axis=-1)
+        abnormal[1] = abnormal[1] + np.sum((d2 > 0.1).astype(float))
+
+        d3 = np.mean(np.sqrt((ood_action_batch3 - action_batch) * (ood_action_batch3 - action_batch)), axis=-1)
+        abnormal[2] = abnormal[2] + np.sum((d3 > 0.1).astype(float))
+
+        d4 = np.mean(np.sqrt((ood_action_batch4 - action_batch) * (ood_action_batch4 - action_batch)), axis=-1)
+        abnormal[3] = abnormal[3] + np.sum((d4 > 0.1).astype(float))
+
 
         iid_distance = predict_env.predict_uncertainty(state_batch, action_batch)
         ood_distance1 = predict_env.predict_uncertainty(state_batch, ood_action_batch1)
@@ -203,6 +217,11 @@ def test_uncertainty(memory, predict_env, dirname, version, batch_size=2560):
     print("50%: ", iid_list[np.int32(len(iid_list)*0.5)], ood_list1[np.int32(len(ood_list1)*0.5)], ood_list2[np.int32(len(ood_list2)*0.5)], ood_list3[np.int32(len(ood_list3)*0.5)], ood_list4[np.int32(len(ood_list4)*0.5)])
     print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(ood_list1)*0.99)], ood_list2[np.int32(len(ood_list2)*0.99)], ood_list3[np.int32(len(ood_list3)*0.99)], ood_list4[np.int32(len(ood_list4)*0.99)])
     print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1], ood_list3[-1], ood_list4[-1])
+
+    print(np.sum((ood_list3 < ood_list2[np.int32(len(ood_list1)*0.5)]).astype(float)) / len(ood_list3), abnormal[2] / len(ood_list3))
+    print(np.sum((ood_list4 < ood_list2[np.int32(len(ood_list1)*0.5)]).astype(float)) / len(ood_list4), abnormal[3] / len(ood_list4))
+
+    print(abnormal)
 
     return iid_list
 
