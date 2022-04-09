@@ -348,12 +348,12 @@ def main(args=None):
 
     if args.test == 0:
         trainer.run(dl_train, max_epochs=epochs)
-        torch.save(model.state_dict(), 'due_m.pt')
-        torch.save(likelihood.state_dict(), 'due_l.pt')
+        torch.save(model.state_dict(), 'due' + args.env_name + '_m.pt')
+        torch.save(likelihood.state_dict(), 'due' + args.env_name + '_l.pt')
 
     if args.test == 1:
-        model.load_state_dict(torch.load('due_m.pt'))
-        likelihood.load_state_dict(torch.load('due_l.pt'))
+        model.load_state_dict(torch.load('due' + args.env_name + '_m.pt'))
+        likelihood.load_state_dict(torch.load('due' + args.env_name + '_l.pt'))
 
         model.eval()
         likelihood.eval()
