@@ -214,6 +214,9 @@ def test_uncertainty(memory, model, likelihood, batch_size=2560):
     print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(ood_list1)*0.99)], ood_list2[np.int32(len(ood_list2)*0.99)], ood_list3[np.int32(len(ood_list3)*0.99)], ood_list4[np.int32(len(ood_list4)*0.99)])
     print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1], ood_list3[-1], ood_list4[-1])
 
+    print(np.sum((ood_list3 < ood_list2[np.int32(len(ood_list1)*0.5)]).astype(float)) / len(ood_list3), abnormal[2] / len(ood_list3))
+    print(np.sum((ood_list4 < ood_list2[np.int32(len(ood_list1)*0.5)]).astype(float)) / len(ood_list4), abnormal[3] / len(ood_list4))
+
     print(abnormal)
     return iid_list
 
