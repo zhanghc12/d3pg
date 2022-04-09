@@ -348,12 +348,12 @@ def main(args=None):
 
     if args.test == 0:
         trainer.run(dl_train, max_epochs=epochs)
-        torch.save(model.state_dict(), 'due.pt')
-        torch.save(likelihood.state_dict(), 'due.pt')
+        torch.save(model.state_dict(), 'due_m.pt')
+        torch.save(likelihood.state_dict(), 'due_l.pt')
 
     if args.test == 1:
-        model.load_state_dict(torch.load('due.pt'))
-        likelihood.load_state_dict(torch.load('due.pt'))
+        model.load_state_dict(torch.load('due_m.pt'))
+        likelihood.load_state_dict(torch.load('due_l.pt'))
 
         model.eval()
         likelihood.eval()
@@ -372,7 +372,7 @@ def predict_uncertainty(model, likelihood, state, action):
         output = ol.mean.cpu()
         output_std = ol.stddev.cpu()
 
-        return (action[:, 0] - output) / output_std
+        return np.abs((action[:, 0] - output) / (output_std + 1e-3))
 
 if __name__ == '__main__':
     main()
