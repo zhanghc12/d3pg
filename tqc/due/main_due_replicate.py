@@ -24,9 +24,7 @@ from tqc.due.sngp import Laplace
 from tqc.due.fc_resnet import FCResNet
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-import env_gridworld
 import gym
 import numpy as np
 from duelingpg.utils import ReplayBuffer
@@ -144,8 +142,6 @@ def readParser():
     return parser.parse_args()
 
 def test_uncertainty(memory, model, likelihood, dirname, version, batch_size=2560):
-    predict_env.model.load(dirname + str(version))
-
     i = 0
     iid_list = []
     ood_list1 = []
@@ -252,6 +248,7 @@ def main(args=None):
 
     steps = 10e3
     epochs = steps // len(dl_train) + 1
+    epochs = args.num_epoch
     print(f"Training with datapoints for {epochs} epochs")
     input_dim = X_train.shape[1]
     features = 128
@@ -353,20 +350,17 @@ def main(args=None):
               f"Test Likelihood: {evaluator.state.metrics['loss']:.2f} - "
               f"Loss: {trainer.state.metrics['loss']:.2f}")
 
-    if args.test==0:
+    if args.test == 0:
         trainer.run(dl_train, max_epochs=epochs)
         torch.save(model.state_dict(), 'due.pt')
         torch.save(likelihood.state_dict(), 'due.pt')
 
-    if args.test==1:
+    if args.test == 1:
         model.load_state_dict(torch.load('due.pt'))
         likelihood.load_state_dict(torch.load('due.pt'))
 
         model.eval()
         likelihood.eval()
-
-
-
 
 def predict_uncertainty(model, likelihood, state, action):
     with torch.no_grad():  # , gpytorch.settings.num_likelihood_samples(64):
