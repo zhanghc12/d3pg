@@ -150,6 +150,7 @@ def test_uncertainty(memory, model, likelihood, batch_size=2560):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     print(memory.state_dim + memory.action_dim)
+    abnormal = [0, 0, 0, 0]
     while i + batch_size < size:
         index = np.arange(i, i+batch_size)
         state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
@@ -161,6 +162,18 @@ def test_uncertainty(memory, model, likelihood, batch_size=2560):
         ood_action_batch3 = np.clip(ood_action_batch3, -1, 1)
         ood_action_batch4 = action_batch + 1.0 * np.random.normal(0., 1., size=action_batch.shape)
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
+
+        d1 = np.mean(np.sqrt((ood_action_batch1 - action_batch) * (ood_action_batch1 - action_batch)), axis=-1)
+        abnormal[0] = abnormal[0] + np.sum(np.float(d1 > 0.1))
+
+        d2 = np.mean(np.sqrt((ood_action_batch2 - action_batch) * (ood_action_batch2 - action_batch)), axis=-1)
+        abnormal[1] = abnormal[1] + np.sum(np.float(d2 > 0.1))
+
+        d3 = np.mean(np.sqrt((ood_action_batch3 - action_batch) * (ood_action_batch3 - action_batch)), axis=-1)
+        abnormal[2] = abnormal[2] + np.sum(np.float(d3 > 0.1))
+
+        d4 = np.mean(np.sqrt((ood_action_batch4 - action_batch) * (ood_action_batch4 - action_batch)), axis=-1)
+        abnormal[3] = abnormal[3] + np.sum(np.float(d4 > 0.1))
 
         iid_distance = predict_uncertainty(model, likelihood, state_batch, action_batch)
         ood_distance1 = predict_uncertainty(model, likelihood, state_batch, ood_action_batch1)
@@ -201,6 +214,7 @@ def test_uncertainty(memory, model, likelihood, batch_size=2560):
     print("99%: ", iid_list[np.int32(len(iid_list)*0.99)], ood_list1[np.int32(len(ood_list1)*0.99)], ood_list2[np.int32(len(ood_list2)*0.99)], ood_list3[np.int32(len(ood_list3)*0.99)], ood_list4[np.int32(len(ood_list4)*0.99)])
     print("100%: ", iid_list[-1], ood_list1[-1], ood_list2[-1], ood_list3[-1], ood_list4[-1])
 
+    print(abnormal)
     return iid_list
 
 
