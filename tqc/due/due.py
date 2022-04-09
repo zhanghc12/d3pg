@@ -97,6 +97,8 @@ else:
 
 dirname = '/Users/peixiaoqi/icml2022/maze.npy'
 
+dirname = './tqc/due/maze.npy'
+
 if save:
     if not os.path.exists(os.path.dirname(dirname)):
         os.makedirs(os.path.dirname(dirname))
