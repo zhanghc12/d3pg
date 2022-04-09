@@ -95,9 +95,10 @@ else:
 
 # dirname = '/tmp/data/zhanghc/maze/maze.npy'
 
-dirname = '/Users/peixiaoqi/icml2022/maze.npy'
-
-dirname = './tqc/due/maze.npy'
+if torch.cuda.is_available():
+    dirname = './tqc/due/maze.npy'
+else:
+    dirname = '/Users/peixiaoqi/icml2022/maze.npy'
 
 if save:
     if not os.path.exists(os.path.dirname(dirname)):
@@ -142,7 +143,7 @@ X_train, y_train = x, y[:, 0]
 X_test, y_test = np.expand_dims(x_lin, 1), y_lin
 
 ds_train = torch.utils.data.TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(y_train).float())
-dl_train = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, shuffle=True, drop_last=True)
+dl_train = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, shuffle=False, drop_last=True)
 
 ds_test = torch.utils.data.TensorDataset(torch.from_numpy(X_test).float(), torch.from_numpy(y_test).float())
 dl_test = torch.utils.data.DataLoader(ds_test, batch_size=512, shuffle=False)
@@ -198,7 +199,7 @@ if torch.cuda.is_available():
     if DUE:
         likelihood = likelihood.cuda()
 
-lr = 1e-3
+lr = 1e-4
 
 parameters = [
     {"params": model.parameters(), "lr": lr},
