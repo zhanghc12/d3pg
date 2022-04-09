@@ -164,16 +164,16 @@ def test_uncertainty(memory, model, likelihood, batch_size=2560):
         ood_action_batch4 = np.clip(ood_action_batch4, -1, 1)
 
         d1 = np.mean(np.sqrt((ood_action_batch1 - action_batch) * (ood_action_batch1 - action_batch)), axis=-1)
-        abnormal[0] = abnormal[0] + np.sum(np.float(d1 > 0.1))
+        abnormal[0] = abnormal[0] + np.sum((d1 > 0.1).astype(float))
 
         d2 = np.mean(np.sqrt((ood_action_batch2 - action_batch) * (ood_action_batch2 - action_batch)), axis=-1)
-        abnormal[1] = abnormal[1] + np.sum(np.float(d2 > 0.1))
+        abnormal[1] = abnormal[1] + np.sum((d2 > 0.1).astype(float))
 
         d3 = np.mean(np.sqrt((ood_action_batch3 - action_batch) * (ood_action_batch3 - action_batch)), axis=-1)
-        abnormal[2] = abnormal[2] + np.sum(np.float(d3 > 0.1))
+        abnormal[2] = abnormal[2] + np.sum((d3 > 0.1).astype(float))
 
         d4 = np.mean(np.sqrt((ood_action_batch4 - action_batch) * (ood_action_batch4 - action_batch)), axis=-1)
-        abnormal[3] = abnormal[3] + np.sum(np.float(d4 > 0.1))
+        abnormal[3] = abnormal[3] + np.sum((d4 > 0.1).astype(float))
 
         iid_distance = predict_uncertainty(model, likelihood, state_batch, action_batch)
         ood_distance1 = predict_uncertainty(model, likelihood, state_batch, ood_action_batch1)
