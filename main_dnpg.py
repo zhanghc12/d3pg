@@ -55,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--version", default=1, type=int)
     parser.add_argument("--target_threshold", default=0.1, type=float)
     parser.add_argument("--num_critic", default=2, type=int)
+    parser.add_argument("--test", default=1, type=int)
 
     args = parser.parse_args()
 
@@ -177,7 +178,7 @@ if __name__ == "__main__":
 
 
         if torch.cuda.is_available():
-            if (t + 1) % 50000 == 0 and args.version == 0:
+            if (t + 1) % 50000 == 0 and args.version == 0 and args.test == 1:
                 utils.test_td(args.env, policy, onpolicy_buffer)
 
                 # evaluate state, observe difference
@@ -186,7 +187,7 @@ if __name__ == "__main__":
                 writer.add_scalar('value/train_v', value_train, t)
                 writer.add_scalar('value/diff_v', value_diff, t)
 
-            if (t + 1) % 50000 == 0 and args.version == 1:
+            if (t + 1) % 50000 == 0 and args.version == 1 and args.test == 1:
                 utils.test_mc(args.env, policy, onpolicy_buffer)
                 # evaluate state, observe difference
                 value_eval, value_train, value_diff = policy.eval_value(replay_buffer)
