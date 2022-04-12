@@ -173,7 +173,7 @@ class D3PG(object):
             next_action = self.actor_target(perturbed_next_state)
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
-            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q = target_Q1 # torch.min(target_Q1, target_Q2)
             target_Q = perturbed_reward + not_done * self.discount * target_Q
 
         # Get current Q estimates
