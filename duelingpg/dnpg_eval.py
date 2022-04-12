@@ -208,7 +208,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), 0, 0, 0, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), 0, 0, 0
 
     def save(self, filename):
         torch.save(self.critic.state_dict(), filename + "_critic")
