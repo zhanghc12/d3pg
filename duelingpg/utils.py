@@ -337,6 +337,7 @@ def test_td_cpu(env, policy, onpolicy_buffer):
     episode_step = 0
 
     while not done:
+        print(episode_step)
         episode_step += 1
         action = policy.select_action(np.array(state))
         next_state, reward, done, _ = eval_env.step(action)
@@ -378,6 +379,7 @@ def test_mc_cpu(env, policy, onpolicy_buffer):
     timesteps = []
 
     while not done:
+        print(episode_step)
         episode_step += 1
         action = policy.select_action(np.array(state))
         next_state, reward, done, _ = eval_env.step(action)
