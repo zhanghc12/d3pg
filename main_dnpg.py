@@ -19,17 +19,20 @@ def eval_policy(policy, env_name, seed, eval_episodes=10):
     eval_env.seed(seed + 100)
 
     avg_reward = 0.
+    avg_len = 0
     for _ in range(eval_episodes):
         state, done = eval_env.reset(), False
         while not done:
             action = policy.select_action(np.array(state))
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
+            avg_len += 1
 
     avg_reward /= eval_episodes
+    avg_len /= eval_episodes
 
     print("---------------------------------------")
-    print("Evaluation over {} episodes: {:.3f}".format(eval_episodes, avg_reward))
+    print("Evaluation over {} episodes: {:.3f}, episode length: {:.2f}".format(eval_episodes, avg_reward, avg_len))
     print("---------------------------------------")
     return avg_reward
 
