@@ -185,18 +185,21 @@ if __name__ == "__main__":
                 utils.test_td(args.env, policy, onpolicy_buffer)
 
                 # evaluate state, observe difference
-                value_eval, value_train, value_diff = policy.eval_value(replay_buffer)
-                writer.add_scalar('value/eval_v', value_eval, t)
-                writer.add_scalar('value/train_v', value_train, t)
-                writer.add_scalar('value/diff_v', value_diff, t)
+                value_eval, value_train, value_diff, value_ratio = policy.eval_value(replay_buffer)
+                writer.add_scalar('value/value_eval', value_eval, t)
+                writer.add_scalar('value/value_train', value_train, t)
+                writer.add_scalar('value/value_diff', value_diff, t)
+                writer.add_scalar('value/value_ratio', value_ratio, t)
+
 
             if (t + 1) % 50000 == 0 and args.version == 1 and args.test == 1:
                 utils.test_mc(args.env, policy, onpolicy_buffer)
                 # evaluate state, observe difference
-                value_eval, value_train, value_diff = policy.eval_value(replay_buffer)
-                writer.add_scalar('value/eval_v', value_eval, t)
-                writer.add_scalar('value/train_v', value_train, t)
-                writer.add_scalar('value/diff_v', value_diff, t)
+                value_eval, value_train, value_diff, value_ratio = policy.eval_value(replay_buffer)
+                writer.add_scalar('value/value_eval', value_eval, t)
+                writer.add_scalar('value/value_train', value_train, t)
+                writer.add_scalar('value/value_diff', value_diff, t)
+                writer.add_scalar('value/value_ratio', value_ratio, t)
 
         else:
             if (t + 1) % 500 == 0 and args.version == 0:
