@@ -165,9 +165,11 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
 
-        perturbed_next_state = next_state + self.target_threshold * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
-        perturbed_reward = reward + self.target_threshold * torch.normal(mean=torch.zeros_like(reward), std=torch.ones_like(reward))
+        #perturbed_next_state = next_state + self.target_threshold * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+        #perturbed_reward = reward + self.target_threshold * torch.normal(mean=torch.zeros_like(reward), std=torch.ones_like(reward))
 
+        perturbed_next_state = next_state
+        perturbed_reward = reward
         with torch.no_grad():
             # Select action according to policy and add clipped noise
             next_action = self.actor_target(perturbed_next_state)
@@ -175,6 +177,7 @@ class D3PG(object):
             target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
             target_Q = torch.min(target_Q1, target_Q2) # target_Q1 #
             target_Q = perturbed_reward + not_done * self.discount * target_Q
+            target_Q = target_Q + 0.1 * self.target_threshold * torch.abs(target_Q).mean() * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
