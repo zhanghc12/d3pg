@@ -342,7 +342,7 @@ def test_mc_v2(env, policy, onpolicy_buffer):
         rewards.append(reward)
         iter += 1
         state = next_state
-        if iter > 1000000:
+        if iter > 100000:
             break
         if done:
             for i in reversed(range(len(rewards) - 1)):
