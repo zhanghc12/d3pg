@@ -178,7 +178,7 @@ class D3PG(object):
             part_train_value, _ = self.critic(part_states, part_actions)
             part_train_values.append(part_train_value.detach().cpu().numpy())
 
-        eval_value = final_rewards
+        eval_value = final_rewards[:part*256]
         train_value = np.squeeze(np.concatenate(part_train_values, axis=0))
         return np.mean(eval_value), np.mean(train_value), np.mean(train_value - eval_value), np.mean((train_value - eval_value) / (np.abs(eval_value) + 1e-3))
 
