@@ -329,6 +329,30 @@ def test_mc(env, policy, onpolicy_buffer):
     onpolicy_buffer.clear()
 
 
+def test_mc_v2(env, policy, onpolicy_buffer):
+    eval_env = gym.make(env)
+    state, done, iter = eval_env.reset(), False, 0
+
+    rewards = []
+
+    episode_rewards = []
+    while not done:
+        action = policy.select_action(np.array(state))
+        next_state, reward, done, _ = eval_env.step(action)
+        rewards.append(reward)
+        iter += 1
+        state = next_state
+        if iter > 1000000:
+            break
+        if done:
+            for i in reversed(range(len(rewards) - 1)):
+                rewards[i] = 0.99 * rewards[i + 1] + rewards[i]
+
+            episode_rewards.append(rewards[0])
+            state, done = eval_env.reset(), False
+            episode_step = 0
+            rewards = []
+    return np.mean(episode_rewards)
 
 def test_td_cpu(env, policy, onpolicy_buffer):
     eval_env = gym.make(env)

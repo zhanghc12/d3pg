@@ -159,6 +159,12 @@ class D3PG(object):
 
         return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item(), ((train_value - eval_value) / (torch.abs(eval_value) + 1e-3)).mean().item()
 
+    def eval_train_value(self, replay_buffer, batch_size=256):
+        # Sample replay buffer
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size * 10)
+        train_value, _ = self.critic(state, action)
+        return train_value.mean().item()
+
     def train(self, replay_buffer, batch_size=256):
         self.total_it += 1
 

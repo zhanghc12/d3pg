@@ -191,6 +191,15 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_diff', value_diff, t)
                 writer.add_scalar('value/value_ratio', value_ratio, t)
 
+            if (t + 1) % 100000 == 0 and args.version == 2 and args.test == 1:
+                value_eval = utils.test_mc_v2(args.env, policy, onpolicy_buffer)
+                # evaluate state, observe difference
+                value_train = policy.eval_train_value(replay_buffer)
+                writer.add_scalar('value/value_eval', value_eval, t)
+                writer.add_scalar('value/value_train', value_train, t)
+                writer.add_scalar('value/value_diff', (value_train - value_eval), t)
+                writer.add_scalar('value/value_ratio', (value_train - value_eval) / (np.abs(value_eval) + 1e-3), t)
+
 
             if (t + 1) % 50000 == 0 and args.version == 1 and args.test == 1:
                 utils.test_mc(args.env, policy, onpolicy_buffer)
@@ -200,6 +209,7 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_train', value_train, t)
                 writer.add_scalar('value/value_diff', value_diff, t)
                 writer.add_scalar('value/value_ratio', value_ratio, t)
+
 
         else:
             if (t + 1) % 500 == 0 and args.version == 0:
