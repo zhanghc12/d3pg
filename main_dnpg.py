@@ -191,7 +191,7 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_diff', value_diff, t)
                 writer.add_scalar('value/value_ratio', value_ratio, t)
 
-            if (t + 1) % 100000 == 0 and args.version == 2 and args.test == 1:
+            if (t + 1) % 50000 == 0 and args.version == 2 and args.test == 1:
                 value_eval = utils.test_mc_v2(args.env, policy, onpolicy_buffer)
                 # evaluate state, observe difference
                 value_train = policy.eval_train_value(replay_buffer)
