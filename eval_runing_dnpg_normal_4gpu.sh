@@ -21,6 +21,9 @@ CUDA_VISIBLE_DEVICES=3 python main_dnpg.py --policy D4PG  --version 3  --target_
 #sh eval_runing_dnpg_normal_4gpu.sh Ant-v2
 
 
+# CUDA_VISIBLE_DEVICES=0 python main_dnpg.py --policy D4PG  --version 4  --target_threshold 0.0001  --env HalfCheetah --test 2
+
+
 
 
 
