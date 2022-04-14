@@ -87,6 +87,11 @@ class D3PG(object):
 
         self.target_threshold = target_threshold # note:
         self.total_it = 0
+        self.use_terminal = True
+
+        if self.version == 3:
+            self.use_terminal = False
+
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -132,7 +137,10 @@ class D3PG(object):
             target_Q1, target_Q2 = self.critic_eval_target(next_state, next_action)
             target_Q = torch.min(target_Q1, target_Q2)
 
-            target_Q = reward + (not_done * torch.pow(self.discount, timestep) * target_Q).detach()
+            if self.use_terminal:
+                target_Q = reward + (not_done * torch.pow(self.discount, timestep) * target_Q).detach()
+            else:
+                target_Q = reward
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic_eval(state, action)

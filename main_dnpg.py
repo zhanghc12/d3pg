@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_ratio', (value_train - value_eval) / (np.abs(value_eval) + 1e-3), t)
 
 
-            if (t + 1) % 50000 == 0 and args.version == 1 and args.test == 1:
+            if (t + 1) % 50000 == 0 and args.version in [1, 3] and args.test == 1:
                 utils.test_mc(args.env, policy, onpolicy_buffer)
                 # evaluate state, observe difference
                 value_eval, value_train, value_diff, value_ratio = policy.eval_value(replay_buffer)
