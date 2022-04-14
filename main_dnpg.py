@@ -218,7 +218,7 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_train', value_train, t)
                 writer.add_scalar('value/value_diff', value_diff, t)
                 writer.add_scalar('value/value_ratio', value_ratio, t)
-                print('end')
+                print('end', value_eval, value_train, value_diff, value_ratio)
 
 
 

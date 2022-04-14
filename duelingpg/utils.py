@@ -390,7 +390,7 @@ def test_mc_v3(env, policy, onpolicy_buffer):
             rewards = []
             states = []
             actions = []
-            print('reset')
+            print('reset', iter)
     return final_rewards, np.array(final_states), np.array(final_actions)
 
 
