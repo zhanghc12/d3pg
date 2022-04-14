@@ -377,7 +377,7 @@ def test_mc_v3(env, policy, onpolicy_buffer):
 
         iter += 1
         state = next_state
-        if iter > 100000:
+        if iter > 40000:
             break
         if done:
             for i in reversed(range(len(rewards) - 1)):
