@@ -167,6 +167,18 @@ class D3PG(object):
 
         return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item(), ((train_value - eval_value) / (torch.abs(eval_value) + 1e-3)).mean().item()
 
+
+    def eval_value_clip(self, final_rewards, final_states, final_actions):
+        # Sample replay buffer
+        eval_value = torch.FloatTensor(final_rewards).to(device)
+        final_states = torch.FloatTensor(final_states).to(device)
+        final_actions = torch.FloatTensor(final_actions).to(device)
+        train_value, _ = self.critic(final_states, final_actions)
+
+        return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item(), ((train_value - eval_value) / (torch.abs(eval_value) + 1e-3)).mean().item()
+
+
+
     def eval_train_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
         state, action, next_state, reward, not_done = replay_buffer.sample(batch_size * 100)

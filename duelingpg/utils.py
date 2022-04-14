@@ -285,7 +285,7 @@ def test_mc(env, policy, onpolicy_buffer):
     rewards = []
     timesteps = []
 
-    while not done:
+    while True: #not done:
         episode_step += 1
         action = policy.select_action(np.array(state))
         next_state, reward, done, _ = eval_env.step(action)
@@ -353,6 +353,46 @@ def test_mc_v2(env, policy, onpolicy_buffer):
             episode_step = 0
             rewards = []
     return np.mean(episode_rewards)
+
+
+def test_mc_v3(env, policy, onpolicy_buffer):
+    eval_env = gym.make(env)
+    state, done, iter = eval_env.reset(), False, 0
+
+    rewards = []
+    states = []
+    actions = []
+
+    final_states = []
+    final_actions = []
+    final_rewards = []
+    episode_rewards = []
+    n_mc_cutoff = 350
+    while not done:
+        action = policy.select_action(np.array(state))
+        next_state, reward, done, _ = eval_env.step(action)
+        rewards.append(reward)
+        states.append(state)
+        actions.append(action)
+
+        iter += 1
+        state = next_state
+        if iter > 100000:
+            break
+        if done:
+            for i in reversed(range(len(rewards) - 1)):
+                rewards[i] = 0.99 * rewards[i + 1] + rewards[i]
+            final_rewards = np.concatenate((final_rewards, rewards[:n_mc_cutoff]))
+            final_states = final_states + states[:n_mc_cutoff]
+            final_actions = final_actions + actions[:n_mc_cutoff]
+            state, done = eval_env.reset(), False
+
+            rewards = []
+            states = []
+            actions = []
+
+    return final_rewards, np.array(final_states), np.array(final_actions)
+
 
 def test_td_cpu(env, policy, onpolicy_buffer):
     eval_env = gym.make(env)

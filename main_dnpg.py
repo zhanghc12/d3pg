@@ -211,6 +211,16 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_ratio', value_ratio, t)
 
 
+            if (t + 1) % 50000 == 0 and args.version==4 and args.test == 1:
+                final_rewards, final_states, final_actions = utils.test_mc_v3(args.env, policy, onpolicy_buffer)
+                value_eval, value_train, value_diff, value_ratio = policy.eval_value_clip(final_rewards, final_states, final_actions)
+                writer.add_scalar('value/value_eval', value_eval, t)
+                writer.add_scalar('value/value_train', value_train, t)
+                writer.add_scalar('value/value_diff', value_diff, t)
+                writer.add_scalar('value/value_ratio', value_ratio, t)
+
+
+
         else:
             if (t + 1) % 500 == 0 and args.version == 0:
                 utils.test_td_cpu(args.env, policy, onpolicy_buffer)
