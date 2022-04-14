@@ -168,8 +168,8 @@ class D3PG(object):
         perturbed_next_state = next_state + self.target_threshold * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
         perturbed_reward = reward + self.target_threshold * torch.normal(mean=torch.zeros_like(reward), std=torch.ones_like(reward))
 
-        perturbed_next_state = next_state
-        #perturbed_reward = reward
+        # perturbed_next_state = next_state
+        # perturbed_reward = reward
         with torch.no_grad():
             # Select action according to policy and add clipped noise
             next_action = self.actor_target(perturbed_next_state)
