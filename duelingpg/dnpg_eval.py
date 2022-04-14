@@ -170,14 +170,17 @@ class D3PG(object):
 
     def eval_value_clip(self, final_rewards, final_states, final_actions):
         # Sample replay buffer
-        eval_value = torch.FloatTensor(final_rewards).to(device)
-        final_states = torch.FloatTensor(final_states).to(device)
-        final_actions = torch.FloatTensor(final_actions).to(device)
-        train_value, _ = self.critic(final_states, final_actions)
+        part = len(final_rewards) // 256
+        part_train_values = []
+        for i in range(part):
+            part_states = torch.FloatTensor(final_states[i * 256: (i+1)*256, :]).to(device)
+            part_actions = torch.FloatTensor(final_actions[i * 256: (i+1)*256, :]).to(device)
+            part_train_value, _ = self.critic(part_states, part_actions)
+            part_train_values.append(part_train_value.detach().cpu().numpy())
 
-        return eval_value.mean().item(), train_value.mean().item(), (train_value - eval_value).mean().item(), ((train_value - eval_value) / (torch.abs(eval_value) + 1e-3)).mean().item()
-
-
+        eval_value = final_rewards
+        train_value = np.squeeze(np.concatenate(part_train_values, axis=0))
+        return np.mean(eval_value), np.mean(train_value), np.mean(train_value - eval_value), np.mean((train_value - eval_value) / (np.abs(eval_value) + 1e-3))
 
     def eval_train_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
