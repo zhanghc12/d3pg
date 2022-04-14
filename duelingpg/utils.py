@@ -297,7 +297,7 @@ def test_mc(env, policy, onpolicy_buffer):
         states.append(state)
         actions.append(action)
         rewards.append(reward)
-        timesteps.append(episode_step + 1)
+        timesteps.append(episode_step)
 
         iter += 1
         state = next_state
@@ -308,7 +308,7 @@ def test_mc(env, policy, onpolicy_buffer):
                 rewards[i] = 0.99 * rewards[i + 1] + rewards[i]
 
             for state, action, reward, timestep in zip(
-                    states, actions, rewards, timesteps):
+                    states, actions, rewards, reversed(timesteps)):
                 onpolicy_buffer.add(
                     state,
                     action,

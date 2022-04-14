@@ -126,7 +126,7 @@ class D3PG(object):
         state, action, next_state, reward, not_done, timestep = replay_buffer.sample_include_timestep(batch_size)
         with torch.no_grad():
             # Select action according to policy and add clipped noise
-            next_action = self.actor_target(next_state)
+            next_action = self.actor(next_state)
             # Compute the target Q value
 
             target_Q1, target_Q2 = self.critic_eval_target(next_state, next_action)
