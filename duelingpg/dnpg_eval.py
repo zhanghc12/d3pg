@@ -169,7 +169,7 @@ class D3PG(object):
 
     def eval_train_value(self, replay_buffer, batch_size=256):
         # Sample replay buffer
-        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size * 10)
+        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size * 100)
         train_value, _ = self.critic(state, action)
         return train_value.mean().item()
 

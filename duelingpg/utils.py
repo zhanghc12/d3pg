@@ -324,7 +324,7 @@ def test_mc(env, policy, onpolicy_buffer):
             rewards = []
             timesteps = []
             episode_step = 0
-    for _ in range(50000):
+    for _ in range(100000):
         policy.train_value_mc(onpolicy_buffer, batch_size=256)
     onpolicy_buffer.clear()
 
