@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
 
         if torch.cuda.is_available():
-            if (t + 1) % 10000 == 0 and args.test == 1 and args.first_phase == 2:
+            if (t + 1) % 1000000 == 0 and args.test == 1 and args.first_phase == 2:
                 final_rewards, final_states, final_actions = utils.test_mc_v3(args.env, policy, onpolicy_buffer)
                 value_eval, value_train, value_diff, value_ratio = policy.eval_value_clip(final_rewards, final_states, final_actions)
                 writer.add_scalar('value/value_eval', value_eval, t)
