@@ -148,7 +148,10 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, q1, q2, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            if args.version == 5:
+                actor_loss, critic_loss, q1, q2, q_value, target_qvalue, r1,  r2, r3 = policy.train_only_reward(replay_buffer, args.batch_size)
+            else:
+                actor_loss, critic_loss, q1, q2, q_value, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
 
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
@@ -212,7 +215,7 @@ if __name__ == "__main__":
 
 
 
-            if (t + 1) % 10000 == 0 and args.version==4 and args.test == 1:
+            if (t + 1) % 10000 == 0 and args.version in [4, 5] and args.test == 1:
                 final_rewards, final_states, final_actions = utils.test_mc_v3(args.env, policy, onpolicy_buffer)
                 value_eval, value_train, value_diff, value_ratio = policy.eval_value_clip(final_rewards, final_states, final_actions)
                 writer.add_scalar('value/value_eval', value_eval, t)
