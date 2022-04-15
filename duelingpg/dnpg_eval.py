@@ -221,7 +221,7 @@ class D3PG(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
+        actor_loss = -self.critic.Q1(state, self.actor(state)).mean() # - self.critic.Q2(state, self.actor(state)).mean()
 
         # Delayed policy updates
         if self.total_it % 2 == 0:
