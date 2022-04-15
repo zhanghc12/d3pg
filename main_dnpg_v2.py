@@ -119,6 +119,7 @@ if __name__ == "__main__":
         os.makedirs(dirname)
     elif os.path.exists(dirname) and args.first_phase == 2:
         policy.load_policy(filename)
+        print('loaded!')
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     onpolicy_buffer = utils.ReplayBuffer(state_dim, action_dim)
