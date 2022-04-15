@@ -207,5 +207,5 @@ if __name__ == "__main__":
                 writer.add_scalar('value/value_ratio', value_ratio, t)
                 # print('end', value_eval, value_train, value_diff, value_ratio)
 
-        if t == 0 and args.first_phase == 1:
+        if t % 1000==0 and args.first_phase == 1:
             policy.save_policy(filename=filename)
