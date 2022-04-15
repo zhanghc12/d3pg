@@ -137,16 +137,13 @@ if __name__ == "__main__":
         episode_timesteps += 1
 
         # Select action randomly or according to policy
-        if args.first_phase == 1:
-            if t < args.start_timesteps:
-                action = env.action_space.sample()
-            else:
-                action = (
-                        policy.select_action(np.array(state))
-                        + np.random.normal(0, max_action * args.expl_noise, size=action_dim)
-                ).clip(-max_action, max_action)
+        if t < args.start_timesteps:
+            action = env.action_space.sample()
         else:
-            action = policy.select_action(np.array(state))
+            action = (
+                    policy.select_action(np.array(state))
+                    + np.random.normal(0, max_action * args.expl_noise, size=action_dim)
+            ).clip(-max_action, max_action)
 
         # Perform action
         next_state, reward, done, _ = env.step(action)
