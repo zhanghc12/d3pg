@@ -231,10 +231,10 @@ class D3PG(object):
             test_next_action_0 = self.actor(next_state)
             test_target_Q1_0, _ = self.critic(next_state, test_next_action_0)
 
-            diff_0 = (test_target_Q1_0 - test_noisy_next_action_0).mean().item()
-            diff_1 = (test_target_Q1_0 - test_noisy_next_action_1).mean().item()
-            diff_2 = (test_target_Q1_0 - test_noisy_next_action_2).mean().item()
-            diff_3 = (test_target_Q1_0 - test_noisy_next_action_3).mean().item()
+            diff_0 = (test_target_Q1_0 - test_noisy_target_Q1_0).mean().item()
+            diff_1 = (test_target_Q1_0 - test_noisy_target_Q1_1).mean().item()
+            diff_2 = (test_target_Q1_0 - test_noisy_target_Q1_2).mean().item()
+            diff_3 = (test_target_Q1_0 - test_noisy_target_Q1_3).mean().item()
 
             print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
 
