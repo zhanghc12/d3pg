@@ -3,11 +3,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from tqc.spectral_normalization import spectral_norm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Critic(nn.Module):
-    def __init__(self, state_dim, action_dim):
+    def __init__(self, state_dim, action_dim, use_sn=False):
         super(Critic, self).__init__()
 
         # Q1 architecture
@@ -19,6 +19,17 @@ class Critic(nn.Module):
         self.l4 = nn.Linear(state_dim + action_dim, 256)
         self.l5 = nn.Linear(256, 256)
         self.l6 = nn.Linear(256, 1)
+
+        if use_sn:
+            # Q1 architecture
+            self.l1 = spectral_norm(nn.Linear(state_dim + action_dim, 256))
+            self.l2 = spectral_norm(nn.Linear(256, 256))
+            self.l3 = spectral_norm(nn.Linear(256, 1))
+
+            # Q2 architecture
+            self.l4 = spectral_norm(nn.Linear(state_dim + action_dim, 256))
+            self.l5 = spectral_norm(nn.Linear(256, 256))
+            self.l6 = spectral_norm(nn.Linear(256, 1))
 
     def forward(self, state, action):
         sa = torch.cat([state, action], 1)
@@ -72,7 +83,7 @@ class D3PG(object):
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-        self.critic = Critic(state_dim, action_dim).to(device)
+        self.critic = Critic(state_dim, action_dim, use_sn=(version==2)).to(device)
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
@@ -148,7 +159,7 @@ class D3PG(object):
         if self.version == 0:
             actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()\
                          -self.critic.Q1(perturbed_next_state, self.actor(perturbed_next_state)).mean() - self.critic.Q2(perturbed_next_state, self.actor(perturbed_next_state)).mean()
-        if self.version == 1:
+        else:
             actor_loss = -self.critic.Q1(state, self.actor(state)).mean() - self.critic.Q2(state, self.actor(state)).mean()
 
         # Delayed policy updates
