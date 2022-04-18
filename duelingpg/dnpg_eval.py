@@ -197,8 +197,8 @@ class D3PG(object):
         perturbed_next_state = next_state + self.target_threshold * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
         perturbed_reward = reward + self.target_threshold * torch.normal(mean=torch.zeros_like(reward), std=torch.ones_like(reward))
 
-        # perturbed_next_state = next_state
-        # perturbed_reward = reward
+        perturbed_next_state = next_state
+        perturbed_reward = reward
         with torch.no_grad():
             # Select action according to policy and add clipped noise
             next_action = self.actor_target(perturbed_next_state)
@@ -209,6 +209,34 @@ class D3PG(object):
             target_Q = target_Q1
             target_Q = perturbed_reward + not_done * self.discount * target_Q
             # target_Q = target_Q + self.target_threshold * torch.abs(target_Q).mean() * torch.normal(mean=torch.zeros_like(target_Q), std=torch.ones_like(target_Q))
+
+        perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+        perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+        perturbed_next_state_2 = next_state + 1e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+        perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+
+        with torch.no_grad():
+            test_noisy_next_action_0 = self.actor(perturbed_next_state_0)
+            test_noisy_target_Q1_0, _ = self.critic(perturbed_next_state_0, test_noisy_next_action_0)
+
+            test_noisy_next_action_1 = self.actor(perturbed_next_state_1)
+            test_noisy_target_Q1_1, _ = self.critic(perturbed_next_state_1, test_noisy_next_action_1)
+
+            test_noisy_next_action_2 = self.actor(perturbed_next_state_2)
+            test_noisy_target_Q1_2, _ = self.critic(perturbed_next_state_2, test_noisy_next_action_2)
+
+            test_noisy_next_action_3 = self.actor(perturbed_next_state_3)
+            test_noisy_target_Q1_3, _ = self.critic(perturbed_next_state_3, test_noisy_next_action_3)
+
+            test_next_action_0 = self.actor(next_state)
+            test_target_Q1_0, _ = self.critic(test_next_action_0, next_state)
+
+            diff_0 = (test_target_Q1_0 - test_noisy_next_action_0).mean().item()
+            diff_1 = (test_target_Q1_0 - test_noisy_next_action_1).mean().item()
+            diff_2 = (test_target_Q1_0 - test_noisy_next_action_2).mean().item()
+            diff_3 = (test_target_Q1_0 - test_noisy_next_action_3).mean().item()
+
+            print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
