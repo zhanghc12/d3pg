@@ -229,7 +229,7 @@ class D3PG(object):
             test_noisy_target_Q1_3, _ = self.critic(perturbed_next_state_3, test_noisy_next_action_3)
 
             test_next_action_0 = self.actor(next_state)
-            test_target_Q1_0, _ = self.critic(test_next_action_0, next_state)
+            test_target_Q1_0, _ = self.critic(next_state, test_next_action_0)
 
             diff_0 = (test_target_Q1_0 - test_noisy_next_action_0).mean().item()
             diff_1 = (test_target_Q1_0 - test_noisy_next_action_1).mean().item()
