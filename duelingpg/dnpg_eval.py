@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -204,9 +205,9 @@ class D3PG(object):
             next_action = self.actor_target(perturbed_next_state)
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
-            # target_Q = torch.min(target_Q1, target_Q2) # target_Q1 #
+            target_Q = torch.min(target_Q1, target_Q2) # target_Q1 #
             # target_Q = (target_Q1 +  target_Q2) / 2
-            target_Q = target_Q1
+            # target_Q = target_Q1
             target_Q = perturbed_reward + not_done * self.discount * target_Q
             # target_Q = target_Q + self.target_threshold * torch.abs(target_Q).mean() * torch.normal(mean=torch.zeros_like(target_Q), std=torch.ones_like(target_Q))
 
@@ -214,6 +215,13 @@ class D3PG(object):
         perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
         perturbed_next_state_2 = next_state + 1e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
         perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+
+        next_state_var = Variable(next_state, requires_grad=True)
+        next_action_var = self.actor_target(next_state_var)
+        target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
+        target_Q_var = torch.min(target_Q1_var, target_Q2_var)  # target_Q1 #
+        target_Q_var.sum().backward()
+        next_state_grad = next_state_var.grad
 
         with torch.no_grad():
             test_noisy_next_action_0 = self.actor(perturbed_next_state_0)
@@ -236,7 +244,20 @@ class D3PG(object):
             diff_2 = (test_target_Q1_0 - test_noisy_target_Q1_2).mean().item()
             diff_3 = (test_target_Q1_0 - test_noisy_target_Q1_3).mean().item()
 
+            test_fixed_target_Q1_0 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_0 - next_state), dim=1, keepdim=True)
+            test_fixed_target_Q1_1 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
+            test_fixed_target_Q1_2 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
+            test_fixed_target_Q1_3 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
+
+            diff_4 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
+            diff_5 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
+            diff_6 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
+            diff_7 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
+
+
+            print('---')
             print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
+            print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_4, diff_5, diff_6, diff_7))
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
