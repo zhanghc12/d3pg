@@ -211,6 +211,17 @@ class D3PG(object):
             target_Q = perturbed_reward + not_done * self.discount * target_Q
             # target_Q = target_Q + self.target_threshold * torch.abs(target_Q).mean() * torch.normal(mean=torch.zeros_like(target_Q), std=torch.ones_like(target_Q))
 
+        # Get current Q estimates
+        current_Q1, current_Q2 = self.critic(state, action)
+
+        # Compute critic loss
+        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
+
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
         if self.total_it % 10 == 0:
             perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
             perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
@@ -218,8 +229,8 @@ class D3PG(object):
             perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
 
             next_state_var = Variable(next_state, requires_grad=True)
-            next_action_var = self.actor_target(next_state_var)
-            target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
+            next_action_var = self.actor(next_state_var)
+            target_Q1_var, target_Q2_var = self.critic(next_state_var, next_action_var)
             target_Q_var = torch.min(target_Q1_var, target_Q2_var)  # target_Q1 #
             target_Q_var.sum().backward()
             next_state_grad = next_state_var.grad
@@ -259,17 +270,9 @@ class D3PG(object):
                 print('---')
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_4, diff_5, diff_6, diff_7))
+            self.actor.zero_grad()
+            self.critic.zero_grad()
 
-        # Get current Q estimates
-        current_Q1, current_Q2 = self.critic(state, action)
-
-        # Compute critic loss
-        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
-
-        # Optimize the critic
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
 
         actor_loss = -self.critic.Q1(state, self.actor(state)).mean() # - self.critic.Q2(state, self.actor(state)).mean()
 
