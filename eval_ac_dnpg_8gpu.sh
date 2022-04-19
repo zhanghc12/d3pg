@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=6 python main_dnpg_v3.py --policy D4PG  --version $1  --tar
 CUDA_VISIBLE_DEVICES=7 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.1   --env  Ant-v2
 
 
-# sh eval_ac_dnpg_8gpu.sh
+# sh eval_ac_dnpg_8gpu.sh 4
 
 
 
