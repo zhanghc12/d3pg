@@ -231,8 +231,8 @@ class D3PG(object):
             next_state_var = Variable(next_state, requires_grad=True)
             next_action_var = self.actor(next_state_var)
             target_Q1_var, target_Q2_var = self.critic(next_state_var, next_action_var)
-            target_Q_var = torch.min(target_Q1_var, target_Q2_var)  # target_Q1 #
-            target_Q_var.sum().backward()
+            # target_Q_var = torch.min(target_Q1_var, target_Q2_var)  # target_Q1 #
+            target_Q1_var.sum().backward()
             next_state_grad = next_state_var.grad
 
             with torch.no_grad():
