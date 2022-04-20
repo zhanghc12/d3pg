@@ -222,7 +222,7 @@ class D3PG(object):
         critic_loss.backward()
         self.critic_optimizer.step()
 
-        if self.total_it % 10 == 0:
+        if self.total_it % 100 == 0:
             perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
             perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
             perturbed_next_state_2 = next_state + 3e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
