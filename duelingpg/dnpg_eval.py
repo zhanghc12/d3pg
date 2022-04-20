@@ -221,7 +221,7 @@ class D3PG(object):
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-
+        '''
         if self.total_it % 100 == 0:
             perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
             perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
@@ -260,6 +260,60 @@ class D3PG(object):
                 test_fixed_target_Q1_1 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
                 test_fixed_target_Q1_2 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
                 test_fixed_target_Q1_3 = test_target_Q1_0 + torch.sum(next_state_grad * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
+
+                diff_4 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
+                diff_5 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
+                diff_6 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
+                diff_7 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
+
+
+                print('---')
+                print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
+                print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_4, diff_5, diff_6, diff_7))
+            self.actor.zero_grad()
+            self.critic.zero_grad()
+        '''
+
+        if self.total_it % 100 == 0:
+            perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            perturbed_next_state_2 = next_state + 3e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+
+            perturbed_next_state = torch.cat([perturbed_next_state_0, perturbed_next_state_1, perturbed_next_state_2, perturbed_next_state_3], dim=0)
+            next_state_var = Variable(perturbed_next_state, requires_grad=True)
+            next_action_var = self.actor(next_state_var)
+            target_Q1_var, target_Q2_var = self.critic(next_state_var, next_action_var)
+            # target_Q_var = torch.min(target_Q1_var, target_Q2_var)  # target_Q1 #
+            target_Q1_var.sum().backward()
+            next_state_grad = next_state_var.grad
+            # get the gard, and then added
+
+            with torch.no_grad():
+                test_noisy_next_action_0 = self.actor(perturbed_next_state_0)
+                test_noisy_target_Q1_0, _ = self.critic(perturbed_next_state_0, test_noisy_next_action_0)
+
+                test_noisy_next_action_1 = self.actor(perturbed_next_state_1)
+                test_noisy_target_Q1_1, _ = self.critic(perturbed_next_state_1, test_noisy_next_action_1)
+
+                test_noisy_next_action_2 = self.actor(perturbed_next_state_2)
+                test_noisy_target_Q1_2, _ = self.critic(perturbed_next_state_2, test_noisy_next_action_2)
+
+                test_noisy_next_action_3 = self.actor(perturbed_next_state_3)
+                test_noisy_target_Q1_3, _ = self.critic(perturbed_next_state_3, test_noisy_next_action_3)
+
+                test_next_action_0 = self.actor(next_state)
+                test_target_Q1_0, _ = self.critic(next_state, test_next_action_0)
+
+                diff_0 = (test_target_Q1_0 - test_noisy_target_Q1_0).mean().item()
+                diff_1 = (test_target_Q1_0 - test_noisy_target_Q1_1).mean().item()
+                diff_2 = (test_target_Q1_0 - test_noisy_target_Q1_2).mean().item()
+                diff_3 = (test_target_Q1_0 - test_noisy_target_Q1_3).mean().item()
+
+                test_fixed_target_Q1_0 = test_noisy_target_Q1_0 - torch.sum(next_state_grad[:batch_size] * (perturbed_next_state_0 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_1 = test_noisy_target_Q1_1 - torch.sum(next_state_grad[batch_size:2*batch_size] * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_2 = test_noisy_target_Q1_2 - torch.sum(next_state_grad[2*batch_size:3*batch_size] * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_3 = test_noisy_target_Q1_3 - torch.sum(next_state_grad[3*batch_size:] * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
 
                 diff_4 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
                 diff_5 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
