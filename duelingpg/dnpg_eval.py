@@ -314,16 +314,28 @@ class D3PG(object):
                 test_fixed_target_Q1_1 = test_noisy_target_Q1_1 - torch.sum(next_state_grad[batch_size:2*batch_size] * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
                 test_fixed_target_Q1_2 = test_noisy_target_Q1_2 - torch.sum(next_state_grad[2*batch_size:3*batch_size] * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
                 test_fixed_target_Q1_3 = test_noisy_target_Q1_3 - torch.sum(next_state_grad[3*batch_size:] * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
-
                 diff_4 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
                 diff_5 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
                 diff_6 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
                 diff_7 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
 
+                test_fixed_target_Q1_0 = test_noisy_target_Q1_0 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True) * 1e-4 * 0.8  # torch.sum(next_state_grad[:batch_size] * (perturbed_next_state_0 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_1 = test_noisy_target_Q1_1 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True) * 1e-3 * 0.8  #  torch.sum(next_state_grad[batch_size:2*batch_size] * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_2 = test_noisy_target_Q1_2 + torch.norm(next_state_grad[2*batch_size:3*batch_size], dim=1, keepdim=True) * 3e-2 * 0.8  # torch.sum(next_state_grad[2*batch_size:3*batch_size] * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_3 = test_noisy_target_Q1_3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True) * 1e-1 * 0.8  # torch.sum(next_state_grad[3*batch_size:] * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
+
+
+                diff_8 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
+                diff_9 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
+                diff_10 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
+                diff_11 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
+
 
                 print('---')
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_4, diff_5, diff_6, diff_7))
+                print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_8, diff_9, diff_10, diff_11))
+
             self.actor.zero_grad()
             self.critic.zero_grad()
 
