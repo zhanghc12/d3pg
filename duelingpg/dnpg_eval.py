@@ -319,10 +319,10 @@ class D3PG(object):
                 diff_6 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
                 diff_7 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
 
-                test_fixed_target_Q1_0 = test_noisy_target_Q1_0 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True) * 1e-4 * 0.08  # torch.sum(next_state_grad[:batch_size] * (perturbed_next_state_0 - next_state), dim=1, keepdim=True)
-                test_fixed_target_Q1_1 = test_noisy_target_Q1_1 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True) * 1e-3 * 0.08  #  torch.sum(next_state_grad[batch_size:2*batch_size] * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
-                test_fixed_target_Q1_2 = test_noisy_target_Q1_2 + torch.norm(next_state_grad[2*batch_size:3*batch_size], dim=1, keepdim=True) * 3e-2 * 0.08  # torch.sum(next_state_grad[2*batch_size:3*batch_size] * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
-                test_fixed_target_Q1_3 = test_noisy_target_Q1_3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True) * 1e-1 * 0.08  # torch.sum(next_state_grad[3*batch_size:] * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_0 = test_noisy_target_Q1_0 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True) * 1e-4 * 0.008  # torch.sum(next_state_grad[:batch_size] * (perturbed_next_state_0 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_1 = test_noisy_target_Q1_1 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True) * 1e-3 * 0.008  #  torch.sum(next_state_grad[batch_size:2*batch_size] * (perturbed_next_state_1 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_2 = test_noisy_target_Q1_2 + torch.norm(next_state_grad[2*batch_size:3*batch_size], dim=1, keepdim=True) * 3e-2 * 0.008  # torch.sum(next_state_grad[2*batch_size:3*batch_size] * (perturbed_next_state_2 - next_state), dim=1, keepdim=True)
+                test_fixed_target_Q1_3 = test_noisy_target_Q1_3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True) * 1e-1 * 0.008  # torch.sum(next_state_grad[3*batch_size:] * (perturbed_next_state_3 - next_state), dim=1, keepdim=True)
 
 
                 diff_8 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
