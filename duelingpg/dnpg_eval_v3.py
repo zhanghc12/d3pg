@@ -131,7 +131,7 @@ class D3PG(object):
         # Sample replay buffer
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
 
-        if self.version in [5,6]:
+        if self.version in [5,6, 8]:
             next_state_var = Variable(perturbed_next_state, requires_grad=True)
             next_action_var = self.actor_target(next_state_var)
             target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
