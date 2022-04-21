@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from tqc.spectral_normalization import spectral_norm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from torch.autograd import Variable
+
 
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim, use_sn=False):
@@ -128,25 +130,46 @@ class D3PG(object):
 
         # Sample replay buffer
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
-        with torch.no_grad():
-            # Select action according to policy and add clipped noise
-            next_action = self.actor_target(perturbed_next_state)
-            # Compute the target Q value
-            target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
-            target_Q = torch.min(target_Q1, target_Q2)
 
-            if self.version == 2:
-                target_Q = perturbed_reward / 1e3 + not_done * self.discount * target_Q
-            else:
-                target_Q = perturbed_reward + not_done * self.discount * target_Q
+        if self.version in [5,6]:
+            next_state_var = Variable(perturbed_next_state, requires_grad=True)
+            next_action_var = self.actor_target(next_state_var)
+            target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
+            torch.min(target_Q1_var, target_Q2_var).sum().backward()
+            next_state_grad = next_state_var.grad
+            if self.version == 5:
+                approximate_state = perturbed_next_state + 0.1 * self.target_threshold * next_state_grad / (
+                            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+            elif self.version == 6:
+                approximate_state = perturbed_next_state + 1 * self.target_threshold * next_state_grad / (
+                            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+            self.actor_target.zero_grad()
+            self.critic_target.zero_grad()
 
-            if self.version == 3:
-                # target_Q = target_Q + 0.1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) * (target_Q.abs().mean())
-                target_Q = target_Q + 1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) #* (target_Q.abs().mean())
+        else:
+            with torch.no_grad():
+                # Select action according to policy and add clipped noise
+                next_action = self.actor_target(perturbed_next_state)
+                # Compute the target Q value
+                target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
+                target_Q = torch.min(target_Q1, target_Q2)
 
-            if self.version == 4:
-                # target_Q = target_Q + 1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) * (target_Q.abs().mean())
-                target_Q = target_Q + 10 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) #* (target_Q.abs().mean())
+                if self.version == 2:
+                    target_Q = perturbed_reward / 1e3 + not_done * self.discount * target_Q
+                else:
+                    target_Q = perturbed_reward + not_done * self.discount * target_Q
+
+                if self.version == 3:
+                    # target_Q = target_Q + 0.1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) * (target_Q.abs().mean())
+                    target_Q = target_Q + 1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) #* (target_Q.abs().mean())
+
+                if self.version == 4:
+                    # target_Q = target_Q + 1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) * (target_Q.abs().mean())
+                    target_Q = target_Q + 10 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) #* (target_Q.abs().mean())
 
         with torch.no_grad():
             test_noisy_next_action = self.actor(perturbed_next_state)
