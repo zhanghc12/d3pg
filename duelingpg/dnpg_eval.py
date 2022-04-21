@@ -217,10 +217,7 @@ class D3PG(object):
         # Compute critic loss
         critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
 
-        # Optimize the critic
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
+
         '''
         if self.total_it % 100 == 0:
             perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
@@ -274,11 +271,41 @@ class D3PG(object):
             self.critic.zero_grad()
         '''
 
+        perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state),
+                                                                  std=torch.ones_like(next_state))
+        perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state),
+                                                                  std=torch.ones_like(next_state))
+        perturbed_next_state_2 = next_state + 3e-2 * torch.normal(mean=torch.zeros_like(next_state),
+                                                                  std=torch.ones_like(next_state))
+        perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state),
+                                                                  std=torch.ones_like(next_state))
+
+        test_noisy_next_action_0 = self.actor(perturbed_next_state_0)
+        test_noisy_target_Q1_0, _ = self.critic(perturbed_next_state_0, test_noisy_next_action_0)
+
+        test_noisy_next_action_1 = self.actor(perturbed_next_state_1)
+        test_noisy_target_Q1_1, _ = self.critic(perturbed_next_state_1, test_noisy_next_action_1)
+
+        test_noisy_next_action_2 = self.actor(perturbed_next_state_2)
+        test_noisy_target_Q1_2, _ = self.critic(perturbed_next_state_2, test_noisy_next_action_2)
+
+        test_noisy_next_action_3 = self.actor(perturbed_next_state_3)
+        test_noisy_target_Q1_3, _ = self.critic(perturbed_next_state_3, test_noisy_next_action_3)
+
+        noisy_loss = (test_noisy_target_Q1_0 + test_noisy_target_Q1_1 + test_noisy_target_Q1_2 + test_noisy_target_Q1_3).mean()
+
+        critic_loss = critic_loss + noisy_loss
+        # Optimize the critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+
         if self.total_it % 100 == 0:
-            perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
-            perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
-            perturbed_next_state_2 = next_state + 3e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
-            perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            #perturbed_next_state_0 = next_state + 1e-4 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            #perturbed_next_state_1 = next_state + 1e-3 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            #perturbed_next_state_2 = next_state + 3e-2 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
+            #perturbed_next_state_3 = next_state + 1e-1 * torch.normal(mean=torch.zeros_like(next_state), std=torch.ones_like(next_state))
 
             perturbed_next_state = torch.cat([perturbed_next_state_0, perturbed_next_state_1, perturbed_next_state_2, perturbed_next_state_3], dim=0)
             next_state_var = Variable(perturbed_next_state, requires_grad=True)
