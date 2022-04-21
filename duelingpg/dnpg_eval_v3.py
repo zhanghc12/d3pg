@@ -138,14 +138,20 @@ class D3PG(object):
             torch.min(target_Q1_var, target_Q2_var).sum().backward()
             next_state_grad = next_state_var.grad
             if self.version == 5:
-                approximate_state = perturbed_next_state + 0.1 * self.target_threshold * next_state_grad / (
+                #approximate_state = perturbed_next_state + 0.1 * self.target_threshold * next_state_grad / (
+                #            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                approximate_state = perturbed_next_state + 0.033 * self.target_threshold * next_state_grad / (
                             1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
             elif self.version == 6:
-                approximate_state = perturbed_next_state + 1 * self.target_threshold * next_state_grad / (
+                #approximate_state = perturbed_next_state + 1 * self.target_threshold * next_state_grad / (
+                #            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                approximate_state = perturbed_next_state + 0.33 * self.target_threshold * next_state_grad / (
                             1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
 
             elif self.version == 8:
-                approximate_state = perturbed_next_state + 10 * self.target_threshold * next_state_grad / (
+                #approximate_state = perturbed_next_state + 10 * self.target_threshold * next_state_grad / (
+                #            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                approximate_state = perturbed_next_state + 0.01 * self.target_threshold * next_state_grad / (
                             1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
             approximate_action = self.actor_target(approximate_state)
             approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
