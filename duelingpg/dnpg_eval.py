@@ -330,11 +330,27 @@ class D3PG(object):
                 diff_10 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
                 diff_11 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
 
+                fake_state_0 = perturbed_next_state_0 + 0.1 * next_state_grad[:batch_size] / (1e-3 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True))
+                test_fixed_target_Q1_0 = self.critic.Q1(fake_state_0, self.actor(fake_state_0))
+                fake_state_1 = perturbed_next_state_1 + 0.1 * next_state_grad[batch_size:2*batch_size] / (1e-3 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True))
+                test_fixed_target_Q1_1 = self.critic.Q1(fake_state_1, self.actor(fake_state_1))
+                fake_state_2 = perturbed_next_state_2 + 0.1 * next_state_grad[2* batch_size:3*batch_size] / (1e-3 + torch.norm(next_state_grad[2* batch_size:3*batch_size], dim=1, keepdim=True))
+                test_fixed_target_Q1_2 = self.critic.Q1(fake_state_2, self.actor(fake_state_2))
+                fake_state_3 = perturbed_next_state_3 + 0.1 * next_state_grad[3*batch_size:] / (1e-3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True))
+                test_fixed_target_Q1_3 = self.critic.Q1(fake_state_3, self.actor(fake_state_3))
+
+                diff_12 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
+                diff_13 = (test_target_Q1_0 - test_fixed_target_Q1_1).mean().item()
+                diff_14 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
+                diff_15 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
 
                 print('---')
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_0, diff_1, diff_2, diff_3))
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_4, diff_5, diff_6, diff_7))
                 print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_8, diff_9, diff_10, diff_11))
+                print('{:.4f},{:.4f},{:.4f},{:.4f}'.format(diff_12, diff_13, diff_14, diff_15))
+
+
 
             self.actor.zero_grad()
             self.critic.zero_grad()
