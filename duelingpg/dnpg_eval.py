@@ -330,13 +330,13 @@ class D3PG(object):
                 diff_10 = (test_target_Q1_0 - test_fixed_target_Q1_2).mean().item()
                 diff_11 = (test_target_Q1_0 - test_fixed_target_Q1_3).mean().item()
 
-                fake_state_0 = perturbed_next_state_0 + 0.1 * next_state_grad[:batch_size] / (1e-3 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True))
+                fake_state_0 = perturbed_next_state_0 + 0.1 * 1e-4 * next_state_grad[:batch_size] / (1e-3 + torch.norm(next_state_grad[:batch_size], dim=1, keepdim=True))
                 test_fixed_target_Q1_0 = self.critic.Q1(fake_state_0, self.actor(fake_state_0))
-                fake_state_1 = perturbed_next_state_1 + 0.1 * next_state_grad[batch_size:2*batch_size] / (1e-3 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True))
+                fake_state_1 = perturbed_next_state_1 + 0.1 * 1e-3 * next_state_grad[batch_size:2*batch_size] / (1e-3 + torch.norm(next_state_grad[batch_size:2*batch_size], dim=1, keepdim=True))
                 test_fixed_target_Q1_1 = self.critic.Q1(fake_state_1, self.actor(fake_state_1))
-                fake_state_2 = perturbed_next_state_2 + 0.1 * next_state_grad[2* batch_size:3*batch_size] / (1e-3 + torch.norm(next_state_grad[2* batch_size:3*batch_size], dim=1, keepdim=True))
+                fake_state_2 = perturbed_next_state_2 + 0.1 * 2e-2 * next_state_grad[2* batch_size:3*batch_size] / (1e-3 + torch.norm(next_state_grad[2* batch_size:3*batch_size], dim=1, keepdim=True))
                 test_fixed_target_Q1_2 = self.critic.Q1(fake_state_2, self.actor(fake_state_2))
-                fake_state_3 = perturbed_next_state_3 + 0.1 * next_state_grad[3*batch_size:] / (1e-3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True))
+                fake_state_3 = perturbed_next_state_3 + 0.1 * 0.1 * next_state_grad[3*batch_size:] / (1e-3 + torch.norm(next_state_grad[3*batch_size:], dim=1, keepdim=True))
                 test_fixed_target_Q1_3 = self.critic.Q1(fake_state_3, self.actor(fake_state_3))
 
                 diff_12 = (test_target_Q1_0 - test_fixed_target_Q1_0).mean().item()
