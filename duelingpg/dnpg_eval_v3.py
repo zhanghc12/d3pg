@@ -181,6 +181,17 @@ class D3PG(object):
                     # target_Q = target_Q + 1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) * (target_Q.abs().mean())
                     target_Q = target_Q + 10 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)) #* (target_Q.abs().mean())
 
+                if self.version in [9, 10, 11]:
+                    if self.version == 9:
+                        ratio = torch.clip(0.1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)), 0, 0.5)
+                    if self.version == 10:
+                        ratio = torch.clip(1 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)), 0, 0.5)
+                    if self.version == 11:
+                        ratio = torch.clip(10 * torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True)), 0, 0.5)
+
+                    target_Q = (1 - ratio) * torch.min(target_Q1, target_Q2) + ratio * torch.max(target_Q1, target_Q2)
+                    target_Q = perturbed_reward + not_done * self.discount * target_Q
+
         with torch.no_grad():
             test_noisy_next_action = self.actor(perturbed_next_state)
             test_noisy_target_Q1, test_noisy_target_Q2 = self.critic(perturbed_next_state, test_noisy_next_action)
