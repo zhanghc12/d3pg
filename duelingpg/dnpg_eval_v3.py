@@ -62,6 +62,20 @@ class Critic(nn.Module):
         q2 = self.l6(q2)
         return q2
 
+class BiasCritic(nn.Module):
+    def __init__(self, state_dim, use_sn=False):
+        super(BiasCritic, self).__init__()
+
+        # Q1 architecture
+        self.l1 = nn.Linear(state_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, 1)
+
+    def forward(self, state):
+        q1 = F.relu(self.l1(state))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+        return q1
 
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
@@ -89,10 +103,13 @@ class D3PG(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.critic_eval = Critic(state_dim, action_dim).to(device)
-        self.critic_eval_target = copy.deepcopy(self.critic_eval)
-        self.critic_eval_optimizer = torch.optim.Adam(self.critic_eval.parameters(), lr=3e-4)
+        #self.critic_eval = Critic(state_dim, action_dim).to(device)
+        #self.critic_eval_target = copy.deepcopy(self.critic_eval)
+        # self.critic_eval_optimizer = torch.optim.Adam(self.critic_eval.parameters(), lr=3e-4)
 
+        self.bias_critic = BiasCritic(state_dim).to(device)
+        self.bias_critic_optimizer = torch.optim.Adam(self.bias_critic.parameters(), lr=3e-4)
+        self.bias_critic_loss = nn.MSELoss()
         self.discount = discount
         self.tau = tau
         self.version = version
@@ -130,6 +147,28 @@ class D3PG(object):
 
         # Sample replay buffer
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
+
+        bias_loss = 0.
+        bias_diff = 0.
+        if self.version == 12:
+            with torch.no_grad():
+                perturbed_next_action = self.actor_target(perturbed_next_state)
+                perturbed_target_Q1, perturbed_target_Q2 = self.critic_target(perturbed_next_state, perturbed_next_action)
+                perturbed_target_Q = torch.min(perturbed_target_Q1, perturbed_target_Q2)
+
+                next_action = self.actor_target(next_state)
+                target_Q1, target_Q2 = self.critic_target(next_state, next_action)
+                target_Q = torch.min(target_Q1, target_Q2)
+
+                label = target_Q - perturbed_target_Q
+
+            prediction = self.bias_critic(perturbed_next_state)
+            bias_critic_loss = self.bias_critic_loss(prediction, label)
+            bias_diff = (label - prediction).mean().item()
+            self.bias_critic_optimizer.zero_grad()
+            bias_critic_loss.backward()
+            self.bias_critic_optimizer.step()
+            bias_loss = bias_critic_loss.item()
 
         if self.version in [5,6, 8]:
             next_state_var = Variable(perturbed_next_state, requires_grad=True)
@@ -192,6 +231,11 @@ class D3PG(object):
                     target_Q = (1 - ratio) * torch.min(target_Q1, target_Q2) + ratio * torch.max(target_Q1, target_Q2)
                     target_Q = perturbed_reward + not_done * self.discount * target_Q
 
+                if self.version == 12:
+                    target_Q = torch.min(target_Q1, target_Q2)
+                    target_Q = target_Q + self.bias_critic(perturbed_next_state).detach()
+                    target_Q = perturbed_reward + not_done * self.discount * target_Q
+
         with torch.no_grad():
             test_noisy_next_action = self.actor(perturbed_next_state)
             test_noisy_target_Q1, test_noisy_target_Q2 = self.critic(perturbed_next_state, test_noisy_next_action)
@@ -235,7 +279,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, 0, 0, 0, 0
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, 0, 0
 
 
     def save(self, filename):

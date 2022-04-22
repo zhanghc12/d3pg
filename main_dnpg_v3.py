@@ -148,13 +148,15 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, q1, q2, q_diff, target_qvalue, r1,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            actor_loss, critic_loss, q1, q2, q_diff, bias_loss, bias_diff,  r2, r3 = policy.train(replay_buffer, args.batch_size)
 
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('value/q1', q1, t)
             writer.add_scalar('value/q2', q2, t)
             writer.add_scalar('value/q_diff', q_diff, t)
+            writer.add_scalar('bias/bias_loss', bias_loss, t)
+            writer.add_scalar('bias/bias_diff', bias_diff, t)
 
 
         if done:
