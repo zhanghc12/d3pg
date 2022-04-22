@@ -144,12 +144,36 @@ class D3PG(object):
 
     def train(self, replay_buffer, batch_size=256):
         self.total_it += 1
+        bias_loss = 0.
+        bias_diff = 0.
+        if self.version == 13:
+            for i in range(10):
+                state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(
+                    batch_size)
+
+                with torch.no_grad():
+                    perturbed_next_action = self.actor_target(perturbed_next_state)
+                    perturbed_target_Q1, perturbed_target_Q2 = self.critic_target(perturbed_next_state, perturbed_next_action)
+                    perturbed_target_Q = torch.min(perturbed_target_Q1, perturbed_target_Q2)
+
+                    next_action = self.actor_target(next_state)
+                    target_Q1, target_Q2 = self.critic_target(next_state, next_action)
+                    target_Q = torch.min(target_Q1, target_Q2)
+
+                    label = target_Q - perturbed_target_Q
+
+                prediction = self.bias_critic(perturbed_next_state)
+                bias_critic_loss = self.bias_critic_loss(prediction, label)
+                bias_diff = (label - prediction).mean().item()
+                self.bias_critic_optimizer.zero_grad()
+                bias_critic_loss.backward()
+                self.bias_critic_optimizer.step()
+                bias_loss = bias_critic_loss.item()
 
         # Sample replay buffer
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
 
-        bias_loss = 0.
-        bias_diff = 0.
+
         if self.version == 12:
             with torch.no_grad():
                 perturbed_next_action = self.actor_target(perturbed_next_state)
@@ -169,6 +193,7 @@ class D3PG(object):
             bias_critic_loss.backward()
             self.bias_critic_optimizer.step()
             bias_loss = bias_critic_loss.item()
+
 
         if self.version in [5,6, 8]:
             next_state_var = Variable(perturbed_next_state, requires_grad=True)
@@ -231,7 +256,7 @@ class D3PG(object):
                     target_Q = (1 - ratio) * torch.min(target_Q1, target_Q2) + ratio * torch.max(target_Q1, target_Q2)
                     target_Q = perturbed_reward + not_done * self.discount * target_Q
 
-                if self.version == 12:
+                if self.version in [12, 13]:
                     target_Q = torch.min(target_Q1, target_Q2)
                     target_Q = target_Q + self.bias_critic(perturbed_next_state).detach()
                     target_Q = perturbed_reward + not_done * self.discount * target_Q
