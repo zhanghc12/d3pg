@@ -77,6 +77,23 @@ class BiasCritic(nn.Module):
         q1 = self.l3(q1)
         return q1
 
+
+class NoisyStateModel(nn.Module):
+    def __init__(self, state_dim):
+        super(NoisyStateModel, self).__init__()
+
+        # Q1 architecture
+        self.l1 = nn.Linear(state_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, state_dim)
+
+    def forward(self, state):
+        q1 = F.relu(self.l1(state))
+        q1 = F.relu(self.l2(q1))
+        q1 = self.l3(q1)
+        q1 = torch.tanh(q1)
+        return q1
+
 class Actor(nn.Module):
     def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
@@ -107,9 +124,13 @@ class D3PG(object):
         #self.critic_eval_target = copy.deepcopy(self.critic_eval)
         # self.critic_eval_optimizer = torch.optim.Adam(self.critic_eval.parameters(), lr=3e-4)
 
-        self.bias_critic = BiasCritic(state_dim).to(device)
-        self.bias_critic_optimizer = torch.optim.Adam(self.bias_critic.parameters(), lr=3e-4)
-        self.bias_critic_loss = nn.MSELoss()
+        #self.bias_critic = BiasCritic(state_dim).to(device)
+        #self.bias_critic_optimizer = torch.optim.Adam(self.bias_critic.parameters(), lr=3e-4)
+        #self.bias_critic_loss = nn.MSELoss()
+
+        self.nsm = NoisyStateModel(state_dim).to(device)
+        self.nsm_optimizer = torch.optim.Adam(self.nsm.parameters(), lr=3e-4)
+
         self.discount = discount
         self.tau = tau
         self.version = version
@@ -194,7 +215,21 @@ class D3PG(object):
             self.bias_critic_optimizer.step()
             bias_loss = bias_critic_loss.item()
 
+        if self.version == 15:
+            noise = self.nsm(perturbed_next_state)
+            noisy_state = perturbed_next_state + self.target_threshold * noise
+            noisy_action = self.actor_target(noisy_state)
+            noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
+            noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
+            nsm_loss = -noisy_Q.mean()
+            self.nsm_optimizer.zero_grad()
+            nsm_loss.backward()
+            self.nsm_optimizer.step()
 
+
+        '''
+        get target_Q
+        '''
         if self.version in [5,6, 8]:
             next_state_var = Variable(perturbed_next_state, requires_grad=True)
             next_action_var = self.actor_target(next_state_var)
@@ -223,6 +258,33 @@ class D3PG(object):
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
             self.actor_target.zero_grad()
             self.critic_target.zero_grad()
+
+        elif self.version == 14:
+
+            approximate_state = perturbed_next_state
+
+            for i in range(10):
+                next_state_var = Variable(approximate_state, requires_grad=True)
+                next_action_var = self.actor_target(next_state_var)
+                target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
+                (torch.min(target_Q1_var, target_Q2_var) - torch.mean((approximate_state - perturbed_next_state) ** 2, dim=1, keepdim=True)).sum().backward()
+                next_state_grad = next_state_var.grad
+                approximate_state = approximate_state + 0.1 * self.target_threshold * next_state_grad / (
+                            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                self.actor_target.zero_grad()
+                self.critic_target.zero_grad()
+
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
+        elif self.version == 15:
+            approximate_state = perturbed_next_state + self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
         else:
             with torch.no_grad():
