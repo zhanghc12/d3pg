@@ -324,7 +324,7 @@ class D3PG(object):
             if self.version == 18:
                 ratio = torch.clamp(-50 * ue + 0.5, 0, 0.5)
             if self.version == 19:
-                ratio = torch.clamp(-500 * ue + 0.5, 0, 0.5)
+                ratio = torch.clamp(-5 * ue + 0.5, 0, 0.5)
 
             target_Q = target_Q_mean - ratio * target_Q_std
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
