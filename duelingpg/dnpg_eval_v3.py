@@ -232,7 +232,9 @@ class D3PG(object):
 
         if self.version == 15:
             noise = self.nsm(perturbed_next_state)
-            noisy_state = perturbed_next_state + self.target_threshold * noise
+            #noisy_state = perturbed_next_state + self.target_threshold * noise
+            noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
+
             noisy_action = self.actor_target(noisy_state)
             noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
             noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
@@ -303,7 +305,7 @@ class D3PG(object):
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
         elif self.version in [15, 17]:
-            approximate_state = perturbed_next_state + self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_state = perturbed_next_state + 0.1 * self.target_threshold * self.nsm(perturbed_next_state)
             approximate_action = self.actor_target(approximate_state)
             approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
             target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
