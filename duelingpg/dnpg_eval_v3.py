@@ -311,6 +311,24 @@ class D3PG(object):
             target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
+        elif self.version in [18, 19]:
+            next_action = self.actor_target(perturbed_next_state)
+            target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
+            target_Q_mean = (target_Q1 + target_Q2) / 2
+            target_Q_std = torch.abs(target_Q1 - target_Q2)
+            ue = torch.sqrt(torch.mean((perturbed_next_state - next_state) **2, dim=1, keepdim=True))
+
+            # how to scale ue to real ratio
+            # when the ratio is 0.5, when the ratio is 0
+            # when the distance is 0, the ratio is 0.5; when the distance is
+            if self.version == 18:
+                ratio = torch.clamp(-50 * ue + 0.5, 0, 0.5)
+            if self.version == 19:
+                ratio = torch.clamp(-500 * ue + 0.5, 0, 0.5)
+
+            target_Q = target_Q_mean - ratio * target_Q_std
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
         else:
             with torch.no_grad():
                 # Select action according to policy and add clipped noise
