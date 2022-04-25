@@ -1,7 +1,7 @@
 import numpy as np
 
 a = np.random.normal(np.zeros([1000]), np.ones([1000]))
-print(a)
+print(np.mean(np.abs(a)))
 
 # 0.8
 # 0.1 * 0.8 -> 0.08 -> 0.064 loss

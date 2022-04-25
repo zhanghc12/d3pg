@@ -191,6 +191,21 @@ class D3PG(object):
                 self.bias_critic_optimizer.step()
                 bias_loss = bias_critic_loss.item()
 
+        if self.version == 17:
+            for i in range(10):
+                state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(
+                    batch_size)
+
+                noise = self.nsm(perturbed_next_state)
+                noisy_state = perturbed_next_state + self.target_threshold * noise
+                noisy_action = self.actor_target(noisy_state)
+                noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
+                noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
+                nsm_loss = -noisy_Q.mean()
+                self.nsm_optimizer.zero_grad()
+                nsm_loss.backward()
+                self.nsm_optimizer.step()
+
         # Sample replay buffer
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
 
@@ -227,6 +242,7 @@ class D3PG(object):
             self.nsm_optimizer.step()
 
 
+
         '''
         get target_Q
         '''
@@ -259,7 +275,7 @@ class D3PG(object):
             self.actor_target.zero_grad()
             self.critic_target.zero_grad()
 
-        elif self.version == 14:
+        elif self.version in [14, 16]:
 
             approximate_state = perturbed_next_state
 
@@ -267,10 +283,17 @@ class D3PG(object):
                 next_state_var = Variable(approximate_state, requires_grad=True)
                 next_action_var = self.actor_target(next_state_var)
                 target_Q1_var, target_Q2_var = self.critic_target(next_state_var, next_action_var)
-                (torch.min(target_Q1_var, target_Q2_var) - torch.mean((approximate_state - perturbed_next_state) ** 2, dim=1, keepdim=True)).sum().backward()
+                # (torch.min(target_Q1_var, target_Q2_var) - torch.mean((approximate_state - perturbed_next_state) ** 2, dim=1, keepdim=True)).sum().backward()
+                (torch.min(target_Q1_var, target_Q2_var)).sum().backward()
+
                 next_state_grad = next_state_var.grad
-                approximate_state = approximate_state + 0.1 * self.target_threshold * next_state_grad / (
-                            1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                if self.version == 14:
+                    approximate_state = approximate_state + 0.1 * self.target_threshold * next_state_grad / (
+                                1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+                elif self.version == 16:
+                    approximate_state = approximate_state + 0.01 * self.target_threshold * next_state_grad / (
+                                1e-3 + torch.norm(next_state_grad, dim=1, keepdim=True))
+
                 self.actor_target.zero_grad()
                 self.critic_target.zero_grad()
 
@@ -279,7 +302,7 @@ class D3PG(object):
             target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
-        elif self.version == 15:
+        elif self.version in [15, 17]:
             approximate_state = perturbed_next_state + self.target_threshold * self.nsm(perturbed_next_state)
             approximate_action = self.actor_target(approximate_state)
             approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
