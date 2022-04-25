@@ -346,6 +346,7 @@ class D3PG(object):
                 target_Q = target_Q + 0.1 * perturbed_reward * (1 / cur_Q_std - 1 / target_Q_std)
             if self.version == 21:
                 target_Q = target_Q + 1 * perturbed_reward * (1 / cur_Q_std - 1 / target_Q_std)
+                #target_Q = target_Q + 1 * perturbed_reward * (1 / cur_Q_std - 1 / target_Q_std)
 
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 

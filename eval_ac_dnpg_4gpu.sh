@@ -24,7 +24,7 @@ CUDA_VISIBLE_DEVICES=3 python main_dnpg_v3.py --policy D4PG  --version $1  --tar
 CUDA_VISIBLE_DEVICES=0 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.01 --seed 0 --env Ant-v2  &\
 CUDA_VISIBLE_DEVICES=1 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.01 --seed 1  --env Ant-v2  &\
 CUDA_VISIBLE_DEVICES=2 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.1 --seed 0  --env Ant-v2   &\
-CUDA_VISIBLE_DEVICES=4 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.1 --seed 1  --env Ant-v2
+CUDA_VISIBLE_DEVICES=3 python main_dnpg_v3.py --policy D4PG  --version $1  --target_threshold 0.1 --seed 1  --env Ant-v2
 
 #sh eval_ac_dnpg_4gpu.sh Walker2d-v2 3
 #sh eval_ac_dnpg_4gpu.sh Hopper-v2 3
