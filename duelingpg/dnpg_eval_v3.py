@@ -328,6 +328,26 @@ class D3PG(object):
 
             target_Q = target_Q_mean - ratio * target_Q_std
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+        elif self.version in [20, 21]:
+            next_action = self.actor_target(perturbed_next_state)
+            target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
+            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q_mean = (target_Q1 + target_Q2) / 2
+            target_Q_std = torch.abs(target_Q1 - target_Q2) + 1
+            target_Q_std = target_Q_std / (torch.sum(target_Q_mean.abs()) + 1)
+
+            cur_action = self.actor_target(state)
+            cur_Q1, cur_Q2 = self.critic_target(state, cur_action)
+            cur_Q_mean = (cur_Q1 + cur_Q2) / 2
+            cur_Q_std = torch.abs(cur_Q1 - cur_Q2) + 1
+            cur_Q_std = cur_Q_std / (torch.sum(cur_Q_mean.abs()) + 1)
+
+            if self.version == 20:
+                target_Q = target_Q + 0.1 * perturbed_reward * (1 / cur_Q_std - 1 / target_Q_std)
+            if self.version == 21:
+                target_Q = target_Q + 1 * perturbed_reward * (1 / cur_Q_std - 1 / target_Q_std)
+
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
         else:
             with torch.no_grad():
