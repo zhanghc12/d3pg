@@ -235,7 +235,8 @@ class D3PG(object):
             #noisy_state = perturbed_next_state + self.target_threshold * noise
             # noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
             #noisy_state = perturbed_next_state + 0.01 * self.target_threshold * noise
-            noisy_state = perturbed_next_state + 0.001 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.001 * self.target_threshold * noise
+            noisy_state = perturbed_next_state + 0.033 * self.target_threshold * noise
 
             noisy_action = self.actor_target(noisy_state)
             noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
@@ -246,6 +247,22 @@ class D3PG(object):
             self.nsm_optimizer.step()
 
 
+        if self.version == 22:
+            noise = self.nsm(perturbed_next_state)
+            #noisy_state = perturbed_next_state + self.target_threshold * noise
+            # noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.01 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.001 * self.target_threshold * noise
+            noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
+
+            noisy_action = self.actor_target(noisy_state)
+            noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
+            noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
+            var_Q = torch.abs(noisy_target_Q1_var - noisy_target_Q2_var)
+            nsm_loss = -noisy_Q.mean() + var_Q.mean()
+            self.nsm_optimizer.zero_grad()
+            nsm_loss.backward()
+            self.nsm_optimizer.step()
 
         '''
         get target_Q
@@ -308,12 +325,25 @@ class D3PG(object):
 
         elif self.version in [15, 17]:
             #approximate_state = perturbed_next_state + 0.01 * self.target_threshold * self.nsm(perturbed_next_state)
-            approximate_state = perturbed_next_state + 0.001 * self.target_threshold * self.nsm(perturbed_next_state)
+            #approximate_state = perturbed_next_state + 0.001 * self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_state = perturbed_next_state + 0.033 * self.target_threshold * self.nsm(perturbed_next_state)
 
             approximate_action = self.actor_target(approximate_state)
             approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
             target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
+        elif self.version == 22:
+            #approximate_state = perturbed_next_state + 0.01 * self.target_threshold * self.nsm(perturbed_next_state)
+            #approximate_state = perturbed_next_state + 0.001 * self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_state = perturbed_next_state + 0.1 * self.target_threshold * self.nsm(perturbed_next_state)
+
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
+
 
         elif self.version in [18, 19]:
             next_action = self.actor_target(perturbed_next_state)
