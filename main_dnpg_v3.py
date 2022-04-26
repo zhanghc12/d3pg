@@ -123,9 +123,8 @@ if __name__ == "__main__":
         stds = np.array([0.0266,0.0266,0.0284,0.0256,0.0250,0.0814,0.1084,0.1069,0.0765,0.1257,0.0701,0.1237,0.0989,0.2565,0.2636,0.4562,1.1361,1.1066,0.7945,1.6805,2.3335,2.1514,1.6336,2.5113,1.4211,2.5081,2.0492,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1763,0.1758,0.0393,0.3257,0.3248,0.1781,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1047,0.1080,0.1020,0.1309,0.1314,0.1434,0.2785,0.2821,0.2746,0.3027,0.3009,0.3011,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0768,0.0751,0.0723,0.0932,0.0940,0.0973,0.2974,0.2912,0.2955,0.3071,0.3084,0.3120,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0760,0.0791,0.0734,0.0957,0.0948,0.0992,0.2846,0.2883,0.2877,0.2972,0.2996,0.2980,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1079,0.1073,0.1035,0.1329,0.1328,0.1450,0.2780,0.2802,0.2779,0.2984,0.2926,0.2994])
 
 
-    stds = []
-    replay_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, target_threshold=args.target_threshold)
-    onpolicy_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, target_threshold=0)
+    replay_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, stds, target_threshold=args.target_threshold)
+    onpolicy_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, stds, target_threshold=0)
 
     # Evaluate untrained policy
     evaluations = [eval_policy(policy, args.env, args.seed)]
