@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="D4PG")  # Policy name (TD3, DDPG or OurDDPG, Dueling)
-    parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
+    parser.add_argument("--env", default="Ant-v2")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument("--start_timesteps", default=25e3, type=int)  # Time steps initial random policy is used
     parser.add_argument("--eval_freq", default=5e3, type=int)  # How often (time steps) we evaluate
@@ -112,7 +112,18 @@ if __name__ == "__main__":
 
     policy = dnpg_eval_v3.D3PG(**kwargs)
 
+    stds = []
+    if args.env == 'HalfCheetah-v2':
+        stds = np.array([0.0267,0.0483,0.2409,0.2429,0.2939,0.2280,0.2310,0.1762,0.6867,0.5823,1.2553,7.9273,7.7772,8.2787,6.0047,7.6029,5.6397])
+    elif args.env == 'Hopper-v2':
+        stds = np.array([0.0397,0.0108,0.0925,0.0134,0.0608,0.2227,0.2087,0.3554,0.4259,0.4380,0.8584])
+    elif args.env == 'Walker2d-v2':
+        stds = np.array([0.0281,0.0521,0.0478,0.0716,0.0975,0.0553,0.0568,0.1018,0.2401,0.2233,2.2874,3.0197,2.4364,3.8227,3.1578,2.4878,3.8398])
+    else:
+        stds = np.array([0.0266,0.0266,0.0284,0.0256,0.0250,0.0814,0.1084,0.1069,0.0765,0.1257,0.0701,0.1237,0.0989,0.2565,0.2636,0.4562,1.1361,1.1066,0.7945,1.6805,2.3335,2.1514,1.6336,2.5113,1.4211,2.5081,2.0492,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1763,0.1758,0.0393,0.3257,0.3248,0.1781,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1047,0.1080,0.1020,0.1309,0.1314,0.1434,0.2785,0.2821,0.2746,0.3027,0.3009,0.3011,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0768,0.0751,0.0723,0.0932,0.0940,0.0973,0.2974,0.2912,0.2955,0.3071,0.3084,0.3120,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0760,0.0791,0.0734,0.0957,0.0948,0.0992,0.2846,0.2883,0.2877,0.2972,0.2996,0.2980,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.1079,0.1073,0.1035,0.1329,0.1328,0.1450,0.2780,0.2802,0.2779,0.2984,0.2926,0.2994])
 
+
+    stds = []
     replay_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, target_threshold=args.target_threshold)
     onpolicy_buffer = utils.PerturbedReplayBuffer(state_dim, action_dim, target_threshold=0)
 

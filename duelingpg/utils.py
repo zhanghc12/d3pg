@@ -190,7 +190,7 @@ class ReplayBuffer(object):
 
 
 class PerturbedReplayBuffer(object):
-    def __init__(self, state_dim, action_dim, target_threshold=0, max_size=int(1e6)):
+    def __init__(self, state_dim, action_dim, stds, target_threshold=0, max_size=int(1e6)):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.max_size = max_size
@@ -220,6 +220,7 @@ class PerturbedReplayBuffer(object):
             "cuda" if torch.cuda.is_available() else "cpu")
 
         self.target_threshold = target_threshold
+        self.stds = stds
 
     def clear(self):
         self.ptr = 0
@@ -247,8 +248,12 @@ class PerturbedReplayBuffer(object):
         self.reward[self.ptr] = reward
         self.not_done[self.ptr] = 1. - done
 
-        self.perturbed_next_state[self.ptr] = next_state + self.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
+        #self.perturbed_next_state[self.ptr] = next_state + self.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
+        #self.perturbed_reward[self.ptr] = reward + self.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
+
+        self.perturbed_next_state[self.ptr] = next_state + self.target_threshold * np.random.normal(np.zeros_like(self.stds), self.stds)
         self.perturbed_reward[self.ptr] = reward + self.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
+
 
         self.next_action[self.ptr - 1] = action
         self.not_fake_done[self.ptr] = 1. - fake_done

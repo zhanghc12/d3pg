@@ -12,15 +12,15 @@ def normalize(data):
 
 env1 = gym.make('hopper-expert-v0')
 env2 = gym.make('halfcheetah-expert-v0')
-env3 = gym.make('walker2d-expert-v0')
+env3 = gym.make('ant-expert-v0')
 
 for env in [env1, env2, env3]:
     print('env', env.observation_space.shape[0] + env.action_space.shape[0])
 
 
 def load_hdf5(dataset, replay_buffer):
-    obs_mean = np.mean(dataset['observations'], axis=0, keepdims=True)
-    obs_std = np.std(dataset['observations'], axis=0, keepdims=True)
+    obs_mean = np.mean(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
+    obs_std = np.std(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
     replay_buffer.state = normalize(dataset['observations'])
     replay_buffer.action = dataset['actions']
     replay_buffer.next_state = normalize(dataset['next_observations'])
@@ -36,7 +36,7 @@ def load_hdf5(dataset, replay_buffer):
     print('Number of terminals on: ', replay_buffer.not_done.sum())
     return obs_mean, obs_std, rew_mean, rew_std
 
-env = gym.make('hopper-medium-replay-v0')
+env = gym.make('ant-medium-replay-v0')
 #env = gym.make('hopper-expert-v0')
 
 state_dim = env.observation_space.shape[0]
@@ -44,7 +44,9 @@ action_dim = env.action_space.shape[0]
 replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 offline_dataset = d4rl.qlearning_dataset(env)
 obs_mean, obs_std, rew_mean, rew_std = load_hdf5(offline_dataset, replay_buffer)
-print(obs_mean, obs_std, rew_mean, rew_std)
+for std in obs_std[0]:
+    print('{:.4f},'.format(std), end="")
+# print(obs_mean, obs_std, rew_mean, rew_std)
 
 # hopper 0.07
 # medium
