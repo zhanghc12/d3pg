@@ -306,7 +306,7 @@ class D3PG(object):
             target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
 
         elif self.version in [15, 17]:
-            approximate_state = perturbed_next_state + 0.1 * self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_state = perturbed_next_state + 0.01 * self.target_threshold * self.nsm(perturbed_next_state)
             approximate_action = self.actor_target(approximate_state)
             approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
             target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
