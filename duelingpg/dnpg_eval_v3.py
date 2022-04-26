@@ -111,7 +111,7 @@ class Actor(nn.Module):
 
 
 class D3PG(object):
-    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, num_critic=2):
+    def __init__(self, state_dim, action_dim, max_action, discount=0.99, tau=0.005, version=0, target_threshold=0.1, num_critic=2, ratio=1):
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
@@ -139,6 +139,7 @@ class D3PG(object):
         self.target_threshold = target_threshold # note:
         self.total_it = 0
         self.use_terminal = True
+        self.ratio = ratio
 
         if self.version == 3:
             self.use_terminal = False
