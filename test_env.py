@@ -36,7 +36,7 @@ def load_hdf5(dataset, replay_buffer):
     print('Number of terminals on: ', replay_buffer.not_done.sum())
     return obs_mean, obs_std, rew_mean, rew_std
 
-env = gym.make('ant-medium-replay-v0')
+env = gym.make('halfcheetah-medium-replay-v0')
 #env = gym.make('hopper-expert-v0')
 
 state_dim = env.observation_space.shape[0]
@@ -46,7 +46,8 @@ offline_dataset = d4rl.qlearning_dataset(env)
 obs_mean, obs_std, rew_mean, rew_std = load_hdf5(offline_dataset, replay_buffer)
 for std in obs_std[0]:
     print('{:.4f},'.format(std), end="")
-# print(obs_mean, obs_std, rew_mean, rew_std)
+print('')
+print(obs_mean, obs_std, rew_mean, rew_std)
 
 # hopper 0.07
 # medium

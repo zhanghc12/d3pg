@@ -176,6 +176,7 @@ class EnsembleModel(nn.Module):
         else:
             mse_loss = torch.mean(torch.pow(mean - labels, 2), dim=(1, 2))
             total_loss = torch.sum(mse_loss)
+            print('loss', torch.mean(torch.pow(mean - labels, 2), dim=(0, 1)))
         return total_loss, mse_loss
 
     def train(self, loss):
