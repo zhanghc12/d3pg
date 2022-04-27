@@ -221,6 +221,7 @@ class PerturbedReplayBuffer(object):
 
         self.target_threshold = target_threshold
         self.stds = stds
+        self.stds_gpu = torch.unsqueeze(torch.FloatTensor(self.stds).to(self.device), dim=0)
 
     def clear(self):
         self.ptr = 0
