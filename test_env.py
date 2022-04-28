@@ -37,7 +37,7 @@ def load_hdf5(dataset, replay_buffer):
     return obs_mean, obs_std, rew_mean, rew_std
 
 env = gym.make('halfcheetah-medium-replay-v0')
-env = gym.make('halfcheetah-random-v0')
+#env = gym.make('halfcheetah-random-v0')
 
 #env = gym.make('hopper-expert-v0')
 
@@ -49,6 +49,7 @@ obs_mean, obs_std, rew_mean, rew_std = load_hdf5(offline_dataset, replay_buffer)
 for std in obs_std[0]:
     print('{:.4f},'.format(std), end="")
 print('')
+
 print(obs_mean, obs_std, rew_mean, rew_std)
 
 # hopper 0.07

@@ -400,6 +400,9 @@ class D3PG(object):
 
                 if self.version == 2:
                     target_Q = perturbed_reward / 1e3 + not_done * self.discount * target_Q
+                elif self.version == 23:
+                    target_Q = reward + not_done * self.discount * target_Q
+
                 else:
                     target_Q = perturbed_reward + not_done * self.discount * target_Q
 
