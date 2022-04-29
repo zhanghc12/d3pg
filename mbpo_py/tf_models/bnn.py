@@ -571,6 +571,7 @@ class BNN:
         logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output//2:])
         logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
 
+        self.print_scaler()
         if ret_log_var:
             return mean, logvar
         else:
@@ -601,3 +602,7 @@ class BNN:
             total_losses = tf.reduce_mean(tf.reduce_mean(tf.square(mean - targets), axis=-1), axis=-1)
 
         return total_losses
+
+    def print_scaler(self):
+        print(self.sess.run(self.scaler.mu))
+        print(self.sess.run(self.scaler.std))
