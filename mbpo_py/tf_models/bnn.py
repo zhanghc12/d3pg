@@ -125,8 +125,8 @@ class BNN:
             raise RuntimeError("Cannot modify network structure after finalizing.")
         if len(self.layers) == 0 and layer.get_input_dim() is None:
             raise ValueError("Must set input dimension for the first layer.")
-        if self.model_loaded:
-            raise RuntimeError("Cannot add layers to a loaded model.")
+        #if self.model_loaded:
+        #    raise RuntimeError("Cannot add layers to a loaded model.")
 
         layer.set_ensemble_size(self.num_nets)
         if len(self.layers) > 0:
