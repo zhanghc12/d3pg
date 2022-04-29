@@ -154,6 +154,9 @@ if __name__ == "__main__":
 
         # Store data in replay buffer
         perturbed_next_state, perturbed_reward, *_ = predict_env.step(state, action)
+        if t % 100 == 0:
+            print(np.abs(perturbed_next_state - next_state))
+            print(np.abs(reward - perturbed_reward))
 
         replay_buffer.add(state, action, next_state, reward, done_bool, fake_done_bool, perturbed_next_state, perturbed_reward)
 
