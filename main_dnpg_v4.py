@@ -154,6 +154,13 @@ if __name__ == "__main__":
 
         # Store data in replay buffer
         perturbed_next_state, perturbed_reward = predict_env.step_single(state, action)
+        perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
+        perturbed_reward = reward + args.target_threshold *(reward - perturbed_reward)
+
+        # 0, no noise
+        # 1, pure perturb
+        # 0.01
+        # 0.1
         '''
         if t % 100 == 0:
             print('state_error', np.abs(perturbed_next_state - next_state))
