@@ -154,6 +154,7 @@ if __name__ == "__main__":
 
         # Store data in replay buffer
         perturbed_next_state, perturbed_reward, *_ = predict_env.step(state, action)
+        '''
         if t % 100 == 0:
             print('state_error', np.abs(perturbed_next_state - next_state))
             print('reward_error', np.abs(reward - perturbed_reward))
@@ -163,8 +164,15 @@ if __name__ == "__main__":
             #    3.77046  0.67164  2.14682  9.21376  7.98837  7.55857  9.19066 11.35497
             #    7.65146  0.80107  0.66895  0.72724  0.61391  0.76352  0.65932
 
-
-
+            # [[-4.70140e-02  2.33330e-01  3.74848e-02 -1.78363e-01 -1.51083e-02                           
+            #   -5.78601e-02 -5.55856e-03 -1.83146e-02  8.36824e+00 -6.51337e-02                           
+            #    7.18851e-04  2.12533e-01 -3.98862e-02  7.87675e-02 -2.08685e-01                           
+            #    3.89809e-01  2.27202e-01 -6.12492e-03 -2.63280e-01 -7.85856e-02                           
+            #   -8.56887e-02 -5.51485e-02  9.98859e-03]]                                                   
+            # [[ 0.10939  0.87077  0.45566  0.34358  0.3448   0.42436  0.50425  0.33355                    
+            #    3.7581   0.67351  2.15283  9.25037  8.04784  7.56236  9.24105 11.38824                    
+            #    7.66265  0.80172  0.66845  0.72792  0.61433  0.76279  0.6594 ]] 
+        '''
         replay_buffer.add(state, action, next_state, reward, done_bool, fake_done_bool, perturbed_next_state, perturbed_reward)
 
 

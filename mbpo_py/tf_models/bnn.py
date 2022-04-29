@@ -469,7 +469,7 @@ class BNN:
             factored (bool): See above for behavior.
         """
 
-        self.print_scaler()
+        # self.print_scaler()
 
         if len(inputs.shape) == 2:
             if factored:
