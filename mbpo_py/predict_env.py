@@ -131,7 +131,7 @@ class PredictEnv:
         ensemble_samples = ensemble_model_means # N * 1 * state_dim
 
         rewards, next_obs = ensemble_samples[:, 0, :1], ensemble_samples[:, 0, 1:]
-        print(np.shape(next_obs))
+        # print(np.shape(next_obs))
 
         return np.mean(next_obs, axis=0), np.mean(rewards, axis=0)
 
