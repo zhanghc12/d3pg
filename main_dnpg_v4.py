@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
 
         # Store data in replay buffer
-        perturbed_next_state, perturbed_reward, *_ = predict_env.step(state, action)
+        perturbed_next_state, perturbed_reward = predict_env.step(state, action)
         '''
         if t % 100 == 0:
             print('state_error', np.abs(perturbed_next_state - next_state))

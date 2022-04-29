@@ -119,6 +119,24 @@ class PredictEnv:
         info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
 
+
+    def step_single(self, obs, act, deterministic=False):
+        obs = obs[None]
+        act = act[None]
+
+        inputs = np.concatenate((obs, act), axis=-1)
+        ensemble_model_means, ensemble_model_vars = self.model.predict(inputs, factored=True)
+        ensemble_model_means[:, :, 1:] += obs
+
+        ensemble_samples = ensemble_model_means # N * 1 * state_dim
+
+        rewards, next_obs = ensemble_samples[:, 0, :1], ensemble_samples[:, 0, 1:]
+        print(np.shape(next_obs))
+
+        return np.mean(next_obs, axis=0), np.mean(rewards, axis=0)
+
+
+
     def predict_uncertainty(self, obs, act):
         inputs = np.concatenate((obs, act), axis=-1)
         if self.model_type == 'pytorch':
