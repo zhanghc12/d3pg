@@ -105,16 +105,16 @@ class PredictEnv:
         rewards, next_obs = samples[:, :1], samples[:, 1:]
         terminals = self._termination_fn(self.env_name, obs, act, next_obs)
 
-        #batch_size = model_means.shape[0]
-        #return_means = np.concatenate((model_means[:, :1], model_means[:, 1:]), axis=-1)
-        #return_stds = np.concatenate((model_stds[:, :1], model_stds[:, 1:]), axis=-1)
+        batch_size = model_means.shape[0]
+        return_means = np.concatenate((model_means[:, :1], model_means[:, 1:]), axis=-1)
+        return_stds = np.concatenate((model_stds[:, :1], model_stds[:, 1:]), axis=-1)
 
         if return_single:
             next_obs = next_obs[0]
             return_means = model_means[0]
             return_stds = model_stds[0]
             rewards = rewards[0]
-            terminals = terminals[0]
+            terminals = terminals
 
         info = {'mean': return_means, 'std': return_stds, 'log_prob': log_prob, 'dev': dev}
         return next_obs, rewards, terminals, info
