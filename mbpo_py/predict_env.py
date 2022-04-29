@@ -111,8 +111,8 @@ class PredictEnv:
 
         if return_single:
             next_obs = next_obs[0]
-            return_means = return_means[0]
-            return_stds = return_stds[0]
+            return_means = model_means[0]
+            return_stds = model_means[0]
             rewards = rewards[0]
             terminals = terminals[0]
 
