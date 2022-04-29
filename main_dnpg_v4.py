@@ -159,6 +159,11 @@ if __name__ == "__main__":
             print('reward_error', np.abs(reward - perturbed_reward))
             print('rel_state_error', np.abs(perturbed_next_state - next_state) / (np.abs(next_state) + 1e-6))
 
+            # 0.11055  0.88451  0.45427  0.34102  0.34408  0.42239  0.50313  0.33358
+            #    3.77046  0.67164  2.14682  9.21376  7.98837  7.55857  9.19066 11.35497
+            #    7.65146  0.80107  0.66895  0.72724  0.61391  0.76352  0.65932
+
+
 
         replay_buffer.add(state, action, next_state, reward, done_bool, fake_done_bool, perturbed_next_state, perturbed_reward)
 

@@ -62,6 +62,9 @@ class TensorStandardScaler:
 
         Returns: (np.array) The transformed dataset.
         """
+        print(self.cached_mu)
+        print(self.cached_sigma)
+
         return (data - self.mu) / self.sigma
 
     def inverse_transform(self, data):
