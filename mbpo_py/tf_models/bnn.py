@@ -468,6 +468,9 @@ class BNN:
             inputs (np.ndarray): An array of input vectors in rows. See above for behavior.
             factored (bool): See above for behavior.
         """
+
+        self.print_scaler()
+
         if len(inputs.shape) == 2:
             if factored:
                 return self.sess.run(
@@ -571,7 +574,6 @@ class BNN:
         logvar = self.max_logvar - tf.nn.softplus(self.max_logvar - cur_out[:, :, dim_output//2:])
         logvar = self.min_logvar + tf.nn.softplus(logvar - self.min_logvar)
 
-        self.print_scaler()
         if ret_log_var:
             return mean, logvar
         else:
