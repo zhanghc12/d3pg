@@ -19,8 +19,13 @@ for env in [env1, env2, env3]:
 
 
 def load_hdf5(dataset, replay_buffer):
-    obs_mean = np.mean(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
-    obs_std = np.std(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
+    #obs_mean = np.mean(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
+    #obs_std = np.std(np.abs(dataset['next_observations'] - dataset['observations']), axis=0, keepdims=True)
+
+    obs_mean = np.mean(dataset['observations'], axis=0, keepdims=True)
+    obs_std = np.std(dataset['observations'], axis=0, keepdims=True)
+
+
     replay_buffer.state = normalize(dataset['observations'])
     replay_buffer.action = dataset['actions']
     replay_buffer.next_state = normalize(dataset['next_observations'])

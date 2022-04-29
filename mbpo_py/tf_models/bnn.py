@@ -70,6 +70,7 @@ class BNN:
         self.sy_pred_mean2d, self.sy_pred_var2d = None, None
         self.sy_pred_in3d, self.sy_pred_mean3d_fac, self.sy_pred_var3d_fac = None, None, None
 
+        '''
         if params.get('load_model', False):
             if self.model_dir is None:
                 raise ValueError("Cannot load model without providing model directory.")
@@ -81,6 +82,14 @@ class BNN:
             self.num_nets = params.get('num_networks', 1)
             self.num_elites = params['num_elites'] #params.get('num_elites', 1)
             self.model_loaded = False
+        '''
+
+
+        self.num_nets = params.get('num_networks', 1)
+        self.num_elites = params['num_elites']  # params.get('num_elites', 1)
+        #if self.model_dir is None:
+        self.model_loaded = True
+
 
         if self.num_nets == 1:
             print("Created a neural network with variance predictions.")

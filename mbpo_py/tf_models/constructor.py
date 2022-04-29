@@ -5,9 +5,9 @@ from mbpo_py.tf_models.fc import FC
 from mbpo_py.tf_models.bnn import BNN
 
 
-def construct_model(obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_networks=7, num_elites=5, session=None):
+def construct_model(obs_dim=11, act_dim=3, rew_dim=1, hidden_dim=200, num_networks=7, num_elites=5, session=None, model_dir=None, name='BNN'):
     print('[ BNN ] Observation dim {} | Action dim: {} | Hidden dim: {}'.format(obs_dim, act_dim, hidden_dim))
-    params = {'name': 'BNN', 'num_networks': num_networks, 'num_elites': num_elites, 'sess': session}
+    params = {'name': name, 'num_networks': num_networks, 'num_elites': num_elites, 'sess': session, 'model_dir': model_dir}
     model = BNN(params)
 
     model.add(FC(hidden_dim, input_dim=obs_dim + act_dim, activation="swish", weight_decay=0.000025))
