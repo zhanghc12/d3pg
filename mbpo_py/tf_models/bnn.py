@@ -96,6 +96,8 @@ class BNN:
         else:
             print("Created an ensemble of {} neural networks with variance predictions | Elites: {}".format(self.num_nets, self.num_elites))
 
+        self._model_inds = [0, 1, 2, 3, 4, 5 ,6]
+
     @property
     def is_probabilistic(self):
         return True
