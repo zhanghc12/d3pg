@@ -607,4 +607,4 @@ class BNN:
 
     def print_scaler(self):
         print(self.sess.run(self.scaler.mu))
-        print(self.sess.run(self.scaler.std))
+        print(self.sess.run(self.scaler.sigma))
