@@ -114,9 +114,6 @@ if __name__ == "__main__":
     kwargs['target_threshold'] = args.target_threshold
 
     model_dir = '/data/zhanghc/tf_models/' + args.env + '/'
-    if args.version == 101:
-        model_dir = ''
-
     env_model = construct_model(obs_dim=state_dim, act_dim=action_dim, hidden_dim=200,
                                 num_networks=7,
                                 num_elites=5, model_dir=model_dir, name='BNN_115000')

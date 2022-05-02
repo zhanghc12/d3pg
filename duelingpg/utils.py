@@ -548,7 +548,7 @@ def test_mc_v2(env, policy, onpolicy_buffer):
     return np.mean(episode_rewards)
 
 
-def test_mc_v3(env, policy, onpolicy_buffer):
+def test_mc_v3(env, policy):
     eval_env = gym.make(env)
     state, done, iter = eval_env.reset(), False, 0
 
@@ -559,7 +559,6 @@ def test_mc_v3(env, policy, onpolicy_buffer):
     final_states = []
     final_actions = []
     final_rewards = []
-    episode_rewards = []
     n_mc_cutoff = 350
     while not done:
         action = policy.select_action(np.array(state))
