@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
 
         # Store data in replay buffer
-        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action)
+        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action, randomized_output=(args.version==102))
         perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
         perturbed_reward = reward + args.target_threshold *(perturbed_reward - reward)
         if args.version == 100:

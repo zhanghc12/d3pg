@@ -120,7 +120,7 @@ class PredictEnv:
         return next_obs, rewards, terminals, info
 
 
-    def step_single(self, obs, act, deterministic=False):
+    def step_single(self, obs, act, deterministic=False, randomized_output=False):
         obs = obs[None]
         act = act[None]
 
@@ -132,6 +132,8 @@ class PredictEnv:
 
         rewards, next_obs = ensemble_samples[:, 0, :1], ensemble_samples[:, 0, 1:]
         # print(np.shape(next_obs))
+        if randomized_output:
+            return np.random.normal(np.zeros_like(rewards), np.abs(rewards)), np.random.normal(np.zeros_like(next_obs), np.abs(next_obs))
 
         return np.mean(next_obs, axis=0), np.mean(rewards, axis=0)
 
