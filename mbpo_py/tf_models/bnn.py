@@ -88,7 +88,7 @@ class BNN:
         self.num_nets = params.get('num_networks', 1)
         self.num_elites = params['num_elites']  # params.get('num_elites', 1)
         #if self.model_dir is None:
-        self.model_loaded = self.model_dir is not None
+        self.model_loaded = self.model_dir is not ''
 
 
         if self.num_nets == 1:
