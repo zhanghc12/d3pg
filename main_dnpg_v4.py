@@ -155,7 +155,7 @@ if __name__ == "__main__":
         # Store data in replay buffer
         perturbed_next_state, perturbed_reward = predict_env.step_single(state, action)
         perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
-        perturbed_reward = reward + args.target_threshold *(reward - perturbed_reward)
+        perturbed_reward = reward + args.target_threshold *(perturbed_reward - reward)
 
         # 0, no noise
         # 1, pure perturb
