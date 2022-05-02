@@ -133,9 +133,9 @@ class PredictEnv:
         rewards, next_obs = ensemble_samples[:, 0, :1], ensemble_samples[:, 0, 1:]
         # print(np.shape(next_obs))
         if randomized_output:
-            rewards, next_obs = np.mean(rewards, axis=0), np.mean(next_obs, axis=0)
+            rewards, next_obs = np.mean(rewards, axis=0, keepdims=False), np.mean(next_obs, axis=0, keepdims=False)
 
-            return np.random.normal(np.zeros_like(rewards), np.abs(rewards)), np.random.normal(np.zeros_like(next_obs), np.abs(next_obs))
+            return np.random.normal(np.zeros_like(next_obs), np.abs(next_obs)), np.random.normal(np.zeros_like(rewards), np.abs(rewards))
 
         return np.mean(next_obs, axis=0), np.mean(rewards, axis=0)
 
