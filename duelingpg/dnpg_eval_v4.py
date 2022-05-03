@@ -275,9 +275,12 @@ class D3PG(object):
 
             # Compute actor losse
             # Optimize the actor
-            self.actor_optimizer.zero_grad()
-            actor_loss.backward()
-            self.actor_optimizer.step()
+            if self.version == 103:
+                pass
+            else:
+                self.actor_optimizer.zero_grad()
+                actor_loss.backward()
+                self.actor_optimizer.step()
 
             # Update the frozen target models
             for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
