@@ -284,7 +284,7 @@ class D3PG(object):
 
             # Compute actor losse
             # Optimize the actor
-            if self.version == 103:
+            if self.version in [103, 105]:
                 pass
             else:
                 self.actor_optimizer.zero_grad()
