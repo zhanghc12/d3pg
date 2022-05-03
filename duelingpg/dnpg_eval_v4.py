@@ -240,13 +240,22 @@ class D3PG(object):
         else:
             with torch.no_grad():
                 # Select action according to policy and add clipped noise
-                next_action = self.actor_target(perturbed_next_state)
-                # Compute the target Q value
-                target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
-                # target_Q = torch.min(target_Q1, target_Q2)
-                target_Q = (target_Q1 + target_Q2) / 2
+                if self.version == 104:
+                    next_action = self.actor_target(next_state)
+                    # Compute the target Q value
+                    target_Q1, target_Q2 = self.critic_target(next_state, next_action)
+                    target_Q = torch.min(target_Q1, target_Q2)
+                    # target_Q = (target_Q1 + target_Q2) / 2
 
-                target_Q = perturbed_reward + not_done * self.discount * target_Q
+                    target_Q = reward + not_done * self.discount * target_Q
+                else:
+                    next_action = self.actor_target(perturbed_next_state)
+                    # Compute the target Q value
+                    target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
+                    target_Q = torch.min(target_Q1, target_Q2)
+                    # target_Q = (target_Q1 + target_Q2) / 2
+
+                    target_Q = perturbed_reward + not_done * self.discount * target_Q
 
         with torch.no_grad():
             test_noisy_next_action = self.actor(perturbed_next_state)
