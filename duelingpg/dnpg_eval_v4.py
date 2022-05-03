@@ -240,7 +240,7 @@ class D3PG(object):
         else:
             with torch.no_grad():
                 # Select action according to policy and add clipped noise
-                if self.version == 104:
+                if self.version in [104, 105]:
                     next_action = self.actor_target(next_state)
                     # Compute the target Q value
                     target_Q1, target_Q2 = self.critic_target(next_state, next_action)
