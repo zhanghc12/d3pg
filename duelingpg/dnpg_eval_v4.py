@@ -240,7 +240,7 @@ class D3PG(object):
         else:
             with torch.no_grad():
                 # Select action according to policy and add clipped noise
-                if self.version in [104, 105]:
+                if self.version in [104, 106]:
                     next_action = self.actor_target(next_state)
                     # Compute the target Q value
                     target_Q1, target_Q2 = self.critic_target(next_state, next_action)
@@ -284,7 +284,7 @@ class D3PG(object):
 
             # Compute actor losse
             # Optimize the actor
-            if self.version in [103, 105]:
+            if self.version in [103, 105, 106]:
                 pass
             else:
                 self.actor_optimizer.zero_grad()
