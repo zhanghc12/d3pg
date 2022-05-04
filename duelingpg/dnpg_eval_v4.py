@@ -322,28 +322,28 @@ class D3PG(object):
             perturbed_next_state_v1 = next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
             test_noisy_next_action_v1 = self.actor(perturbed_next_state_v1)
             test_noisy_target_Q1_v1, test_noisy_target_Q2_v1 = self.critic(perturbed_next_state_v1, test_noisy_next_action_v1)
-            q_diff_v1 = (test_target_Q1 - test_noisy_target_Q1_v1).mean().item()
+            q_diff_v1 = (test_target_Q1 - test_noisy_target_Q1_v1).mean().item() # no estimate
 
             perturbed_next_state_v2 = (1-self.target_threshold) * next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
             test_noisy_next_action_v2 = self.actor(perturbed_next_state_v2)
             test_noisy_target_Q1_v2, test_noisy_target_Q2_v2 = self.critic(perturbed_next_state_v2, test_noisy_next_action_v2)
-            q_diff_v2 = (test_target_Q1 - test_noisy_target_Q1_v2).mean().item()
+            q_diff_v2 = (test_target_Q1 - test_noisy_target_Q1_v2).mean().item() # over estimate
 
             perturbed_next_state_v3 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
             test_noisy_next_action_v3 = self.actor(perturbed_next_state_v3)
             test_noisy_target_Q1_v3, _ = self.critic(perturbed_next_state_v3, test_noisy_next_action_v3)
-            q_diff_v3 = (test_target_Q1 - test_noisy_target_Q1_v3).mean().item()
+            q_diff_v3 = (test_target_Q1 - test_noisy_target_Q1_v3).mean().item() # no estimate
 
             perturbed_next_state_v4 = (1-self.target_threshold) * next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
             test_noisy_next_action_v4 = self.actor(perturbed_next_state_v4)
             test_noisy_target_Q1_v4, _ = self.critic(perturbed_next_state_v4, test_noisy_next_action_v4)
-            q_diff_v4 = (test_target_Q1 - test_noisy_target_Q1_v4).mean().item()
+            q_diff_v4 = (test_target_Q1 - test_noisy_target_Q1_v4).mean().item() # over estimate
 
             perturbed_next_state_v5 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state),
                                                                                         torch.ones_like(next_state))  # 107
             test_noisy_next_action_v5 = self.actor(perturbed_next_state_v5)
             test_noisy_target_Q1_v5, _ = self.critic(perturbed_next_state_v5, test_noisy_next_action_v5)
-            q_diff_v5 = (test_target_Q1 - test_noisy_target_Q1_v5).mean().item()
+            q_diff_v5 = (test_target_Q1 - test_noisy_target_Q1_v5).mean().item() # under estimate
 
             perturbed_next_state_v6 = (1 - self.target_threshold) * next_state + self.target_threshold * torch.normal(
                 torch.zeros_like(next_state), torch.ones_like(next_state))  # 107

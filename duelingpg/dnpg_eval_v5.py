@@ -62,6 +62,56 @@ class Critic(nn.Module):
         q2 = self.l6(q2)
         return q2
 
+class CriticB(nn.Module):
+    def __init__(self, state_dim, action_dim, use_sn=False):
+        super(Critic, self).__init__()
+
+        # Q1 architecture
+        self.l1 = nn.Linear(state_dim + action_dim, 256)
+        self.l2 = nn.Linear(256, 1)
+
+        # Q2 architecture
+        self.l4 = nn.Linear(state_dim + action_dim, 256)
+        self.l5 = nn.Linear(256, 1)
+
+        if use_sn:
+            # Q1 architecture
+            self.l1 = spectral_norm(nn.Linear(state_dim + action_dim, 256))
+            self.l2 = spectral_norm(nn.Linear(256, 256))
+            self.l3 = spectral_norm(nn.Linear(256, 1))
+
+            # Q2 architecture
+            self.l4 = spectral_norm(nn.Linear(state_dim + action_dim, 256))
+            self.l5 = spectral_norm(nn.Linear(256, 256))
+            self.l6 = spectral_norm(nn.Linear(256, 1))
+
+    def forward(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = self.l2(q1)
+
+        q2 = F.relu(self.l4(sa))
+        q2 = self.l5(q2)
+        return q1, q2
+
+    def Q1(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q1 = F.relu(self.l1(sa))
+        q1 = self.l2(q1)
+        return q1
+
+
+    def Q2(self, state, action):
+        sa = torch.cat([state, action], 1)
+
+        q2 = F.relu(self.l4(sa))
+        q2 = F.relu(self.l5(q2))
+        q2 = self.l6(q2)
+        return q2
+
+
 class BiasCritic(nn.Module):
     def __init__(self, state_dim, use_sn=False):
         super(BiasCritic, self).__init__()
@@ -173,27 +223,92 @@ class D3PG(object):
         state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(batch_size)
 
 
-        with torch.no_grad():
-            # Select action according to policy and add clipped noise
-            if self.version in [104, 106]:
-                next_action = self.actor_target(next_state)
-                # Compute the target Q value
-                target_Q1, target_Q2 = self.critic_target(next_state, next_action)
-                target_Q = torch.min(target_Q1, target_Q2)
-                # target_Q = (target_Q1 + target_Q2) / 2
 
-                target_Q = reward + not_done * self.discount * target_Q
-            elif self.version == 108:
-                target_Q  = reward
+        if self.version == 15:
+            noise = self.nsm(perturbed_next_state)
+            #noisy_state = perturbed_next_state + self.target_threshold * noise
+            # noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.01 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.001 * self.target_threshold * noise
+            noisy_state = perturbed_next_state + self.ratio * self.target_threshold * noise * replay_buffer.stds_gpu
 
-            else:
-                next_action = self.actor_target(perturbed_next_state)
-                # Compute the target Q value
-                target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
-                target_Q = torch.min(target_Q1, target_Q2)
-                # target_Q = (target_Q1 + target_Q2) / 2
 
-                target_Q = perturbed_reward + not_done * self.discount * target_Q
+            # self.ratio * self.target_threshold * noise * replay_buffer.stds_gpu
+            noisy_action = self.actor_target(noisy_state)
+            noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
+            noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
+            nsm_loss = -noisy_Q.mean()
+            self.nsm_optimizer.zero_grad()
+            nsm_loss.backward()
+            self.nsm_optimizer.step()
+
+
+        if self.version == 22:
+            noise = self.nsm(perturbed_next_state)
+            #noisy_state = perturbed_next_state + self.target_threshold * noise
+            # noisy_state = perturbed_next_state + 0.1 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.01 * self.target_threshold * noise
+            #noisy_state = perturbed_next_state + 0.001 * self.target_threshold * noise
+            noisy_state = perturbed_next_state + self.ratio * self.target_threshold * noise
+
+            noisy_action = self.actor_target(noisy_state)
+            noisy_target_Q1_var, noisy_target_Q2_var = self.critic_target(noisy_state, noisy_action)
+            noisy_Q = torch.min(noisy_target_Q1_var, noisy_target_Q2_var)
+            var_Q = torch.abs(noisy_target_Q1_var - noisy_target_Q2_var)
+            nsm_loss = -noisy_Q.mean() + var_Q.mean()
+            self.nsm_optimizer.zero_grad()
+            nsm_loss.backward()
+            self.nsm_optimizer.step()
+
+        '''
+        get target_Q
+        '''
+
+        if self.version in [15, 17]:
+            #approximate_state = perturbed_next_state + 0.01 * self.target_threshold * self.nsm(perturbed_next_state)
+            #approximate_state = perturbed_next_state + 0.001 * self.target_threshold * self.nsm(perturbed_next_state)
+            #approximate_state = perturbed_next_state + 0.033 * self.target_threshold * self.nsm(perturbed_next_state)
+
+            approximate_state = perturbed_next_state + self.ratio * self.target_threshold * self.nsm(perturbed_next_state) * replay_buffer.stds_gpu
+
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
+        elif self.version == 22:
+            #approximate_state = perturbed_next_state + 0.01 * self.target_threshold * self.nsm(perturbed_next_state)
+            #approximate_state = perturbed_next_state + 0.001 * self.target_threshold * self.nsm(perturbed_next_state)
+            # approximate_state = perturbed_next_state + 0.1 * self.target_threshold * self.nsm(perturbed_next_state)
+            approximate_state = perturbed_next_state + self.ratio * self.target_threshold * self.nsm(perturbed_next_state)
+
+            approximate_action = self.actor_target(approximate_state)
+            approximate_target_Q1, approximate_target_Q2 = self.critic_target(approximate_state, approximate_action)
+            target_Q = torch.min(approximate_target_Q1, approximate_target_Q2)
+            target_Q = (perturbed_reward + not_done * self.discount * target_Q).detach()
+
+        else:
+            with torch.no_grad():
+                # Select action according to policy and add clipped noise
+                if self.version in [104, 106]:
+                    next_action = self.actor_target(next_state)
+                    # Compute the target Q value
+                    target_Q1, target_Q2 = self.critic_target(next_state, next_action)
+                    target_Q = torch.min(target_Q1, target_Q2)
+                    # target_Q = (target_Q1 + target_Q2) / 2
+
+                    target_Q = reward + not_done * self.discount * target_Q
+                elif self.version == 108:
+                    target_Q  = reward
+
+                else:
+                    next_action = self.actor_target(perturbed_next_state)
+                    # Compute the target Q value
+                    target_Q1, target_Q2 = self.critic_target(perturbed_next_state, next_action)
+                    target_Q = torch.min(target_Q1, target_Q2)
+                    # target_Q = (target_Q1 + target_Q2) / 2
+
+                    target_Q = perturbed_reward + not_done * self.discount * target_Q
 
         with torch.no_grad():
             test_noisy_next_action = self.actor(perturbed_next_state)
@@ -207,10 +322,34 @@ class D3PG(object):
             perturbed_next_state_v1 = next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
             test_noisy_next_action_v1 = self.actor(perturbed_next_state_v1)
             test_noisy_target_Q1_v1, test_noisy_target_Q2_v1 = self.critic(perturbed_next_state_v1, test_noisy_next_action_v1)
-            q_diff = (test_target_Q1 - test_noisy_target_Q1_v1).mean().item()
+            q_diff_v1 = (test_target_Q1 - test_noisy_target_Q1_v1).mean().item() # no estimate
 
+            perturbed_next_state_v2 = (1 + self.target_threshold) * next_state - self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
+            test_noisy_next_action_v2 = self.actor(perturbed_next_state_v2)
+            test_noisy_target_Q1_v2, test_noisy_target_Q2_v2 = self.critic(perturbed_next_state_v2, test_noisy_next_action_v2)
+            q_diff_v2 = (test_target_Q1 - test_noisy_target_Q1_v2).mean().item() # over estimate
 
+            perturbed_next_state_v3 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
+            test_noisy_next_action_v3 = self.actor(perturbed_next_state_v3)
+            test_noisy_target_Q1_v3, _ = self.critic(perturbed_next_state_v3, test_noisy_next_action_v3)
+            q_diff_v3 = (test_target_Q1 - test_noisy_target_Q1_v3).mean().item() # no estimate
 
+            perturbed_next_state_v4 = (1 + self.target_threshold) * next_state - self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
+            test_noisy_next_action_v4 = self.actor(perturbed_next_state_v4)
+            test_noisy_target_Q1_v4, _ = self.critic(perturbed_next_state_v4, test_noisy_next_action_v4)
+            q_diff_v4 = (test_target_Q1 - test_noisy_target_Q1_v4).mean().item() # over estimate
+
+            perturbed_next_state_v5 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state),
+                                                                                        torch.ones_like(next_state))  # 107
+            test_noisy_next_action_v5 = self.actor(perturbed_next_state_v5)
+            test_noisy_target_Q1_v5, _ = self.critic(perturbed_next_state_v5, test_noisy_next_action_v5)
+            q_diff_v5 = (test_target_Q1 - test_noisy_target_Q1_v5).mean().item() # under estimate
+
+            perturbed_next_state_v6 = (1 + self.target_threshold) * next_state - self.target_threshold * torch.normal(
+                torch.zeros_like(next_state), torch.ones_like(next_state))  # 107
+            test_noisy_next_action_v6 = self.actor(perturbed_next_state_v6)
+            test_noisy_target_Q1_v6, _ = self.critic(perturbed_next_state_v6, test_noisy_next_action_v6)
+            q_diff_v6 = (test_target_Q1 - test_noisy_target_Q1_v6).mean().item()
 
 
         # Get current Q estimates
@@ -246,7 +385,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, 0, 0
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6
 
 
     def save(self, filename):

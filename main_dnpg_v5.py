@@ -11,10 +11,6 @@ from duelingpg import dnpg_eval_v4
 import datetime
 from torch.utils.tensorboard import SummaryWriter
 
-from mbpo_py.tf_models.constructor import construct_model, format_samples_for_training
-from mbpo_py.predict_env import PredictEnv
-
-
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
 def eval_policy(policy, env_name, seed, eval_episodes=10):
@@ -117,12 +113,6 @@ if __name__ == "__main__":
     if args.version == 101:
         model_dir = ''
 
-    env_model = construct_model(obs_dim=state_dim, act_dim=action_dim, hidden_dim=200,
-                                num_networks=7,
-                                num_elites=5, model_dir=model_dir, name='BNN_115000')
-    predict_env = PredictEnv(env_model, args.env, 'tensorflow')
-
-
     policy = dnpg_eval_v4.D3PG(**kwargs)
 
     replay_buffer = utils.ModeledReplayBuffer(state_dim, action_dim, target_threshold=args.target_threshold)
@@ -155,15 +145,9 @@ if __name__ == "__main__":
         fake_done_bool = float(done) if episode_timesteps < env._max_episode_steps else 1
 
 
-        # Store data in replay buffer
-        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action, randomized_output=(args.version in [102, 105, 106, 107, 108] ))
-        if args.version == 107:
-            perturbed_next_state = next_state + args.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
-            perturbed_reward = reward + args.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
 
-        else:
-            perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
-            perturbed_reward = reward + args.target_threshold *(perturbed_reward - reward)
+        perturbed_next_state = next_state + args.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
+        perturbed_reward = reward + args.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
 
         if args.version in [100, 105, 106]:
             perturbed_reward = reward
@@ -199,13 +183,20 @@ if __name__ == "__main__":
 
         # Train agent after collecting sufficient data
         if t >= args.start_timesteps:
-            actor_loss, critic_loss, q1, q2, q_diff, bias_loss, bias_diff,  r2, r3 = policy.train(replay_buffer, args.batch_size)
+            actor_loss, critic_loss, q1, q2, q_diff, bias_loss, bias_diff,  q_diff1, q_diff2, q_diff3, q_diff4, q_diff5, q_diff6 = policy.train(replay_buffer, args.batch_size)
 
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('value/q1', q1, t)
             writer.add_scalar('value/q2', q2, t)
             writer.add_scalar('value/q_diff', q_diff, t)
+            writer.add_scalar('value/q_diff1', q_diff1, t)
+            writer.add_scalar('value/q_diff2', q_diff2, t)
+            writer.add_scalar('value/q_diff3', q_diff3, t)
+            writer.add_scalar('value/q_diff4', q_diff4, t)
+            writer.add_scalar('value/q_diff5', q_diff5, t)
+            writer.add_scalar('value/q_diff6', q_diff6, t)
+
             writer.add_scalar('bias/bias_loss', bias_loss, t)
             writer.add_scalar('bias/bias_diff', bias_diff, t)
 
