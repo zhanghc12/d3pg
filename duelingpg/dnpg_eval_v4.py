@@ -329,6 +329,31 @@ class D3PG(object):
             test_noisy_target_Q1_v2, test_noisy_target_Q2_v2 = self.critic(perturbed_next_state_v2, test_noisy_next_action_v2)
             q_diff_v2 = (test_target_Q1 - test_noisy_target_Q1_v2).mean().item()
 
+            perturbed_next_state_v3 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
+            test_noisy_next_action_v3 = self.actor(perturbed_next_state_v3)
+            test_noisy_target_Q1_v3, _ = self.critic(perturbed_next_state_v3, test_noisy_next_action_v3)
+            q_diff_v3 = (test_target_Q1 - test_noisy_target_Q1_v3).mean().item()
+
+            perturbed_next_state_v4 = (1-self.target_threshold) * next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
+            test_noisy_next_action_v4 = self.actor(perturbed_next_state_v4)
+            test_noisy_target_Q1_v4, _ = self.critic(perturbed_next_state_v4, test_noisy_next_action_v4)
+            q_diff_v4 = (test_target_Q1 - test_noisy_target_Q1_v4).mean().item()
+
+            perturbed_next_state_v5 = next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state),
+                                                                                        torch.ones_like(next_state))  # 107
+            test_noisy_next_action_v5 = self.actor(perturbed_next_state_v5)
+            test_noisy_target_Q1_v5, _ = self.critic(perturbed_next_state_v5, test_noisy_next_action_v5)
+            q_diff_v5 = (test_target_Q1 - test_noisy_target_Q1_v5).mean().item()
+
+            perturbed_next_state_v6 = (1 - self.target_threshold) * next_state + self.target_threshold * torch.normal(
+                torch.zeros_like(next_state), torch.ones_like(next_state))  # 107
+            test_noisy_next_action_v6 = self.actor(perturbed_next_state_v6)
+            test_noisy_target_Q1_v6, _ = self.critic(perturbed_next_state_v6, test_noisy_next_action_v6)
+            q_diff_v6 = (test_target_Q1 - test_noisy_target_Q1_v6).mean().item()
+
+
+            #             return np.random.normal(np.zeros_like(obs), np.abs(obs)), np.random.normal(np.zeros_like(rewards), np.abs(rewards)) # 107
+
 
 
 
@@ -366,7 +391,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6
 
 
     def save(self, filename):
