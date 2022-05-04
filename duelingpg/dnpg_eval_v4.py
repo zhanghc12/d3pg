@@ -351,10 +351,7 @@ class D3PG(object):
             test_noisy_target_Q1_v6, _ = self.critic(perturbed_next_state_v6, test_noisy_next_action_v6)
             q_diff_v6 = (test_target_Q1 - test_noisy_target_Q1_v6).mean().item()
 
-
             #             return np.random.normal(np.zeros_like(obs), np.abs(obs)), np.random.normal(np.zeros_like(rewards), np.abs(rewards)) # 107
-
-
 
 
 

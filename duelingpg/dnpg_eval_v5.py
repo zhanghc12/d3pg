@@ -290,7 +290,7 @@ class D3PG(object):
         else:
             with torch.no_grad():
                 # Select action according to policy and add clipped noise
-                if self.version in [104, 106]:
+                if self.version in [104, 106, 109]:
                     next_action = self.actor_target(next_state)
                     # Compute the target Q value
                     target_Q1, target_Q2 = self.critic_target(next_state, next_action)
@@ -362,6 +362,16 @@ class D3PG(object):
             test_noisy_target_Q1_v8, _ = self.critic(perturbed_next_state_v8, test_noisy_next_action_v8)
             q_diff_v8 = (test_target_Q1 - test_noisy_target_Q1_v8).mean().item() # under estimate
 
+            perturbed_next_state_v9 = (1 - self.target_threshold) * next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
+            test_noisy_next_action_v9 = self.actor(perturbed_next_state_v9)
+            test_noisy_target_Q1_v9, _ = self.critic(perturbed_next_state_v9, test_noisy_next_action_v9)
+            q_diff_v9 = (test_target_Q1 - test_noisy_target_Q1_v9).mean().item() # over estimate
+
+            perturbed_next_state_v10 = (1 - self.target_threshold) * next_state + self.target_threshold * torch.normal(torch.zeros_like(next_state), torch.abs(next_state)) # 107
+            test_noisy_next_action_v10 = self.actor(perturbed_next_state_v10)
+            test_noisy_target_Q1_v10, _ = self.critic(perturbed_next_state_v10, test_noisy_next_action_v10)
+            q_diff_v10 = (test_target_Q1 - test_noisy_target_Q1_v10).mean().item() # over estimate
+
 
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
@@ -396,7 +406,8 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6, q_diff_v7, q_diff_v8
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6, q_diff_v7, q_diff_v8, q_diff_v9, q_diff_v10
+
 
 
     def save(self, filename):
