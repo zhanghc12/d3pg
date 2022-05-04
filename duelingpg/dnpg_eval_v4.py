@@ -248,6 +248,9 @@ class D3PG(object):
                     # target_Q = (target_Q1 + target_Q2) / 2
 
                     target_Q = reward + not_done * self.discount * target_Q
+                elif self.version == 108:
+                    target_Q  = reward
+
                 else:
                     next_action = self.actor_target(perturbed_next_state)
                     # Compute the target Q value
@@ -284,7 +287,7 @@ class D3PG(object):
 
             # Compute actor losse
             # Optimize the actor
-            if self.version in [103, 105, 106]:
+            if self.version in [103, 105, 106, 108]:
                 pass
             else:
                 self.actor_optimizer.zero_grad()

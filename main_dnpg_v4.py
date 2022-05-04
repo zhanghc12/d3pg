@@ -156,7 +156,7 @@ if __name__ == "__main__":
 
 
         # Store data in replay buffer
-        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action, randomized_output=(args.version in [102, 105, 106, 107] ))
+        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action, randomized_output=(args.version in [102, 105, 106, 107, 108] ))
         if args.version == 107:
             perturbed_next_state = next_state + args.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
             perturbed_reward = reward + args.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
