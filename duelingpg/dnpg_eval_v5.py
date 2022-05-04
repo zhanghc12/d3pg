@@ -352,6 +352,17 @@ class D3PG(object):
             q_diff_v6 = (test_target_Q1 - test_noisy_target_Q1_v6).mean().item()
 
 
+            perturbed_next_state_v7 = next_state + self.target_threshold * next_state
+            test_noisy_next_action_v7 = self.actor(perturbed_next_state_v7)
+            test_noisy_target_Q1_v7, _ = self.critic(perturbed_next_state_v7, test_noisy_next_action_v7)
+            q_diff_v7 = (test_target_Q1 - test_noisy_target_Q1_v7).mean().item() # under estimate
+
+            perturbed_next_state_v8 = next_state - self.target_threshold * next_state
+            test_noisy_next_action_v8 = self.actor(perturbed_next_state_v8)
+            test_noisy_target_Q1_v8, _ = self.critic(perturbed_next_state_v8, test_noisy_next_action_v8)
+            q_diff_v8 = (test_target_Q1 - test_noisy_target_Q1_v8).mean().item() # under estimate
+
+
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
 
