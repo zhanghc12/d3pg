@@ -113,7 +113,7 @@ if __name__ == "__main__":
     if args.version == 101:
         model_dir = ''
 
-    policy = dnpg_eval_v4.D3PG(**kwargs)
+    policy = dnpg_eval_v5.D3PG(**kwargs)
 
     replay_buffer = utils.ModeledReplayBuffer(state_dim, action_dim, target_threshold=args.target_threshold)
     onpolicy_buffer = utils.ModeledReplayBuffer(state_dim, action_dim, target_threshold=0)
