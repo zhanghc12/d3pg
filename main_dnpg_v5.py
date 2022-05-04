@@ -6,7 +6,7 @@ import os
 import os.path as osp
 import duelingpg.utils as utils
 
-from duelingpg import dnpg_eval_v4
+from duelingpg import dnpg_eval_v5
 
 import datetime
 from torch.utils.tensorboard import SummaryWriter
