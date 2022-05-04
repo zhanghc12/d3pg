@@ -8,7 +8,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from torch.autograd import Variable
 
 
-class CriticBackup(nn.Module):
+class Critic(nn.Module):
     def __init__(self, state_dim, action_dim, use_sn=False):
         super(Critic, self).__init__()
 
@@ -62,7 +62,7 @@ class CriticBackup(nn.Module):
         q2 = self.l6(q2)
         return q2
 
-class Critic(nn.Module):
+class CriticB(nn.Module):
     def __init__(self, state_dim, action_dim, use_sn=False):
         super(Critic, self).__init__()
 
@@ -319,6 +319,18 @@ class D3PG(object):
 
             q_diff = (test_target_Q1 - test_noisy_target_Q1).mean().item()
 
+            perturbed_next_state_v1 = next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
+            test_noisy_next_action_v1 = self.actor(perturbed_next_state_v1)
+            test_noisy_target_Q1_v1, test_noisy_target_Q2_v1 = self.critic(perturbed_next_state_v1, test_noisy_next_action_v1)
+            q_diff_v1 = (test_target_Q1 - test_noisy_target_Q1_v1).mean().item()
+
+            perturbed_next_state_v2 = (1-self.target_threshold) * next_state + self.target_threshold * next_state * ((torch.normal(torch.zeros_like(next_state), torch.ones_like(next_state)) > 0).float() - 0.5 ) * 2
+            test_noisy_next_action_v2 = self.actor(perturbed_next_state_v2)
+            test_noisy_target_Q1_v2, test_noisy_target_Q2_v2 = self.critic(perturbed_next_state_v2, test_noisy_next_action_v2)
+            q_diff_v2 = (test_target_Q1 - test_noisy_target_Q1_v2).mean().item()
+
+
+
 
 
         # Get current Q estimates
@@ -354,7 +366,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, 0, 0
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2
 
 
     def save(self, filename):
