@@ -114,6 +114,9 @@ if __name__ == "__main__":
     kwargs['target_threshold'] = args.target_threshold
 
     model_dir = '/data/zhanghc/tf_models/' + args.env + '/'
+    if args.version == 101:
+        model_dir = ''
+
     env_model = construct_model(obs_dim=state_dim, act_dim=action_dim, hidden_dim=200,
                                 num_networks=7,
                                 num_elites=5, model_dir=model_dir, name='BNN_115000')
@@ -153,10 +156,16 @@ if __name__ == "__main__":
 
 
         # Store data in replay buffer
-        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action)
-        perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
-        perturbed_reward = reward + args.target_threshold *(perturbed_reward - reward)
-        if args.version == 100:
+        perturbed_next_state, perturbed_reward = predict_env.step_single(state, action, randomized_output=(args.version in [102, 105, 106, 107, 108] ))
+        if args.version == 107:
+            perturbed_next_state = next_state + args.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
+            perturbed_reward = reward + args.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
+
+        else:
+            perturbed_next_state = next_state + args.target_threshold * (perturbed_next_state - next_state)
+            perturbed_reward = reward + args.target_threshold *(perturbed_reward - reward)
+
+        if args.version in [100, 105, 106]:
             perturbed_reward = reward
 
         # 0, no noise
