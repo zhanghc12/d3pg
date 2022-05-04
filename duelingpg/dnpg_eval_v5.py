@@ -396,7 +396,7 @@ class D3PG(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
 
-        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6
+        return actor_loss.item(), critic_loss.item(), current_Q1.mean().item(), current_Q2.mean().item(), q_diff, bias_loss, bias_diff, q_diff_v1, q_diff_v2, q_diff_v3, q_diff_v4, q_diff_v5, q_diff_v6, q_diff_v7, q_diff_v8
 
 
     def save(self, filename):
