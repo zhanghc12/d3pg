@@ -171,7 +171,7 @@ class D3PG(object):
         bias_diff = 0.
 
         if self.version == 110:
-            for i in range(10):
+            for i in range(1):
                 state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(
                     batch_size)
 
