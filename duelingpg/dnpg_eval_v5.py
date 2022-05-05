@@ -72,8 +72,9 @@ class BiasCritic(nn.Module):
         self.l2 = nn.Linear(256, 256)
         self.l3 = nn.Linear(256, 1)
 
-    def forward(self, state):
-        q1 = F.relu(self.l1(state))
+    def forward(self, state, action, next_state):
+        inputs = torch.cat([state, action, next_state], dim=1)
+        q1 = F.relu(self.l1(inputs))
         q1 = F.relu(self.l2(q1))
         q1 = self.l3(q1)
         return q1
