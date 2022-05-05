@@ -144,12 +144,13 @@ if __name__ == "__main__":
         done_bool = float(done) if episode_timesteps < env._max_episode_steps else 0
         fake_done_bool = float(done) if episode_timesteps < env._max_episode_steps else 1
 
+        next_state_noise, reward_noise = np.random.normal(np.zeros_like(next_state), np.abs(next_state)), np.random.normal(np.zeros_like(reward), np.abs(reward))  # 107
 
 
-        perturbed_next_state = next_state + args.target_threshold * np.random.normal(np.zeros_like(next_state), np.ones_like(next_state))
-        perturbed_reward = reward + args.target_threshold * np.random.normal(np.zeros_like(reward), np.ones_like(reward))
+        perturbed_next_state = next_state + args.target_threshold * next_state_noise
+        perturbed_reward = reward + args.target_threshold * reward_noise
 
-        if args.version in [100, 105, 106]:
+        if args.version in [100, 105, 106, 110]:
             perturbed_reward = reward
 
         # 0, no noise
