@@ -171,8 +171,11 @@ class D3PG(object):
         bias_loss = 0.
         bias_diff = 0.
 
-        if self.version == 110:
-            for i in range(1):
+        if self.version in [110, 111]:
+            iters = 1
+            if self.version == 111:
+                iters = 10
+            for i in range(iters):
                 state, action, next_state, reward, not_done, perturbed_next_state, perturbed_reward = replay_buffer.sample(
                     batch_size)
 
@@ -222,7 +225,7 @@ class D3PG(object):
 
                 target_Q = perturbed_reward + not_done * self.discount * target_Q
 
-                if self.version == 110:
+                if self.version in [110, 111]:
                     target_Q += not_done * self.discount * self.bias_critic(state, action, perturbed_next_state).detach()
 
 

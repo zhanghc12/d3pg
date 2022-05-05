@@ -150,7 +150,7 @@ if __name__ == "__main__":
         perturbed_next_state = next_state + args.target_threshold * next_state_noise
         perturbed_reward = reward + args.target_threshold * reward_noise
 
-        if args.version in [100, 105, 106, 110]:
+        if args.version in [100, 105, 106, 110, 111]:
             perturbed_reward = reward
 
         # 0, no noise
