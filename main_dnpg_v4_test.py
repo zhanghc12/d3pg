@@ -136,6 +136,6 @@ if __name__ == "__main__":
         state_batch, action_batch = memory.sample_by_index(ind=index, return_np=True)
         iid_distance = predict_env.predict_uncertainty(state_batch, action_batch)
         i += batch_size
-        print(i, iid_distance)
+        print(i, np.mean(iid_distance))
 
 
