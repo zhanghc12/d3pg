@@ -83,10 +83,10 @@ def init_weights(m):
 
 class EnsembleFC(nn.Module):
     __constants__ = ['in_features', 'out_features']
-    in_features: int
-    out_features: int
-    ensemble_size: int
-    weight: torch.Tensor
+    #in_features: int
+    #out_features: int
+    #ensemble_size: int
+    #weight: torch.Tensor
 
     def __init__(self, in_features: int, out_features: int, ensemble_size: int, weight_decay: float = 0., bias: bool = True) -> None:
         super(EnsembleFC, self).__init__()

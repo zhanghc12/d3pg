@@ -13,7 +13,7 @@ class SpectralNorm:
     # Invariant before and after each forward call:
     #   u = normalize(W @ v)
     # NB: At initialization, this invariant is not enforced
-
+    """
     _version: int = 1
     # At version 1:
     #   made  `W` not a buffer,
@@ -24,6 +24,7 @@ class SpectralNorm:
     n_power_iterations: int
     eps: float
     norm_bound: float
+    """
 
     def __init__(self, name: str = 'weight', n_power_iterations: int = 1, dim: int = 0, eps: float = 1e-12,
                  norm_bound: float = 0.95) -> None:
@@ -132,7 +133,8 @@ class SpectralNorm:
         fn = SpectralNorm(name, n_power_iterations, dim, eps, norm_bound)
         weight = module._parameters[name]
         if weight is None:
-            raise ValueError(f'`SpectralNorm` cannot be applied as parameter `{name}` is None')
+            raise ValueError('1')
+            #raise ValueError(f'`SpectralNorm` cannot be applied as parameter `{name}` is None')
         if isinstance(weight, torch.nn.parameter.UninitializedParameter):
             raise ValueError(
                 'The module passed to `SpectralNorm` can\'t have uninitialized parameters. '
