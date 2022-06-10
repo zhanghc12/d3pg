@@ -8,6 +8,7 @@ from knn_ue import dppg
 import d4rl.gym_mujoco
 import numpy as np
 import time
+from tqdm import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -27,7 +28,7 @@ def load_hdf5(dataset, replay_buffer):
     dones = np.expand_dims(np.squeeze(dataset['terminals']), 1)
     next_actions = np.concatenate([dataset['actions'][1:], dataset['actions'][-1:]], axis=0)
 
-    for state, action, reward, next_state, done, next_action in zip(states, actions, next_states, rewards, dones, next_actions):
+    for state, action, reward, next_state, done, next_action in tqdm(zip(states, actions, next_states, rewards, dones, next_actions)):
         replay_buffer.add(state, action, reward, next_state, done, next_action)
 
     print('loading finished!!!')
@@ -35,7 +36,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_episodes=10, bc=False):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -44,7 +45,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_epi
         state, done = eval_env.reset(), False
         while not done:
             state = (state - obs_mean) / (obs_std + 1e-5)
-            action = policy.select_action(np.array(state), bc=bc)
+            action = policy.select_action(np.array(state))
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
 
@@ -52,7 +53,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_epi
     d4rl_score = eval_env.get_normalized_score(avg_reward) * 100
 
     print("---------------------------------------")
-    print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}, normalized scoare:{}".format(t, eval_episodes, avg_reward, bc_scale, d4rl_score))
+    print("Steps:{}, Evaluation over {} episodes: {:.3f}, normalized scoare:{}".format(t, eval_episodes, avg_reward, d4rl_score))
     print("---------------------------------------")
     return avg_reward, d4rl_score
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
 
     # Evaluate untrained policy
-    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
+    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std)]
 
     start_time = time.time()
 
@@ -126,7 +127,7 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            avg_return, d4rl_score = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)
+            avg_return, d4rl_score = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std)
             evaluations.append(avg_return)
             writer.add_scalar('test/return', avg_return, t)
             writer.add_scalar('test/d4rl_score', d4rl_score, t)

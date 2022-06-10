@@ -96,7 +96,7 @@ class TD3(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-    def select_action(self, state, evaluate=False, bc=False):
+    def select_action(self, state, evaluate=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         action = self.actor(state)
         return action.detach().cpu().numpy()[0]
