@@ -28,7 +28,7 @@ def load_hdf5(dataset, replay_buffer):
     dones = np.expand_dims(np.squeeze(dataset['terminals']), 1)
     next_actions = np.concatenate([dataset['actions'][1:], dataset['actions'][-1:]], axis=0)
 
-    for state, action, reward, next_state, done, next_action in tqdm(zip(states, actions, next_states, rewards, dones, next_actions)):
+    for state, action, reward, next_state, done, next_action in tqdm(zip(states, actions, rewards, next_states, dones, next_actions)):
         replay_buffer.add(state, action, reward, next_state, done, next_action)
 
     print('loading finished!!!')
