@@ -147,7 +147,7 @@ class TD3(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        priority = np.sqrt(2) - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
+        priority = 2 - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
         priority = priority.detach().cpu().numpy()
         memory.update_priorities(idxes, priority)
 
