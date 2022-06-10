@@ -29,4 +29,4 @@ CUDA_VISIBLE_DEVICES=3 python offline_dppg.py --env walker2d-medium-replay-v0 --
 CUDA_VISIBLE_DEVICES=4 python offline_dppg.py --env walker2d-medium-replay-v0 --seed 3 --alpha 0 &\
 CUDA_VISIBLE_DEVICES=5 python offline_dppg.py --env walker2d-medium-replay-v0 --seed 3 --alpha 0.5 &\
 CUDA_VISIBLE_DEVICES=6 python offline_dppg.py --env walker2d-medium-replay-v0 --seed 3 --alpha 1 &\
-CUDA_VISIBLE_DEVICES=7 python offline_dppg.py --env walker2d-medium-replay-v0 --seed 3 --alpha 5 &\
+CUDA_VISIBLE_DEVICES=7 python offline_dppg.py --env walker2d-medium-replay-v0 --seed 3 --alpha 5
