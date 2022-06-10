@@ -122,7 +122,7 @@ class PrioritizedReplayBuffer(OriginalReplayBuffer):
 
         self._it_sum = SumSegmentTree(it_capacity)
         self._it_min = MinSegmentTree(it_capacity)
-        self._max_priority = 1.0
+        self._max_priority = 2.0
 
     def add(self, obs_t, action, reward, obs_tp1, done, action_tp1):
         """
