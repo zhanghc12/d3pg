@@ -146,7 +146,7 @@ class PrioritizedReplayBuffer(OriginalReplayBuffer):
         idx = self._it_sum.find_prefixsum_idx(mass)
         return idx
 
-    def sample(self, batch_size, beta=0):
+    def sample(self, batch_size, beta=0.5):
         """
         Sample a batch of experiences.
         compared to ReplayBuffer.sample

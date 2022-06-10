@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=0 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0
+CUDA_VISIBLE_DEVICES=0 python offline_dppg.py --env hopper-medium-replay-v0 --seed 0
