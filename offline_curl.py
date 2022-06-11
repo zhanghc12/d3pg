@@ -171,7 +171,7 @@ if __name__ == "__main__":
             writer.add_scalar('loss/actor_loss', actor_loss, t)
             writer.add_scalar('loss/curl_loss', curl_loss, t)
 
-            print('iteration: {}, critic_loss :{:4f}, actor_loss: {:4f}, curl_loss: {.:4f}, left_time:{:.2f}'.format(t, critic_loss, actor_loss, curl_loss, (time.time() - start_time) / 100 * (1e6 - t) / 3600 ))
+            print('iteration: {}, critic_loss :{:4f}, actor_loss: {:4f}, curl_loss: {:4f}, left_time:{:.2f}'.format(t, critic_loss, actor_loss, curl_loss, (time.time() - start_time) / 100 * (1e6 - t) / 3600 ))
             start_time = time.time()
 
         # Evaluate episode
