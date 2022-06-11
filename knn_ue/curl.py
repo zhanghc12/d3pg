@@ -181,6 +181,7 @@ class TD3(object):
         query_data = self.feature_nn(next_state, next_action).detach().cpu().numpy()
         target_distance = kd_trees.query(query_data, k=1)[0] # / 20
 
+        target_distance = torch.FloatTensor(target_distance).to(self.device)
         #tree_index = np.random.choice(len(kd_trees))
         #kd_tree = kd_trees[tree_index]
         #target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
