@@ -189,7 +189,7 @@ class TD3(object):
         # actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
         next_Q1, next_Q2 = self.critic(next_state, next_action)
         next_Q = (next_Q1 + next_Q2) / 2
-        curl_loss = next_Q * (target_distance > self.target_threshold).float()
+        curl_loss = (next_Q * (target_distance > self.target_threshold).float()).mean()
 
         critic_loss = critic_loss + curl_loss
 
@@ -219,7 +219,7 @@ class TD3(object):
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-        return critic_loss.item(), actor_loss.item()
+        return critic_loss.item(), actor_loss.item(), curl_loss.item()
 
 
 

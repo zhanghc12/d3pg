@@ -164,12 +164,14 @@ if __name__ == "__main__":
     start_time = time.time()
 
     for t in range(int(args.max_timesteps)):
-        critic_loss, actor_loss = policy.train(replay_buffer, args.batch_size, trees)
+        critic_loss, actor_loss, curl_loss = policy.train(replay_buffer, args.batch_size, trees)
 
         if t % 100 == 0:
             writer.add_scalar('loss/critic_loss', critic_loss, t)
             writer.add_scalar('loss/actor_loss', actor_loss, t)
-            print('iteration: {}, critic_loss :{:4f}, actor_loss: {:4f}, left_time:{:.2f}'.format(t, critic_loss, actor_loss, (time.time() - start_time) / 100 * (1e6 - t) / 3600 ))
+            writer.add_scalar('loss/curl_loss', curl_loss, t)
+
+            print('iteration: {}, critic_loss :{:4f}, actor_loss: {:4f}, curl_loss: {.:4f}, left_time:{:.2f}'.format(t, critic_loss, actor_loss, curl_loss, (time.time() - start_time) / 100 * (1e6 - t) / 3600 ))
             start_time = time.time()
 
         # Evaluate episode
