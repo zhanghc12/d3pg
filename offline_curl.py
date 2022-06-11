@@ -36,7 +36,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, bc=False):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -45,7 +45,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, 
         state, done = eval_env.reset(), False
         while not done:
             state = (state - obs_mean) / (obs_std + 1e-5)
-            action = policy.select_action(np.array(state), bc=bc)
+            action = policy.select_action(np.array(state))
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
 
@@ -80,8 +80,6 @@ if __name__ == "__main__":
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
     parser.add_argument("--output_dim", type=int, default=6)
-    # parser.add_argument("--seed", type=int, default=0)
-
 
     args = parser.parse_args()
 
