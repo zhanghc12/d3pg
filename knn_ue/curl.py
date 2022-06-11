@@ -187,7 +187,9 @@ class TD3(object):
         #target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
 
         # actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
-        curl_loss = self.critic(next_state, next_action) * (target_distance > self.target_threshold).float()
+        next_Q1, next_Q2 = self.critic(next_state, next_action)
+        next_Q = (next_Q1 + next_Q2) / 2
+        curl_loss = next_Q * (target_distance > self.target_threshold).float()
 
         critic_loss = critic_loss + curl_loss
 
