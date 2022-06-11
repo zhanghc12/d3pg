@@ -14,3 +14,8 @@ g1 = tf.gradients(b, a, grad_ys=1 * tf.ones([3,5]))
 
 # g1 = tf.gradients([b], [a])
 print(sess.run(g1)) # [None]
+
+
+a = tf.ones([3,5])
+b = 2 * tf.ones([5])
+print(sess.run(a - b), sess.run(tf.norm(a, axis=1)))
