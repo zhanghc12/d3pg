@@ -178,12 +178,12 @@ class TD3(object):
         # Compute critic loss
         critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
 
-        state_batch_np = next_state.cpu().numpy()
-        action_batch_np = next_action.detach().cpu().numpy()
-        query_data = np.concatenate([state_batch_np, action_batch_np], axis=1)
-        tree_index = np.random.choice(len(kd_trees))
-        kd_tree = kd_trees[tree_index]
-        target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
+        query_data = self.feature_nn(next_state, next_action).detach().cpu().numpy()
+        target_distance = kd_trees.query(query_data, k=1)[0] # / 20
+
+        #tree_index = np.random.choice(len(kd_trees))
+        #kd_tree = kd_trees[tree_index]
+        #target_distance = kd_tree.query(query_data, k=1)[0] / (self.state_dim + self.action_dim)
 
         # actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
         curl_loss = self.critic(next_state, next_action) * (target_distance > self.target_threshold).float()
