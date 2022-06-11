@@ -1,6 +1,6 @@
 import numpy as np
 
-a = np.random.normal(np.zeros([1000]), np.ones([1000]))
+a = np.random.normal(np.zeros([1000]), 0.8* np.ones([1000]))
 print(np.mean(np.abs(a)))
 
 # 0.8

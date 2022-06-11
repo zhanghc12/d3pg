@@ -34,6 +34,10 @@ def load_hdf5(dataset, replay_buffer):
     replay_buffer.next_action = np.concatenate([dataset['actions'][1:],dataset['actions'][-1:]], axis=0)
     replay_buffer.forward_label = normalize(np.concatenate([dataset['next_observations'] - dataset['observations'], np.expand_dims(np.squeeze(dataset['rewards']), 1)], axis=1))
 
+    rel_obs = dataset['next_observations'] - dataset['observations']
+    print(np.std(rel_obs, axis=0, keepdims=True))
+    print(np.mean(np.std(rel_obs, axis=0, keepdims=True)))
+
     rew_mean = np.mean(replay_buffer.reward, axis=0, keepdims=True)
     rew_std = np.std(replay_buffer.reward, axis=0, keepdims=True)
 
@@ -41,7 +45,7 @@ def load_hdf5(dataset, replay_buffer):
     print('Number of terminals on: ', replay_buffer.not_done.sum())
     return obs_mean, obs_std, rew_mean, rew_std
 
-env = gym.make('halfcheetah-medium-replay-v0')
+env = gym.make('hopper-medium-replay-v0')
 #env = gym.make('halfcheetah-random-v0')
 
 #env = gym.make('hopper-expert-v0')
@@ -51,11 +55,11 @@ action_dim = env.action_space.shape[0]
 replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 offline_dataset = d4rl.qlearning_dataset(env)
 obs_mean, obs_std, rew_mean, rew_std = load_hdf5(offline_dataset, replay_buffer)
-for std in obs_std[0]:
-    print('{:.4f},'.format(std), end="")
-print('')
+#for std in obs_std[0]:
+#    print('{:.4f},'.format(std), end="")
+#print('')
 
-print(obs_mean, obs_std, rew_mean, rew_std)
+#print(obs_mean, obs_std, rew_mean, rew_std)
 
 # hopper 0.07
 # medium
