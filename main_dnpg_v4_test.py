@@ -122,7 +122,7 @@ if __name__ == "__main__":
     predict_env = PredictEnv(env_model, args.env, 'tensorflow')
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 
-    env = gym.make('hopper-medium-replay-v2')
+    env = gym.make('hopper-expert-v2')
     offline_dataset = d4rl.qlearning_dataset(env)
     obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
 
