@@ -36,7 +36,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_episodes=10, bc=False):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, bc=False):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -53,7 +53,7 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, bc_scale, eval_epi
     d4rl_score = eval_env.get_normalized_score(avg_reward) * 100
 
     print("---------------------------------------")
-    print("Steps:{}, Evaluation over {} episodes: {:.3f}, bc_scale:{}, normalized scoare:{}".format(t, eval_episodes, avg_reward, bc_scale, d4rl_score))
+    print("Steps:{}, Evaluation over {} episodes: {:.3f}, normalized scoare:{}".format(t, eval_episodes, avg_reward, d4rl_score))
     print("---------------------------------------")
     return avg_reward, d4rl_score
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
 
     # Evaluate untrained policy
-    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
+    evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std)]
 
     kdtree_path = experiment_dir + 'kdtree/critic' + args.env
     iid_list_path = experiment_dir + 'kdtree/iid_list' + args.env
@@ -176,7 +176,7 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            avg_return, d4rl_score = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)
+            avg_return, d4rl_score = eval_policy(t, policy, args.env, args.seed, obs_mean, obs_std)
             evaluations.append(avg_return)
             writer.add_scalar('test/return', avg_return, t)
             writer.add_scalar('test/d4rl_score', d4rl_score, t)
