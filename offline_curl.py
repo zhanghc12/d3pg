@@ -80,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=2)
     parser.add_argument("--output_dim", type=int, default=6)
+    parser.add_argument("--alpha", type=float, default=1)
 
     args = parser.parse_args()
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/kd/'
     experiment_dir = experiment_dir + '0611/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_od{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.output_dim))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_od{}_alpha{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.output_dim, args.alpha))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")
@@ -109,7 +110,7 @@ if __name__ == "__main__":
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    policy = curl.TD3(state_dim, action_dim, args.discount, args.tau, args.target_threshold, args.output_dim)
+    policy = curl.TD3(state_dim, action_dim, args.discount, args.tau, args.target_threshold, args.output_dim, args.alpha)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)

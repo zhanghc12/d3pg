@@ -120,7 +120,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, target_threshold, output_dim):
+    def __init__(self, state_dim, action_dim, gamma, tau, target_threshold, output_dim, alpha):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -148,6 +148,7 @@ class TD3(object):
 
         self.target_threshold = target_threshold
         self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, output_dim).to(device)
+        self.alpha = alpha
 
 
     def select_action(self, state, evaluate=False):
@@ -191,7 +192,7 @@ class TD3(object):
         next_Q = (next_Q1 + next_Q2) / 2
         curl_loss = (next_Q * (target_distance > self.target_threshold).float()).mean()
 
-        critic_loss = critic_loss + curl_loss
+        critic_loss = critic_loss + self.alpha * curl_loss
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
