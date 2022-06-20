@@ -150,10 +150,11 @@ class TD3(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
+        '''
         self.mse_criterion = nn.MSELoss()
         self.vae = VAEPolicy(state_dim, action_dim, 2 * action_dim).to(device)
         self.vae_optimizer = torch.optim.Adam(self.vae.parameters(), lr=3e-4)
-
+        '''
     def select_action(self, state, evaluate=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
         action = self.actor(state)
@@ -209,7 +210,7 @@ class TD3(object):
         priority = priority.detach().cpu().numpy()
         memory.update_priorities(idxes, priority)
 
-
+        '''
         recon, mean, std = self.vae(state, action)
         recon_loss = self.mse_criterion(recon, action)
         kl_loss = -0.5 * (1 + torch.log(std.pow(2)) - mean.pow(2) - std.pow(2)).mean()
@@ -218,6 +219,7 @@ class TD3(object):
         self.vae_optimizer.zero_grad()
         vae_loss.backward()
         self.vae_optimizer.step()
+        '''
 
         return critic_loss.item(), actor_loss.item()
 
