@@ -131,7 +131,7 @@ class TD3(object):
         lmbda = 1 / Q.abs().mean().detach()
         actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
 
-        actor_loss = - Q.mean()
+        # actor_loss = - Q.mean()
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
