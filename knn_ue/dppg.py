@@ -190,7 +190,7 @@ class TD3(object):
         lmbda = 1 / Q.abs().mean().detach()
         actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
 
-        actor_loss = -lmbda * Q.mean() + self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))
+        actor_loss = -lmbda * Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
         # actor_loss = - Q.mean()
 
