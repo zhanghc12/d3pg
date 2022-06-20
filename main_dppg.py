@@ -59,6 +59,7 @@ if __name__ == "__main__":
     parser.add_argument("--target_threshold", default=0.1, type=float)
     parser.add_argument("--num_critic", default=2, type=int)
     parser.add_argument("--test", default=1, type=int)
+    parser.add_argument("--bc_scale", default=1, type=float)
 
     args = parser.parse_args()
 
@@ -68,7 +69,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/dppg/'
     experiment_dir = experiment_dir + '06_09/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_n{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.num_critic))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_b{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.bc_scale))
 
     file_name = "{}_{}_{}".format(args.policy, args.env, args.seed)
     print("---------------------------------------")

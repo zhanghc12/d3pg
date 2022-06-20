@@ -78,6 +78,8 @@ if __name__ == "__main__":
     parser.add_argument("--target_threshold", default=0.1, type=float)
 
     parser.add_argument("--alpha", type=float, default=0.1)
+    parser.add_argument("--bc_scale", type=float, default=0)
+
     args = parser.parse_args()
 
     if torch.cuda.is_available():
@@ -86,7 +88,7 @@ if __name__ == "__main__":
         experiment_dir = '/tmp/data/zhanghc/offline_dppg/'
     experiment_dir = experiment_dir + '0609/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_alpha{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.alpha))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_thre{}_tau{}_alpha{}_bc{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.target_threshold, args.tau, args.alpha, args.bc_scale))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")

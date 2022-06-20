@@ -73,7 +73,7 @@ class Critic(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -84,7 +84,7 @@ class TD3(object):
         self.policy_noise = 0.2
         self.noise_clip = 0.5
         self.policy_freq = 2
-        self.alpha = 2.5
+        self.bc_scale = bc_scale
 
         self.total_it = 0
 
@@ -128,8 +128,8 @@ class TD3(object):
 
         pi = self.actor(state)
         Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
-        # lmbda = self.alpha / Q.abs().mean().detach()
-        # actor_loss = -lmbda * Q.mean() + F.mse_loss(pi, action)
+        lmbda = 1 / Q.abs().mean().detach()
+        actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
 
         actor_loss = - Q.mean()
 
