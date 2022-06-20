@@ -86,9 +86,9 @@ class VAEPolicy():
         self.mean = torch.nn.Linear(750, self.latent_dim)
         self.log_std = torch.nn.Linear(750, self.latent_dim)
 
-        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 750)
+        self.d1 = torch.nn.Linear(self.latent_dim, 750)
         self.d2 = torch.nn.Linear(750, 750)
-        self.d3 = torch.nn.Linear(750, action_dim)
+        self.d3 = torch.nn.Linear(750, obs_dim + action_dim)
 
         self.max_action = 1.0
         self.latent_dim = latent_dim
@@ -189,6 +189,8 @@ class TD3(object):
         Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
         lmbda = 1 / Q.abs().mean().detach()
         actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
+
+        actor_loss = -lmbda * Q.mean() + self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))
 
         # actor_loss = - Q.mean()
 
