@@ -192,6 +192,8 @@ class TD3(object):
 
         actor_loss = -lmbda * Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
+        actor_loss = Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
+
         # actor_loss = - Q.mean()
 
         # Delayed policy updates
