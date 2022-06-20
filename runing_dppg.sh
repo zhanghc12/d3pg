@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0 --alpha 0 --bc_scale $1 --bc_scale $1 &\
+CUDA_VISIBLE_DEVICES=0 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0 --alpha 0  --bc_scale $1 &\
 CUDA_VISIBLE_DEVICES=1 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0 --alpha 0.5 --bc_scale $1 &\
 CUDA_VISIBLE_DEVICES=2 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0 --alpha 1 --bc_scale $1 &\
 CUDA_VISIBLE_DEVICES=3 python offline_dppg.py --env hopper-medium-replay-v2 --seed 0 --alpha 5 --bc_scale $1 &\
