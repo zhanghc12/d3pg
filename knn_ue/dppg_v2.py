@@ -222,7 +222,7 @@ class TD3(object):
         for i in range(self.num_regressor):
             predicted_rewards.append(self.regressors[i](state, pi))
         predicted_rewards = torch.cat(predicted_rewards, dim=1)
-        actor_loss = torch.mean(torch.std(predicted_rewards, dim=1))
+        actor_loss = torch.mean(torch.std(predicted_rewards, dim=1) / (torch.mean(predicted_rewards, dim=1) + 1e-2))
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
