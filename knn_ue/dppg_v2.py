@@ -175,6 +175,8 @@ class TD3(object):
         self.regressors.to(device)
         self.regressors_optimizer = torch.optim.Adam(self.regressors.parameters(), lr=3e-4)
 
+        self.regressors_target = copy.deepcopy(self.regressors)
+
         '''
         self.mse_criterion = nn.MSELoss()
         self.vae = VAEPolicy(state_dim, action_dim, 2 * action_dim).to(device)
@@ -190,34 +192,19 @@ class TD3(object):
 
         # Sample replay buffer
         state, action, reward, next_state, done, next_action, weights, idxes = memory.sample(batch_size)
-
-        '''
-        with torch.no_grad():
-            # Compute the target Q value
-            target_Q1, target_Q2 = self.critic_target(next_state, next_action)
-            target_Q = torch.min(target_Q1, target_Q2)
-            target_Q = reward + (1 - done) * self.discount * target_Q
-
-            # how to update the priority
-
-        # Get current Q estimates
-        current_Q1, current_Q2 = self.critic(state, action)
-
-        # Compute critic loss
-        critic_loss = F.mse_loss(current_Q1, target_Q) + F.mse_loss(current_Q2, target_Q)
-        
-        # Optimize the critic
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
-        '''
         with torch.no_grad():
             # Compute the target Q value
             # target_Q1, target_Q2 = self.critic_target(next_state, next_action)
             # target_Q = torch.min(target_Q1, target_Q2)
             # target_Q = reward + (1 - done) * self.discount * target_Q
+            # target_Q1 =
+            # target_regressors = reward
+            target_Q = []
+            for i in range(self.num_regressor):
+                target_Q.append(self.regressors_target[i](next_state, next_action))
 
-            target_regressors = reward
+            target_Q = torch.mean(torch.cat(target_Q, dim=1), dim=1, keepdim=True)
+            target_regressors = reward + (1 - done) * self.discount * target_Q * self.bc_scale
 
         regressors_loss = 0.
         for i in range(self.num_regressor):
@@ -244,11 +231,7 @@ class TD3(object):
             actor_loss.backward()
             self.actor_optimizer.step()
 
-            # Update the frozen target models
-            for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
-                target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
-            for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
+            for param, target_param in zip(self.regressors.parameters(), self.regressors_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         #priority = 2 - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
