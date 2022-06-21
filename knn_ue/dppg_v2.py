@@ -212,17 +212,22 @@ class TD3(object):
             regressors_loss += F.mse_loss(predicted_reward, target_regressors)
 
         # Optimize the critic
-        self.regressors_optimizer.zero_grad()
-        regressors_loss.backward()
-        self.regressors_optimizer.step()
+        if self.bc_scale > 1.5:
+            pi = self.actor(state)
+            actor_loss = F.mse_loss(pi, action)
+        else:
 
-        predicted_rewards = []
-        pi = self.actor(state)
+            self.regressors_optimizer.zero_grad()
+            regressors_loss.backward()
+            self.regressors_optimizer.step()
 
-        for i in range(self.num_regressor):
-            predicted_rewards.append(self.regressors[i](state, pi))
-        predicted_rewards = torch.cat(predicted_rewards, dim=1)
-        actor_loss = torch.mean(torch.std(predicted_rewards, dim=1) / (torch.mean(predicted_rewards, dim=1) + 1e-2))
+            predicted_rewards = []
+            pi = self.actor(state)
+
+            for i in range(self.num_regressor):
+                predicted_rewards.append(self.regressors[i](state, pi))
+            predicted_rewards = torch.cat(predicted_rewards, dim=1)
+            actor_loss = torch.mean(torch.std(predicted_rewards, dim=1) / (torch.mean(predicted_rewards, dim=1) + 1e-2))
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
