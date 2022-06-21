@@ -137,6 +137,12 @@ class AutoregressiveModel(nn.Module):
         self.l3 = nn.Linear(256, self.output_dim)
         self.gap = 2. / num_bin
 
+        self.zero_action = torch.zeros([256, action_dim]).to(device)
+        self.one_hot_list = []
+        for i in range(action_dim):
+            self.one_hot_list.append(F.one_hot(torch.tensor([i]), num_classes=action_dim).repeat(256, 1).to(device))
+
+
     def forward(self, state, action):
         logits = []
         for i in range(action.shape[1]):
@@ -156,8 +162,8 @@ class AutoregressiveModel(nn.Module):
 
         for i in range(action.shape[1]):
             action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
-            action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
-            one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
+            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            one_hot = self.one_hot_list[i]
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
@@ -176,9 +182,9 @@ class AutoregressiveModel(nn.Module):
         label = ((action + 1) // self.gap).long().detach()
 
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
-            action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
-            one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
+            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
+            action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action))
+            one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1)
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
