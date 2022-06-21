@@ -150,7 +150,7 @@ class TD3(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.log_beta = nn.Parameter(torch.zeros(1, requires_grad=True)).to(device)
+        self.log_beta = nn.Parameter(torch.zeros(1, requires_grad=True).to(device))
         self.beta_optimizer =torch.optim.Adam([self.log_beta], lr=3e-4)
 
         '''
