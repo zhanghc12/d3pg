@@ -125,11 +125,10 @@ class VAEPolicy():
         a = F.relu(self.d2(a))
         return torch.tanh(self.d3(a)), self.d3(a)
 
+
 class AutoregressiveModel(nn.Module):
     def __init__(self, state_dim, action_dim, num_bin=10):
         super(AutoregressiveModel, self).__init__()
-
-        # state embedding
         self.input_dim = state_dim + action_dim + action_dim
         self.output_dim = num_bin
         self.l1 = nn.Linear(self.input_dim, 256)
@@ -183,8 +182,8 @@ class AutoregressiveModel(nn.Module):
 
         for i in range(action.shape[1]):
             action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
-            action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action))
-            one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1)
+            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            one_hot = self.one_hot_list[i]
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
