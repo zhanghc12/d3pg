@@ -136,7 +136,7 @@ class MADE():
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim, action_dim, hidden_dim, num_bin=10):
+    def __init__(self, state_dim, action_dim, num_bin=10):
         super(Critic, self).__init__()
 
         # state embedding
@@ -155,12 +155,13 @@ class Critic(nn.Module):
             action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
             action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
             one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
-            input = torch.cat([state, action_replaced, one_hot], dim=1)
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
             logit = self.l3(logit)
             logit = nn.LogSoftmax(dim=1)(logit)
-            logit = logit[label[:, i]]
+            # logit = logit[label[:, i]]
+            logit = logit.gather(dim=1, index=label[:,i:i+1])
             logit.unsqueeze(-1)
             logits.append(logit)
         logits = torch.cat(logits, dim=1)
@@ -176,14 +177,27 @@ class Critic(nn.Module):
             action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
             action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
             one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
-            input = torch.cat([state, action_replaced, one_hot], dim=1)
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
             logit = self.l3(logit)
             loss += nn.CrossEntropyLoss()(logit, label[:, i])
         return loss
 
-    # how to calculate the density
+    # how to calculate the density'
+
+def test_autoregressive():
+    autoregressive_model = Critic(10, 2)
+    state = np.random.random(size=[1000,10])
+    action = np.random.random(size=[1000,2])
+    print(state)
+
+    state = torch.from_numpy(state).to(device)
+    action = torch.from_numpy(action).to(device)
+    print(autoregressive_model.get_prob(state, action))
+    print(autoregressive_model.get_loss(state, action))
+
+test_autoregressive()
 
 
 

@@ -150,6 +150,9 @@ class TD3(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
+        self.log_beta = torch.zeros(1, requires_grad=True).to(device)
+        self.beta_optimizer =torch.optim.Adam([self.log_beta], lr=3e-4)
+
         '''
         self.mse_criterion = nn.MSELoss()
         self.vae = VAEPolicy(state_dim, action_dim, 2 * action_dim).to(device)
@@ -188,15 +191,22 @@ class TD3(object):
         pi = self.actor(state)
         Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
         lmbda = 1 / Q.abs().mean().detach()
-        actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
+        #actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
 
-        actor_loss = -lmbda * Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
+        #actor_loss = -lmbda * Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
-        actor_loss = Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
-        actor_loss = (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
+        #actor_loss = Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
+        #actor_loss = (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
         uncertainty = torch.clamp(torch.abs((self.critic.Q1(state, pi) - self.critic.Q2(state, pi)) / (self.critic.Q1(state, pi) + self.critic.Q2(state, pi) + 1e-2) ), 0 ,1)
-        actor_loss = -lmbda * Q.mean() + (self.bc_scale * uncertainty).mean()
+
+        uncertainty_loss = self.log_beta.exp() * (uncertainty - self.bc_scale).mean()
+        actor_loss = -lmbda * Q.mean() + uncertainty_loss
+
+        self.beta_optimizer.zero_grad()
+        (-uncertainty_loss).backward(retain_graph=True)
+        self.beta_optimizer.step()
+        self.log_beta.data.clamp_(min=-5.0, max=10.0)
 
         # actor_loss = - Q.mean()
 
