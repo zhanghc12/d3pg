@@ -127,7 +127,7 @@ class VAEPolicy():
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, version):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -152,6 +152,8 @@ class TD3(object):
 
         self.log_beta = nn.Parameter(torch.zeros(1, requires_grad=True).to(device))
         self.beta_optimizer =torch.optim.Adam([self.log_beta], lr=3e-4)
+
+        self.version = version
 
         '''
         self.mse_criterion = nn.MSELoss()
@@ -191,27 +193,28 @@ class TD3(object):
         pi = self.actor(state)
         Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
         lmbda = 1 / Q.abs().mean().detach()
-        #actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
+        actor_loss = -lmbda * Q.mean() + self.bc_scale * F.mse_loss(pi, action)
 
         #actor_loss = -lmbda * Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
         #actor_loss = Q.mean() + (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
         #actor_loss = (self.bc_scale * torch.abs(self.critic.Q1(state, pi) - self.critic.Q2(state, pi))).mean()
 
-        uncertainty = torch.clamp(torch.abs((self.critic.Q1(state, pi) - self.critic.Q2(state, pi)) / (self.critic.Q1(state, pi) + self.critic.Q2(state, pi) + 1e-2) ), 0 ,1)
-
-        uncertainty_loss = self.log_beta.exp() * (uncertainty - self.bc_scale).mean()
-        actor_loss = -lmbda * Q.mean() + uncertainty_loss
+        if self.version == 2:
+            uncertainty = torch.clamp(torch.abs((self.critic.Q1(state, pi) - self.critic.Q2(state, pi)) / (self.critic.Q1(state, pi) + self.critic.Q2(state, pi) + 1e-2) ), 0 ,1)
+            uncertainty_loss = self.log_beta.exp() * (uncertainty - self.bc_scale).mean()
+            actor_loss = -lmbda * Q.mean() + uncertainty_loss
+            if self.total_it % self.policy_freq == 0:
+                self.beta_optimizer.zero_grad()
+                (-uncertainty_loss).backward(retain_graph=True)
+                self.beta_optimizer.step()
+                self.log_beta.data.clamp_(min=-5.0, max=10.0)
 
         # actor_loss = - Q.mean()
 
         # Delayed policy updates
-        if self.total_it % self.policy_freq == 0:
-            self.beta_optimizer.zero_grad()
-            (-uncertainty_loss).backward(retain_graph=True)
-            self.beta_optimizer.step()
-            self.log_beta.data.clamp_(min=-5.0, max=10.0)
 
+        if self.total_it % self.policy_freq == 0:
             # Optimize the actor
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
@@ -225,6 +228,8 @@ class TD3(object):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
         priority = 2 - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
+        if self.version == 3:
+            priority = torch.exp(- (torch.mean((self.actor(next_state) - next_action) ** 2, dim=1)))
         priority = priority.detach().cpu().numpy()
         memory.update_priorities(idxes, priority)
 
