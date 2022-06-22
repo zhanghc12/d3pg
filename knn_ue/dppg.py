@@ -203,15 +203,15 @@ class TD3(object):
         uncertainty_loss = self.log_beta.exp() * (uncertainty - self.bc_scale).mean()
         actor_loss = -lmbda * Q.mean() + uncertainty_loss
 
-        self.beta_optimizer.zero_grad()
-        (-uncertainty_loss).backward(retain_graph=True)
-        self.beta_optimizer.step()
-        self.log_beta.data.clamp_(min=-5.0, max=10.0)
-
         # actor_loss = - Q.mean()
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
+            self.beta_optimizer.zero_grad()
+            (-uncertainty_loss).backward(retain_graph=True)
+            self.beta_optimizer.step()
+            self.log_beta.data.clamp_(min=-5.0, max=10.0)
+
             # Optimize the actor
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
