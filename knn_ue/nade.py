@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import distributions
-
+import matplotlib.pyplot as plt
 device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
 class MaskedLinear(nn.Linear):
     """A Linear layer with masks that turn off some of the layer's weights."""
@@ -147,12 +147,12 @@ class Critic(nn.Module):
         self.l3 = nn.Linear(256, self.output_dim)
         self.gap = 2. / num_bin
 
-    def get_prob(self, state, action):
+    def get_logprob(self, state, action):
         logits = []
         label = ((action + 1) // self.gap).long().detach()
 
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
+            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
             action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
             one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
@@ -174,7 +174,7 @@ class Critic(nn.Module):
         label = ((action + 1) // self.gap).long().detach()
 
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
+            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
             action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
             one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
@@ -186,16 +186,129 @@ class Critic(nn.Module):
 
     # how to calculate the density'
 
+class AutoregressiveModel(nn.Module):
+    def __init__(self, state_dim, action_dim, num_bin=20):
+        super(AutoregressiveModel, self).__init__()
+        self.input_dim = state_dim + action_dim + action_dim
+        self.output_dim = num_bin
+        self.l1 = nn.Linear(self.input_dim, 256)
+        self.l2 = nn.Linear(256, 256)
+        self.l3 = nn.Linear(256, self.output_dim)
+        self.gap = 2. / num_bin
+
+        self.zero_action = torch.zeros([256, action_dim]).to(device)
+        self.one_hot_list = []
+        self.action_masks = []
+        for i in range(action_dim):
+            self.one_hot_list.append(F.one_hot(torch.tensor([i]), num_classes=action_dim).repeat(256, 1).to(device))
+            self.action_masks.append((torch.arange(action_dim) < i).float().repeat(256, 1).to(device))
+
+
+    def forward(self, state, action):
+        logits = []
+        for i in range(action.shape[1]):
+            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
+            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            one_hot = self.one_hot_list[i]
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
+            logit = F.relu(self.l1(input))
+            logit = F.relu(self.l2(logit))
+            logit = self.l3(logit)
+            logits.append(logit)
+        return torch.cat(logits, dim=1)
+
+    def get_logprob(self, state, action):
+        logits = []
+        label = ((action + 1) // self.gap).long().detach()
+
+        for i in range(action.shape[1]):
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
+            one_hot = self.one_hot_list[i]
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
+            logit = F.relu(self.l1(input))
+            logit = F.relu(self.l2(logit))
+            logit = self.l3(logit)
+            logit = nn.LogSoftmax(dim=1)(logit)
+            # logit = logit[label[:, i]]
+            logit = logit.gather(dim=1, index=label[:,i:i+1])
+            logit.unsqueeze(-1)
+            logits.append(logit)
+        logits = torch.cat(logits, dim=1)
+        logits = torch.sum(logits, dim=1)
+        return logits
+
+
+    def predict(self, state):
+        logits = []
+        action = self.zero_action
+        labels = []
+        for i in range(2):
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
+            one_hot = self.one_hot_list[i]
+            input = torch.cat([state.float(), action_replaced, one_hot.float()], dim=1)
+            logit = F.relu(self.l1(input))
+            logit = F.relu(self.l2(logit))
+            logit = self.l3(logit)
+            logit = nn.LogSoftmax(dim=1)(logit)
+            # logit = logit[label[:, i]]
+            prediction = logit.argmax(dim=1)
+            labels.append(prediction)
+            action[:,i] = (prediction * self.gap - 1).detach()
+        return labels
+
+    def get_loss(self, state, action):
+        loss = 0.
+        label = ((action + 1) // self.gap).long().detach()
+
+        for i in range(action.shape[1]):
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
+            one_hot = self.one_hot_list[i]
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
+            logit = F.relu(self.l1(input))
+            logit = F.relu(self.l2(logit))
+            logit = self.l3(logit)
+            loss += nn.CrossEntropyLoss()(logit, label[:, i])
+        return loss
+
+
 def test_autoregressive():
-    autoregressive_model = Critic(10, 2)
-    state = np.random.random(size=[1000,10])
-    action = np.random.random(size=[1000,2])
+    num_bin = 100
+    autoregressive_model = AutoregressiveModel(1, 2, num_bin=num_bin).to(device)
+    #state = np.random.random(size=[256,10])
+    #action = (np.random.random(size=[256,3]) - 0.5) * 2
+
+    state = np.expand_dims(np.linspace(0, 1, 256), 1)
+    action = np.concatenate([0.99 * np.sin(10 * state), -0.99 * np.cos(10 * state)], axis=1)
+
     print(state)
 
     state = torch.from_numpy(state).to(device)
     action = torch.from_numpy(action).to(device)
-    print(autoregressive_model.get_prob(state, action))
-    print(autoregressive_model.get_loss(state, action))
+    print(autoregressive_model.get_logprob(state, action))
+    #print(autoregressive_model.get_loss(state, action))
+    optim = torch.optim.Adam(autoregressive_model.parameters(), lr=3e-4)
+
+    for i in range(5000):
+        loss = autoregressive_model.get_loss(state, action)
+
+        optim.zero_grad()
+        loss.backward()
+        optim.step()
+        print(i, loss)
+        #print(torch.mean(autoregressive_model.get_logprob(state, action)))
+    prediction = autoregressive_model.predict(state)
+    print(autoregressive_model.predict(state))
+    plt.plot(state.detach().numpy(), action.detach().numpy()[:,0])
+    plt.plot(state.detach().numpy(), prediction[0].detach().numpy() * 2 / num_bin - 1)
+
+    plt.plot(state.detach().numpy(), action.detach().numpy()[:,1])
+    plt.plot(state.detach().numpy(), prediction[1].detach().numpy() * 2 / num_bin - 1)
+
+
+    plt.show()
+
+
+
 
 test_autoregressive()
 

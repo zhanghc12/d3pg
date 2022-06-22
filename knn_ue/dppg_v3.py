@@ -127,7 +127,7 @@ class VAEPolicy():
 
 
 class AutoregressiveModel(nn.Module):
-    def __init__(self, state_dim, action_dim, num_bin=10):
+    def __init__(self, state_dim, action_dim, num_bin=40):
         super(AutoregressiveModel, self).__init__()
         self.input_dim = state_dim + action_dim + action_dim
         self.output_dim = num_bin
@@ -138,16 +138,18 @@ class AutoregressiveModel(nn.Module):
 
         self.zero_action = torch.zeros([256, action_dim]).to(device)
         self.one_hot_list = []
+        self.action_masks = []
         for i in range(action_dim):
             self.one_hot_list.append(F.one_hot(torch.tensor([i]), num_classes=action_dim).repeat(256, 1).to(device))
+            self.action_masks.append((torch.arange(action_dim) < i).float().repeat(256, 1).to(device))
 
 
     def forward(self, state, action):
         logits = []
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
-            action_replaced = torch.where(action_mask > 0, action, torch.zeros_like(action)).to(device)
-            one_hot = F.one_hot(torch.tensor([i]), num_classes=action.shape[1]).repeat(action.shape[0], 1).to(device)
+            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
+            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            one_hot = self.one_hot_list[i]
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
@@ -157,11 +159,10 @@ class AutoregressiveModel(nn.Module):
 
     def get_logprob(self, state, action):
         logits = []
-        label = ((action + 1) // self.gap).long().detach()
+        label = ((action + 1) // self.gap).clamp_(0, self.output_dim-1).long().detach()
 
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1)
-            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
             one_hot = self.one_hot_list[i]
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
@@ -178,11 +179,10 @@ class AutoregressiveModel(nn.Module):
 
     def get_loss(self, state, action):
         loss = 0.
-        label = ((action + 1) // self.gap).long().detach()
+        label = ((action + 1) // self.gap).clamp_(0, self.output_dim-1).long().detach()
 
         for i in range(action.shape[1]):
-            action_mask = (torch.arange(action.shape[1]) < i).float().repeat(action.shape[0], 1).to(device)
-            action_replaced = torch.where(action_mask > 0, action, self.zero_action)
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
             one_hot = self.one_hot_list[i]
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
