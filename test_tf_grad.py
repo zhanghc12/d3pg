@@ -19,3 +19,7 @@ print(sess.run(g1)) # [None]
 a = tf.ones([3,5])
 b = 2 * tf.ones([5])
 print(sess.run(a - b), sess.run(tf.norm(a, axis=1)))
+
+a = tf.ones([3,5])
+print(sess.run(tf.nn.moments(a, -1)))
+

@@ -127,13 +127,14 @@ class VAEPolicy():
 
 
 class AutoregressiveModel(nn.Module):
-    def __init__(self, state_dim, action_dim, num_bin=40):
+    def __init__(self, state_dim, action_dim, num_bin=100):
         super(AutoregressiveModel, self).__init__()
         self.input_dim = state_dim + action_dim + action_dim
         self.output_dim = num_bin
         self.l1 = nn.Linear(self.input_dim, 256)
         self.l2 = nn.Linear(256, 256)
-        self.l3 = nn.Linear(256, self.output_dim)
+        self.l3 = nn.Linear(256, 256)
+        self.l4 = nn.Linear(256, self.output_dim)
         self.gap = 2. / num_bin
 
         self.zero_action = torch.zeros([256, action_dim]).to(device)
@@ -167,7 +168,8 @@ class AutoregressiveModel(nn.Module):
             input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
             logit = F.relu(self.l1(input))
             logit = F.relu(self.l2(logit))
-            logit = self.l3(logit)
+            logit = F.relu(self.l3(logit))
+            logit = self.l4(logit)
             logit = nn.LogSoftmax(dim=1)(logit)
             # logit = logit[label[:, i]]
             logit = logit.gather(dim=1, index=label[:,i:i+1])
@@ -176,6 +178,24 @@ class AutoregressiveModel(nn.Module):
         logits = torch.cat(logits, dim=1)
         logits = torch.sum(logits, dim=1)
         return logits
+
+    def predict(self, state, action):
+        action = torch.zeros_like(action).to(device)
+        for i in range(action.shape[1]):
+            action_replaced = torch.where(self.action_masks[i].float() > 0, action.float(), self.zero_action.float())
+            one_hot = self.one_hot_list[i]
+            input = torch.cat([state.float(), action_replaced.float(), one_hot.float()], dim=1)
+            logit = F.relu(self.l1(input))
+            logit = F.relu(self.l2(logit))
+            logit = F.relu(self.l3(logit))
+            logit = self.l4(logit)
+            logit = nn.LogSoftmax(dim=1)(logit)
+            # logit = logit[label[:, i]]
+            # logit = logit.gather(dim=1, index=label[:,i:i+1])
+            prediction = logit.argmax(dim=1)
+            action[:,i] = (prediction * self.gap - 1)
+        return action.detach()
+
 
     def get_loss(self, state, action):
         loss = 0.
@@ -231,6 +251,7 @@ class TD3(object):
         # Sample replay buffer
         state, action, reward, next_state, done, next_action, weights, idxes = memory.sample(batch_size)
 
+        '''
         with torch.no_grad():
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(next_state, next_action)
@@ -250,20 +271,30 @@ class TD3(object):
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-
+        '''
 
         # how to train the autoregressive model
-        auto_policy_loss = self.auto_policy.get_loss(state, action)
+        # auto_policy_loss = self.auto_policy.get_loss(state, action)
+        auto_policy_loss = -self.auto_policy.get_logprob(state, action).mean()
         self.auto_policy_optimizer.zero_grad()
         auto_policy_loss.backward()
         self.auto_policy_optimizer.step()
 
         pi = self.actor(state)
-        Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
-        lmbda = 1 / Q.abs().mean().detach()
-        logprob = self.auto_policy.get_logprob(state, pi)
-        actor_loss = -lmbda * Q.mean() - self.bc_scale * logprob.mean()
+        #Q = self.critic.Q1(state, pi) + self.critic.Q2(state, pi)
+        #lmbda = 1 / Q.abs().mean().detach()
+        #logprob = self.auto_policy.get_logprob(state, pi)
+        #actor_loss = -lmbda * Q.mean() - self.bc_scale * logprob.mean()
+        # actor_loss = self.bc_scale * logprob.mean()
 
+        prediction = self.auto_policy.predict(state, pi)
+        actor_loss = self.bc_scale * F.mse_loss(pi, prediction)
+
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        '''
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
@@ -278,22 +309,14 @@ class TD3(object):
 
             for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
                 target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
+        
         priority = 2 - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
         priority = priority.detach().cpu().numpy()
         memory.update_priorities(idxes, priority)
 
         '''
-        recon, mean, std = self.vae(state, action)
-        recon_loss = self.mse_criterion(recon, action)
-        kl_loss = -0.5 * (1 + torch.log(std.pow(2)) - mean.pow(2) - std.pow(2)).mean()
-        vae_loss = recon_loss + 0.5 * kl_loss
 
-        self.vae_optimizer.zero_grad()
-        vae_loss.backward()
-        self.vae_optimizer.step()
-        '''
 
-        return critic_loss.item(), actor_loss.item()
+        return auto_policy_loss.item(), actor_loss.item()
 
 

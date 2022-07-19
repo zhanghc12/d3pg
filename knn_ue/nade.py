@@ -290,11 +290,12 @@ def test_autoregressive():
 
     for i in range(5000):
         loss = autoregressive_model.get_loss(state, action)
-
+        loss = -torch.mean(autoregressive_model.get_logprob(state, action))
         optim.zero_grad()
         loss.backward()
         optim.step()
         print(i, loss)
+        print(torch.mean(autoregressive_model.get_logprob(state, action)))
         #print(torch.mean(autoregressive_model.get_logprob(state, action)))
     prediction = autoregressive_model.predict(state)
     print(autoregressive_model.predict(state))
