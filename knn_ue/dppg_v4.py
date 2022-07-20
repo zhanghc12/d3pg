@@ -112,7 +112,7 @@ class TD3(object):
         with torch.no_grad():
             # Compute the target Q value
             target_Q1, target_Q2 = self.critic_target(next_state, next_action)
-            target_Q = torch.min(target_Q1, target_Q2)
+            target_Q = (target_Q1 + target_Q2) / 2
             target_Q = reward + (1 - done) * self.discount * target_Q
 
         # Get current Q estimates
@@ -147,7 +147,7 @@ class TD3(object):
 
         priority = 2 - (torch.sqrt(torch.mean((self.actor(next_state) - next_action) ** 2, dim=1))) + 1e-3
         if self.version == 3:
-            priority = torch.exp(- (torch.mean((self.actor(next_state) - next_action) ** 2, dim=1)))
+            priority = torch.exp(- 6 * (torch.mean((self.actor(next_state) - next_action) ** 2, dim=1)))
         priority = priority.detach().cpu().numpy()
         memory.update_priorities(idxes, priority)
 
