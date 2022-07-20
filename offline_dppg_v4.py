@@ -17,13 +17,17 @@ def normalize(data):
     std = np.std(data, axis=0, keepdims=True)
     return (data - mean) / (std + 1e-5)
 
-def load_hdf5(dataset, replay_buffer):
+def load_hdf5(dataset, replay_buffer, is_ant):
     obs_mean = np.mean(dataset['observations'], axis=0, keepdims=True)
     obs_std = np.std(dataset['observations'], axis=0, keepdims=True)
 
-    states = normalize(dataset['observations'])
+    if is_ant:
+        states = dataset['observations']
+        next_states = dataset['next_observations']
+    else:
+        states = normalize(dataset['observations'])
+        next_states = normalize(dataset['next_observations'])
     actions = dataset['actions']
-    next_states = normalize(dataset['next_observations'])
     rewards = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     dones = np.expand_dims(np.squeeze(dataset['terminals']), 1)
     next_actions = np.concatenate([dataset['actions'][1:], dataset['actions'][-1:]], axis=0)
@@ -36,7 +40,7 @@ def load_hdf5(dataset, replay_buffer):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10):
+def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10, is_ant=False):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -44,7 +48,8 @@ def eval_policy(t, policy, env_name, seed, obs_mean, obs_std, eval_episodes=10):
     for _ in range(eval_episodes):
         state, done = eval_env.reset(), False
         while not done:
-            state = (state - obs_mean) / (obs_std + 1e-5)
+            if not is_ant:
+                state = (state - obs_mean) / (obs_std + 1e-5)
             action = policy.select_action(np.array(state))
             state, reward, done, _ = eval_env.step(action)
             avg_reward += reward
@@ -103,6 +108,9 @@ if __name__ == "__main__":
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
+    is_ant = False
+    if 'antmaze' in args.env:
+        is_ant = True
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
@@ -111,7 +119,7 @@ if __name__ == "__main__":
 
     replay_buffer = utils.PrioritizedReplayBuffer(size=int(2e6), alpha=args.alpha)
     offline_dataset = d4rl.qlearning_dataset(env)
-    obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer)
+    obs_mean, obs_std = load_hdf5(offline_dataset, replay_buffer, is_ant)
 
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std)]
