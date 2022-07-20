@@ -1,16 +1,10 @@
-import os
 import torch
 import torch.nn.functional as F
 import copy
-import numpy as np
 import torch.nn as nn
-from torch.distributions import Distribution, Normal
 from sf_offline.successor_feature import Actor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-LOG_STD_MIN_MAX = (-20, 2)
-
-epsilon = 1e-6
 
 
 class Actor(nn.Module):
@@ -121,8 +115,6 @@ class TD3(object):
             target_Q = torch.min(target_Q1, target_Q2)
             target_Q = reward + (1 - done) * self.discount * target_Q
 
-            # how to update the priority
-
         # Get current Q estimates
         current_Q1, current_Q2 = self.critic(state, action)
 
@@ -139,7 +131,7 @@ class TD3(object):
         current_Q1, current_Q2 = self.critic(state, action)
         current_Q = (current_Q1 + current_Q2) / 2.
 
-        actor_loss = -(self.temperature * (current_Q - Q.detach())).exp().clamp(0, self.max_weight) * (pi - action) * (pi - action)
+        actor_loss = (self.temperature * (current_Q.detach() - Q.detach())).exp().clamp(0, self.max_weight) * (pi - action) * (pi - action)
         actor_loss = actor_loss.mean()
         # Optimize the actor
         self.actor_optimizer.zero_grad()
@@ -160,4 +152,3 @@ class TD3(object):
         memory.update_priorities(idxes, priority)
 
         return critic_loss.item(), actor_loss.item()
-
