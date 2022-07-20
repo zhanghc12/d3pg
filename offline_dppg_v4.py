@@ -24,11 +24,13 @@ def load_hdf5(dataset, replay_buffer, is_ant):
     if is_ant:
         states = dataset['observations']
         next_states = dataset['next_observations']
+        rewards = np.expand_dims(np.squeeze(dataset['rewards']), 1) - 1
+
     else:
         states = normalize(dataset['observations'])
         next_states = normalize(dataset['next_observations'])
+        rewards = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     actions = dataset['actions']
-    rewards = np.expand_dims(np.squeeze(dataset['rewards']), 1)
     dones = np.expand_dims(np.squeeze(dataset['terminals']), 1)
     next_actions = np.concatenate([dataset['actions'][1:], dataset['actions'][-1:]], axis=0)
 
