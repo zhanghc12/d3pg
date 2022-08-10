@@ -92,6 +92,9 @@ if __name__ == "__main__":
         experiment_dir = '/data/zhanghc/kd/'
     else:
         experiment_dir = '/tmp/data/zhanghc/kd/'
+    if not os.path.exists(experiment_dir):
+        experiment_dir = '/DATA/disk1/zhanghc/kd/'
+
     experiment_dir = experiment_dir + '0810/'
     writer = SummaryWriter(
         experiment_dir + '{}_{}_{}_s{}_ver{}_eta{}_tau{}_d{}_n{}_bs{}_od{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.eta, args.tau, args.top_quantiles_to_drop, args.n_nets, args.bc_scale, args.output_dim))
