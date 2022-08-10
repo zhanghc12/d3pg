@@ -117,7 +117,7 @@ if __name__ == "__main__":
     max_action = float(env.action_space.high[0])
 
     drop_quantile_bc = 0
-    policy = td3_final.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.eta, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim)
+    policy = td3_aaai.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.eta, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)
