@@ -213,7 +213,7 @@ class TD3(object):
                 actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
                 actor_loss = ((1 - actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
             elif self.version == 3:
-                actor_loss = source_loss
+                actor_loss = source_loss.mean()
             elif self.version == 9:
                 actor_loss = actor_loss + bc_loss
             else:
