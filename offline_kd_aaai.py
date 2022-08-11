@@ -82,7 +82,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_nets", default=5, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
-    parser.add_argument("--k", type=int, default=2)
+    parser.add_argument("--k", type=int, default=1)
     parser.add_argument("--output_dim", type=int, default=6)
 
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     experiment_dir = experiment_dir + '0810/'
     writer = SummaryWriter(
-        experiment_dir + '{}_{}_{}_s{}_ver{}_eta{}_tau{}_d{}_n{}_bs{}_od{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.eta, args.tau, args.top_quantiles_to_drop, args.n_nets, args.bc_scale, args.output_dim))
+        experiment_dir + '{}_{}_{}_s{}_ver{}_eta{}_tau{}_d{}_n{}_bs{}_od{}_k{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"), args.policy, args.env, args.seed, args.version, args.eta, args.tau, args.top_quantiles_to_drop, args.n_nets, args.bc_scale, args.output_dim, args.k))
 
     file_name = args.policy + "_"  + args.env + "_"  + str(args.seed)
     print("---------------------------------------")
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     max_action = float(env.action_space.high[0])
 
     drop_quantile_bc = 0
-    policy = td3_aaai.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.eta, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim, args.version)
+    policy = td3_aaai.TD3(state_dim, action_dim, args.discount, args.tau, args.bc_scale, args.eta, args.n_nets, args.n_quantiles, args.top_quantiles_to_drop, drop_quantile_bc, args.output_dim, args.version, args.k)
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
     offline_dataset = d4rl.qlearning_dataset(env)

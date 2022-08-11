@@ -126,7 +126,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9, version=0):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9, version=0, k=1):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -165,6 +165,7 @@ class TD3(object):
         self.bias = - lower_bound * self.scale
         self.eta = eta
         self.version = version
+        self.k = k
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -188,7 +189,7 @@ class TD3(object):
             target = reward + not_done * self.discount * (sorted_z)
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
 
-            target_distance = kd_trees.query(query_data, k=1)[0] # / (self.state_dim + self.action_dim)
+            target_distance = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
             cond = -torch.clamp_(self.eta * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
 
         mask = (self.mask < cond).float()  # batch * total_quantile
@@ -209,7 +210,7 @@ class TD3(object):
 
             if self.version == 1:
                 query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
-                target_distance = kd_trees.query(query_data, k=1)[0]  # / (self.state_dim + self.action_dim)
+                target_distance = kd_trees.query(query_data, k=self.k)[0]  # / (self.state_dim + self.action_dim)
                 actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
                 actor_loss = ((1 - actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
             elif self.version == 3:
