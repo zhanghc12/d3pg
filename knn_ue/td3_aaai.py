@@ -190,6 +190,7 @@ class TD3(object):
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
 
             target_distance = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
+            target_distance = np.mean(target_distance, axis=1, keepdims=True)
             cond = -torch.clamp_(self.eta * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
 
         mask = (self.mask < cond).float()  # batch * total_quantile
