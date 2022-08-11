@@ -126,7 +126,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9, version=0):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -164,6 +164,7 @@ class TD3(object):
         self.scale = 1 / (upper_bound - lower_bound)
         self.bias = - lower_bound * self.scale
         self.eta = eta
+        self.version = version
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -206,12 +207,17 @@ class TD3(object):
         # --- Policy and alpha loss --
         if self.total_it % 2 == 0:
 
-            query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
-            target_distance = kd_trees.query(query_data, k=1)[0]  # / (self.state_dim + self.action_dim)
-            actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
-
-            actor_loss = ((1 - actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
-
+            if self.version == 1:
+                query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
+                target_distance = kd_trees.query(query_data, k=1)[0]  # / (self.state_dim + self.action_dim)
+                actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
+                actor_loss = ((1 - actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
+            elif self.version == 3:
+                actor_loss = source_loss
+            elif self.version == 9:
+                actor_loss = actor_loss + bc_loss
+            else:
+                raise NotImplementedError
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             self.actor_optimizer.step()
