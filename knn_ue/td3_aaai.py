@@ -54,15 +54,15 @@ class VAE(nn.Module):
         super().__init__()
         self.latent_dim = latent_dim
 
-        self.e1 = torch.nn.Linear(obs_dim + action_dim, 750)
-        self.e2 = torch.nn.Linear(750, 750)
+        self.e1 = torch.nn.Linear(obs_dim + action_dim, 256)
+        self.e2 = torch.nn.Linear(256, 256)
 
-        self.mean = torch.nn.Linear(750, self.latent_dim)
-        self.log_std = torch.nn.Linear(750, self.latent_dim)
+        self.mean = torch.nn.Linear(256, self.latent_dim)
+        self.log_std = torch.nn.Linear(256, self.latent_dim)
 
-        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 750)
-        self.d2 = torch.nn.Linear(750, 750)
-        self.d3 = torch.nn.Linear(750, obs_dim + action_dim)
+        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 256)
+        self.d2 = torch.nn.Linear(256, 256)
+        self.d3 = torch.nn.Linear(256, obs_dim + action_dim)
 
         self.max_action = 1.0
         self.latent_dim = latent_dim
