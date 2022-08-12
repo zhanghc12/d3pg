@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument("--k", type=int, default=1)
     parser.add_argument("--output_dim", type=int, default=6)
     parser.add_argument("--is_random", type=int, default=1)
-    parser.add_argument("--load", type=int, default=0)
+    parser.add_argument("--load", type=int, default=1)
 
 
     args = parser.parse_args()
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     phi = policy.feature_nn(state_batch, action_batch)
     phi_list.extend(phi.detach().cpu().numpy())
 
-    trees = KDTree(np.array(phi_list), leaf_size=40)
+    trees = KDTree(np.array(phi_list), leaf_size=1)
 
     start_time = time.time()
 
