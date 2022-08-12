@@ -44,6 +44,57 @@ class Mlp(nn.Module):
         output = self.last_fc(h)
         return output
 
+class VAE(nn.Module):
+    def __init__(
+            self,
+            obs_dim,
+            action_dim,
+            latent_dim=6,
+    ):
+        super().__init__()
+        self.latent_dim = latent_dim
+
+        self.e1 = torch.nn.Linear(obs_dim + action_dim, 750)
+        self.e2 = torch.nn.Linear(750, 750)
+
+        self.mean = torch.nn.Linear(750, self.latent_dim)
+        self.log_std = torch.nn.Linear(750, self.latent_dim)
+
+        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 750)
+        self.d2 = torch.nn.Linear(750, 750)
+        self.d3 = torch.nn.Linear(750, obs_dim + action_dim)
+
+        self.max_action = 1.0
+        self.latent_dim = latent_dim
+
+    def forward_encoder_decoder(self, state, action):
+        z = F.relu(self.e1(torch.cat([state, action], 1)))
+        z = F.relu(self.e2(z))
+
+        mean = self.mean(z)
+        # Clamped for numerical stability
+        log_std = self.log_std(z).clamp(-4, 15)
+        std = torch.exp(log_std)
+        z = mean + std * torch.from_numpy(np.random.normal(0, 1, size=(std.size()))).to(device)
+        u = self.decode(state, z)
+
+        return u, mean, std
+
+    def forward(self, state, action):
+        z = F.relu(self.e1(torch.cat([state, action], 1)))
+        z = F.relu(self.e2(z))
+
+        mean = self.mean(z)
+        return mean
+
+    def decode(self, state, z=None):
+        if z is None:
+            z = torch.from_numpy(np.random.normal(0, 1, size=(state.size(0), self.latent_dim))).clamp(-0.5, 0.5).to(device)
+
+        a = F.relu(self.d1(torch.cat([state, z], 1)))
+        a = F.relu(self.d2(a))
+        return torch.tanh(self.d3(a))
+
 
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim, n_quantiles, n_nets):
@@ -126,7 +177,7 @@ class FeatureExtractorV4(nn.Module):
 
 
 class TD3(object):
-    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9, version=0, k=1):
+    def __init__(self, state_dim, action_dim, gamma, tau, bc_scale, eta, n_nets, n_quantiles, top_quantiles_to_drop=200, drop_quantile_bc=0, output_dim=9, version=0, k=1, is_random=1):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.discount = gamma
         self.tau = tau
@@ -153,7 +204,6 @@ class TD3(object):
         self.state_dim = state_dim
         self.action_dim = action_dim
 
-        self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, output_dim).to(device)
 
         self.drop_quantile_bc = drop_quantile_bc
         #upper_bound = 0.01
@@ -166,6 +216,26 @@ class TD3(object):
         self.eta = eta
         self.version = version
         self.k = k
+        self.is_random = is_random
+        if is_random == 0:
+            self.feature_nn = VAE(state_dim, action_dim, output_dim).to(device)
+            self.feature_criterion = nn.MSELoss()
+            self.feature_optimizer = torch.optim.Adam(self.feature_nn.parameters(), lr=3e-4)
+
+        else:
+            self.feature_nn = FeatureExtractorV4(state_dim, action_dim, 256, output_dim).to(device)
+
+    def train_feature_extractor(self, memory, batch_size):
+        assert self.is_random == 0
+        state, action, _, _, _ = memory.sample(batch_size)
+        recon, mean, std = self.feature_nn.forward_encoder_decoder(state, action)
+        recon_loss = self.feature_criterion(recon, torch.cat([state, action], dim=1))
+        kl_loss = -0.5 * (1 + torch.log(std.pow(2)) - mean.pow(2) - std.pow(2)).mean()
+        vae_loss = recon_loss + 0.5 * kl_loss
+
+        self.feature_optimizer.zero_grad()
+        vae_loss.backward()
+        self.feature_optimizer.step()
 
     def select_action(self, state, evaluate=False, bc=False):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -212,6 +282,8 @@ class TD3(object):
             if self.version == 1:
                 query_data = self.feature_nn(state, self.actor(state)).detach().cpu().numpy()
                 target_distance = kd_trees.query(query_data, k=self.k)[0]  # / (self.state_dim + self.action_dim)
+                target_distance = np.mean(target_distance, axis=1, keepdims=True)
+
                 actor_scale = torch.clamp_(self.bc_scale * torch.FloatTensor(target_distance).to(self.device), 0, 1)
                 actor_loss = ((1 - actor_scale) * source_loss).mean() + (actor_scale * bc_loss).mean()
             elif self.version == 3:
