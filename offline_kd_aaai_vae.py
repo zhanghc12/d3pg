@@ -9,7 +9,9 @@ import os
 from knn_ue import td3_aaai
 import d4rl.gym_mujoco
 import numpy as np
-from sklearn.neighbors import KDTree
+# from sklearn.neighbors import KDTree
+from scipy.spatial import KDTree
+
 import time
 from tqdm import trange
 
@@ -173,7 +175,7 @@ if __name__ == "__main__":
     phi = policy.feature_nn(state_batch, action_batch)
     phi_list.extend(phi.detach().cpu().numpy())
 
-    trees = KDTree(np.array(phi_list), leaf_size=10000)
+    trees = KDTree(np.array(phi_list), leaf_size=1)
 
     start_time = time.time()
 
