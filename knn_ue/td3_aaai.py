@@ -262,10 +262,10 @@ class TD3(object):
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
             query_data = query_data# * phi_std + phi_mean
             target_distance, target_id = kd_trees.query(query_data, k=19) # / (self.state_dim + self.action_dim)
-            print(target_distance)
-            print(target_id)
+            #print(target_distance)
+            #print(target_id)
 
-            print('---')
+            #print('---')
             target_distance = np.mean(target_distance, axis=1, keepdims=True)
             cond = -torch.clamp_(self.eta * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
 
