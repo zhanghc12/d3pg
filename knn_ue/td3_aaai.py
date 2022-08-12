@@ -69,7 +69,7 @@ class VAE(nn.Module):
 
     def forward_encoder_decoder(self, state, action):
         z = F.relu(self.e1(torch.cat([state, action], 1)))
-        # z = F.relu(self.e2(z))
+        z = F.relu(self.e2(z))
 
         mean = self.mean(z)
         # Clamped for numerical stability
@@ -82,7 +82,7 @@ class VAE(nn.Module):
 
     def forward(self, state, action):
         z = F.relu(self.e1(torch.cat([state, action], 1)))
-        # z = F.relu(self.e2(z))
+        z = F.relu(self.e2(z))
 
         mean = self.mean(z)
         return mean
