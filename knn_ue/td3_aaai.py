@@ -246,7 +246,7 @@ class TD3(object):
         self.mean_distance = mean_distance
 
 
-    def train_policy(self, memory, batch_size, kd_trees):
+    def train_policy(self, memory, batch_size, kd_trees, phi_mean, phi_std):
         state, action, next_state, reward, not_done = memory.sample(batch_size)
 
         with torch.no_grad():
@@ -258,7 +258,7 @@ class TD3(object):
             sorted_z, _ = torch.sort(next_z.reshape(batch_size, -1))
             target = reward + not_done * self.discount * (sorted_z)
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
-
+            query_data = query_data * phi_std + phi_mean
             target_distance = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
             target_distance = np.mean(target_distance, axis=1, keepdims=True)
             cond = -torch.clamp_(self.eta * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150

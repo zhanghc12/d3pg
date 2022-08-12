@@ -164,7 +164,7 @@ if __name__ == "__main__":
     phi_list = []
     i = 0
     while i + batch_size < replay_buffer.size:
-        print(i)
+        # print(i)
         index = np.arange(i, i + batch_size)
         state_batch, action_batch = replay_buffer.sample_by_index(ind=index)
         phi = policy.feature_nn(state_batch, action_batch)
@@ -175,12 +175,16 @@ if __name__ == "__main__":
     phi = policy.feature_nn(state_batch, action_batch)
     phi_list.extend(phi.detach().cpu().numpy())
 
-    trees = KDTree(np.array(phi_list), leafsize=1, balanced_tree=True)
+    phi_list = np.array(phi_list)
+    phi_mean = np.mean(phi_list, dim=0, keepdims=True)
+    phi_std = np.std(phi_list, dim=0, keepdims=True)
+    phi_list = (phi_list - phi_mean) / (phi_std + 1e-3)
+    trees = KDTree(phi_list, leafsize=1, balanced_tree=True)
 
     start_time = time.time()
 
     for t in range(int(args.max_timesteps)):
-        critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size, trees)
+        critic_loss, actor_loss = policy.train_policy(replay_buffer, args.batch_size, trees, phi_mean, phi_std)
 
         if t % 100 == 0:
             writer.add_scalar('loss/critic_loss', critic_loss, t)
