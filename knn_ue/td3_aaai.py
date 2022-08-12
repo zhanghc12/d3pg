@@ -261,7 +261,7 @@ class TD3(object):
             target = reward + not_done * self.discount * (sorted_z)
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
             query_data = query_data# * phi_std + phi_mean
-            target_distance, target_id = kd_trees.query(query_data, k=19) # / (self.state_dim + self.action_dim)
+            target_distance, target_id = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
             #print(target_distance)
             #print(target_id)
 
