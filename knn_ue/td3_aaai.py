@@ -93,7 +93,7 @@ class VAE(nn.Module):
 
         a = F.relu(self.d1(z))
         a = F.relu(self.d2(a))
-        return torch.tanh(self.d3(a))
+        return a
 
 
 
