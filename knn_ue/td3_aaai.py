@@ -95,9 +95,6 @@ class VAE(nn.Module):
         a = F.relu(self.d2(a))
         return self.d3(a)
 
-
-
-
 class Critic(nn.Module):
     def __init__(self, state_dim, action_dim, n_quantiles, n_nets):
         super().__init__()
@@ -261,7 +258,7 @@ class TD3(object):
             target = reward + not_done * self.discount * (sorted_z)
             query_data = self.feature_nn(next_state, new_next_action).detach().cpu().numpy()
             query_data = query_data# * phi_std + phi_mean
-            target_distance, target_id = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
+            target_distance = kd_trees.query(query_data, k=self.k)[0] # / (self.state_dim + self.action_dim)
             #print(target_distance)
             #print(target_id)
 
