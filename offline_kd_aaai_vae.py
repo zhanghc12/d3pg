@@ -136,7 +136,7 @@ if __name__ == "__main__":
     # load predefined data or not
     if args.is_random == 0:
         if not args.load:
-            for i in trange(1000):
+            for i in trange(10000):
                 policy.train_feature_extractor(replay_buffer, batch_size=256)
             torch.save(policy.feature_nn.state_dict(), model_dir + "vae" + "_" + args.env)
 
