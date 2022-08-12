@@ -175,7 +175,7 @@ if __name__ == "__main__":
     phi = policy.feature_nn(state_batch, action_batch)
     phi_list.extend(phi.detach().cpu().numpy())
 
-    trees = KDTree(np.array(phi_list), leafsize=1)
+    trees = KDTree(np.array(phi_list), leafsize=1, balanced_tree=True)
 
     start_time = time.time()
 
