@@ -10,7 +10,7 @@ from knn_ue import td3_aaai
 import d4rl.gym_mujoco
 import numpy as np
 # from sklearn.neighbors import KDTree
-from scipy.spatial import KDTree
+from scipy.spatial import cKDTree as KDTree
 
 import time
 from tqdm import trange
