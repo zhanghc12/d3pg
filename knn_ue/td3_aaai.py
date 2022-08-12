@@ -289,7 +289,7 @@ class TD3(object):
             elif self.version == 3:
                 actor_loss = source_loss.mean()
             elif self.version == 9:
-                actor_loss = (actor_loss + bc_loss).mean()
+                actor_loss = (source_loss + bc_loss).mean()
             else:
                 raise NotImplementedError
             self.actor_optimizer.zero_grad()
