@@ -176,8 +176,8 @@ if __name__ == "__main__":
     phi_list.extend(phi.detach().cpu().numpy())
 
     phi_list = np.array(phi_list)
-    phi_mean = np.mean(phi_list, dim=0, keepdims=True)
-    phi_std = np.std(phi_list, dim=0, keepdims=True)
+    phi_mean = np.mean(phi_list, axis=0, keepdims=True)
+    phi_std = np.std(phi_list, axis=0, keepdims=True)
     phi_list = (phi_list - phi_mean) / (phi_std + 1e-3)
     trees = KDTree(phi_list, leafsize=1, balanced_tree=True)
 
