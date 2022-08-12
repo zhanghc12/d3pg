@@ -55,7 +55,7 @@ class VAE(nn.Module):
         self.latent_dim = latent_dim
 
         self.e1 = torch.nn.Linear(obs_dim + action_dim, 256)
-        self.e2 = torch.nn.Linear(256, 256)
+        # self.e2 = torch.nn.Linear(256, 256)
 
         self.mean = torch.nn.Linear(256, self.latent_dim)
         self.log_std = torch.nn.Linear(256, self.latent_dim)
@@ -69,7 +69,7 @@ class VAE(nn.Module):
 
     def forward_encoder_decoder(self, state, action):
         z = F.relu(self.e1(torch.cat([state, action], 1)))
-        z = F.relu(self.e2(z))
+        # z = F.relu(self.e2(z))
 
         mean = self.mean(z)
         # Clamped for numerical stability
@@ -82,7 +82,7 @@ class VAE(nn.Module):
 
     def forward(self, state, action):
         z = F.relu(self.e1(torch.cat([state, action], 1)))
-        z = F.relu(self.e2(z))
+        # z = F.relu(self.e2(z))
 
         mean = self.mean(z)
         return mean
