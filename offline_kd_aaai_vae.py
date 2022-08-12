@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--n_quantiles", default=25, type=int)
     parser.add_argument("--top_quantiles_to_drop", default=200, type=int)
-    parser.add_argument("--n_nets", default=5, type=int)
+    parser.add_argument("--n_nets", default=10, type=int)
     parser.add_argument("--bc_scale", type=float, default=0.5)
     parser.add_argument("--loading", type=int, default=0)
     parser.add_argument("--k", type=int, default=1)
