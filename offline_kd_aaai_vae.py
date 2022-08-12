@@ -86,16 +86,24 @@ if __name__ == "__main__":
     parser.add_argument("--k", type=int, default=1)
     parser.add_argument("--output_dim", type=int, default=6)
     parser.add_argument("--is_random", type=int, default=1)
+    parser.add_argument("--load", type=int, default=0)
 
 
     args = parser.parse_args()
 
     if torch.cuda.is_available():
         experiment_dir = '/data/zhanghc/kd/'
+        model_dir = '/data/zhanghc/kd/model/'
+
     else:
         experiment_dir = '/tmp/data/zhanghc/kd/'
+
     if not os.path.exists(experiment_dir):
         experiment_dir = '/DATA/disk1/zhanghc/kd/'
+        model_dir = '/DATA/disk1/zhanghc/kd/model/'
+
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
 
     experiment_dir = experiment_dir + '0810/'
     writer = SummaryWriter(
@@ -127,8 +135,13 @@ if __name__ == "__main__":
 
     # load predefined data or not
     if args.is_random == 0:
-        for i in trange(100000):
-            policy.train_feature_extractor(replay_buffer, batch_size=256)
+        if not args.load:
+            for i in trange(100000):
+                policy.train_feature_extractor(replay_buffer, batch_size=256)
+            torch.save(policy.feature_nn.state_dict(), model_dir + "vae")
+
+        else:
+            policy.feature_nn.load_state_dict(torch.load(model_dir + "vae"))
 
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
