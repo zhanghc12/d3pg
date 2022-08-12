@@ -263,6 +263,7 @@ class TD3(object):
             #print(target_id)
 
             #print('---')
+            target_distance = target_distance.reshape(target_distance.shape[0], -1)
             target_distance = np.mean(target_distance, axis=1, keepdims=True)
             cond = -torch.clamp_(self.eta * torch.FloatTensor(target_distance).to(self.device), 0, 1) * 100 + 150
 
