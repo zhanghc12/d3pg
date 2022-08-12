@@ -138,10 +138,10 @@ if __name__ == "__main__":
         if not args.load:
             for i in trange(100000):
                 policy.train_feature_extractor(replay_buffer, batch_size=256)
-            torch.save(policy.feature_nn.state_dict(), model_dir + "vae")
+            torch.save(policy.feature_nn.state_dict(), model_dir + "vae" + "_" + args.env)
 
         else:
-            policy.feature_nn.load_state_dict(torch.load(model_dir + "vae"))
+            policy.feature_nn.load_state_dict(torch.load(model_dir + "vae" + "_" + args.env))
 
     # Evaluate untrained policy
     evaluations = [eval_policy(0, policy, args.env, args.seed, obs_mean, obs_std, args.bc_scale)]
