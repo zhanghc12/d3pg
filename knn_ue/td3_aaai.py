@@ -75,7 +75,7 @@ class VAE(nn.Module):
         # Clamped for numerical stability
         log_std = self.log_std(z).clamp(-4, 15)
         std = torch.exp(log_std)
-        z = mean + std * torch.from_numpy(np.random.normal(0, 1, size=(std.size()))).to(device)
+        z = mean + std * torch.from_numpy(np.random.normal(0, 1, size=(std.size()))).float().to(device)
         u = self.decode(state, z)
 
         return u, mean, std
