@@ -60,7 +60,7 @@ class VAE(nn.Module):
         self.mean = torch.nn.Linear(256, self.latent_dim)
         self.log_std = torch.nn.Linear(256, self.latent_dim)
 
-        self.d1 = torch.nn.Linear(obs_dim + self.latent_dim, 256)
+        self.d1 = torch.nn.Linear(self.latent_dim, 256)
         self.d2 = torch.nn.Linear(256, 256)
         self.d3 = torch.nn.Linear(256, obs_dim + action_dim)
 
@@ -94,6 +94,8 @@ class VAE(nn.Module):
         a = F.relu(self.d1(torch.cat([state, z], 1)))
         a = F.relu(self.d2(a))
         return torch.tanh(self.d3(a))
+
+
 
 
 class Critic(nn.Module):
